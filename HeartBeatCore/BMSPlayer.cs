@@ -19,9 +19,11 @@ namespace HeartBeatCore
 
         public bool Playside2P = false;
 
-        public bool autoplay = true;
+        public bool autoplay = false;
 
         public bool BMSMode = false;  // TODO: 分岐はハードコーディングじゃなくてスキンで解決したい
+
+        public float RingShowingPeriodByMeasure = 2.0f;
 
         HatoDrawDevice hdraw;
         HatoSoundPlayer hsound;
@@ -70,9 +72,9 @@ namespace HeartBeatCore
         {
             hdraw = new HatoDrawDevice()
             {
-                SurfaceWidth = 640,
+                SurfaceWidth = 853,
                 SurfaceHeight = 480,
-                ClientWidth = 640,
+                ClientWidth = 853,
                 ClientHeight = 480,
                 DPI = 96,
                 SyncInterval = 1,
@@ -105,8 +107,13 @@ namespace HeartBeatCore
 
         BitmapData bmp = null;
         BitmapData bomb = null;
+        BitmapData judgement = null;
         BitmapData font = null;
         Action<RenderTarget> onPaint;
+
+        BitmapData bga_front = null;
+        BitmapData bga_back = null;
+        BitmapData bga_poor = null;
 
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
@@ -140,7 +147,14 @@ namespace HeartBeatCore
                 if (ev.KeyCode == Keys.C) { lastkeydowntime[36 + 5] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 5, out buf)) { buf.StopAndPlay(-6); } }
                 if (ev.KeyCode == Keys.F) { lastkeydowntime[36 + 8] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 8, out buf)) { buf.StopAndPlay(-6); } }
                 if (ev.KeyCode == Keys.V) { lastkeydowntime[36 + 9] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 9, out buf)) { buf.StopAndPlay(-6); } }
-                if (ev.KeyCode == Keys.B) { lastkeydowntime[36 + 6] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 6, out buf)) { buf.StopAndPlay(-6); } }
+                if (!Playside2P)
+                {
+                    if (ev.KeyCode == Keys.ShiftKey) { lastkeydowntime[36 + 6] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 6, out buf)) { buf.StopAndPlay(-6); } }
+                }
+                else
+                {
+                    if (ev.KeyCode == Keys.B) { lastkeydowntime[36 + 6] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 6, out buf)) { buf.StopAndPlay(-6); } }
+                }
             };
 
             b = new BMSStruct(new FileStream(path, FileMode.Open, FileAccess.Read));
@@ -178,6 +192,7 @@ namespace HeartBeatCore
             }
 
             var dict = new Dictionary<int, SecondaryBuffer>();
+            var dictbmp = new Dictionary<int, BitmapData>();
 
 
             //Console.WriteLine("Wav Load Completed");
@@ -190,7 +205,10 @@ namespace HeartBeatCore
             double HiSpeed = 0.6 * (150.0 / tempomedian);
 
             double WavFileLoadingDelayTime = 10.0;  // 先読みする時間量
-            double OffsetTime = WavFileLoadingDelayTime - 1.0;  // 起動から2.2秒遅れて再生開始(1本wavかつwav形式だと1秒では読み込めないことがあるかも)
+            double DelayingTimeBeforePlay = autoplay ? 1.0 :
+                (b.SoundBMObjects.Where(x => x.IsPlayable()).Count() >= 1 ?
+                Math.Max(0.5, 3.0 - (b.SoundBMObjects.Where(x => x.IsPlayable()).First().Seconds - starttime)) : 1.0);
+            double OffsetTime = WavFileLoadingDelayTime - DelayingTimeBeforePlay;  // 起動から2.2秒遅れて再生開始(1本wavかつwav形式だと1秒では読み込めないことがあるかも)
             // というか一本wav(Delicious Rabbitとか)問題はいろいろと解決しなければならなさそう
             // 8192サンプル間隔くらいごとにストリーミングした方がいいのでは
             // まあでもそれより先にogg対応な
@@ -245,6 +263,10 @@ namespace HeartBeatCore
                         lock (dict)
                         {
                             dict[sb.Wavid] = sbuf3;
+                            // TraceMessage("    Preload " + sb.Wavid);
+                            // 一部の音しかプリロードされないことがある・・・？
+                            // で、どういう時かというと、NVorbisがぽしゃった時っぽい。
+                            // やっぱりNVorbisはやめよう
                         }
 
                     });
@@ -258,7 +280,7 @@ namespace HeartBeatCore
 
                 // Asynchronously wait for Task<T> to complete with timeout
                 // http://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
-                int timeout = 3000;
+                int timeout = 10000;
                 if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
                 {
                     TraceMessage("(^^)");
@@ -290,6 +312,7 @@ namespace HeartBeatCore
                     //bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "bomb1.png"));
                     bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "ring1.png"));
 
+                    judgement = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "judgement.png"));
                     //System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.AboveNormal;
 
                 }
@@ -302,7 +325,15 @@ namespace HeartBeatCore
 
                        if (bmp != null)
                        {
-                           rt.DrawBitmap(bmp, 0f, 0f, 0.15f, 480f / bmp.Height);
+                           rt.DrawBitmap(bmp, 0f, 0f, 0.10f, 480f / bmp.Height);
+                       }
+                       if (bga_back != null)
+                       {
+                           rt.DrawBitmap(bga_back, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_back.Height);
+                       }
+                       if (bga_front != null)
+                       {
+                           rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
                        }
 
                        for (; left < b.SoundBMObjects.Count; left++)  // 消える箇所、left <= right
@@ -326,6 +357,7 @@ namespace HeartBeatCore
                        brushes[0] = new ColorBrush(rt, 0xFF3333);
 
 
+                       float ttt = 1.5f; // デフォルトで1.0
 
                        //Console.WriteLine(left + " / " + right);
                        if (false)
@@ -371,6 +403,30 @@ namespace HeartBeatCore
                            }
                            else
                            {
+                               #region Ringモード 非オートプレイの場合（キー反応描画）
+
+                               foreach (var bmschannel in new int[] { 36 + 1, 36 + 3, 36 + 5, 36 + 9 })
+                               {
+                                   var xpos = 40f + ObjectPosX[(bmschannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
+
+                                   rt.FillRectangle(
+                                                   xpos - 32f + 16f + 96f - 16f, 0,
+                                                   48, 480,
+                                                   new ColorBrush(rt, 0x888888, 0.12f));
+                               }
+
+                               foreach (var kvpair in lastkeydowntime)
+                               {
+                                   var xpos = 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
+                                   var displacement = s.ElapsedMilliseconds / 1000.0 - kvpair.Value;  // >= 0
+
+                                   rt.FillRectangle(
+                                                   xpos - 32f + 16f + 96f - 16f, 0,
+                                                   48, 480,
+                                                   new ColorBrush(rt, 0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.20f));
+                               }
+                               #endregion
+
                                #region Ringモード オートプレイの場合
                                for (int i = left - 20; i < right; i++)
                                {
@@ -387,7 +443,7 @@ namespace HeartBeatCore
                                            var displacement = (b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 1.2 / period;  // >= 0
                                            int idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
                                            //int idx = (int)Math.Floor(displacement * 3) + 1;
-                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
+                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f;
 
                                            if (idx <= 0)
                                            {
@@ -429,22 +485,34 @@ namespace HeartBeatCore
                                foreach (var kvpair in lastkeydowntime)
                                {
                                    var displacement = s.ElapsedMilliseconds / 1000.0 - kvpair.Value;  // >= 0
-                                   rt.DrawBitmap(bomb, 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f - 72f, 400f - 40f, (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
+                                   rt.DrawBitmap(bomb, 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f - 72f, 400f - 40f,
+                                       (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
                                }
                                #endregion
                            }
                            else
                            {
                                #region Ringモード 非オートプレイの場合（キー反応描画）
+
+                               foreach (var bmschannel in new int[] { 36 + 1, 36 + 3, 36 + 5, 36 + 9 })
+                               {
+                                   var xpos = 40f + ObjectPosX[(bmschannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
+
+                                   rt.FillRectangle(
+                                                   xpos - 32f + 16f + 96f - 16f, 0,
+                                                   48, 480,
+                                                   new ColorBrush(rt, 0x888888, 0.12f));
+                               }
+
                                foreach (var kvpair in lastkeydowntime)
                                {
-                                   var xpos = 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f - 72f;
+                                   var xpos = 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
                                    var displacement = s.ElapsedMilliseconds / 1000.0 - kvpair.Value;  // >= 0
 
                                    rt.FillRectangle(
                                                    xpos - 32f + 16f + 96f - 16f, 0,
                                                    48, 480,
-                                                   new ColorBrush(rt, 0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.3f));
+                                                   new ColorBrush(rt, 0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.20f));
                                }
                                #endregion
 
@@ -458,16 +526,17 @@ namespace HeartBeatCore
                                    {
                                        if (x.IsPlayable())
                                        {
-                                           float period = 2.0f;
 
-                                           var posdisp = (JustSeconds - x.Seconds) * 1.7;
-                                           var displacement = (JustSeconds - x.Seconds) * 1.2 / period;  // >= 0
+                                           var posdisp = (JustSeconds - x.Seconds) * 2.4;
+                                           var displacement = (JustSeconds - x.Seconds) * 1.2 / RingShowingPeriodByMeasure;  // >= 0
                                            //int idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
                                            int idx = 0;
-                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
+                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f;
+                                           double timedifference = 0;
 
                                            double lasttime;
-                                           if (lastkeydowntime.TryGetValue(x.BMSChannel, out lasttime) && Math.Abs(lasttime + JustSecondsOffset - x.Seconds) < 0.1)
+                                           if (lastkeydowntime.TryGetValue(x.BMSChannel, out lasttime) &&
+                                                (timedifference = Math.Abs(lasttime + JustSecondsOffset - x.Seconds)) < 0.1)
                                            {
                                                // キー押し下しがあった
                                                idx = (int)Math.Floor((JustSeconds - (lasttime + JustSecondsOffset)) * 30) + 1;
@@ -485,12 +554,12 @@ namespace HeartBeatCore
 
                                                //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
                                                rt.DrawBitmapSrc(bomb,
-                                                   xpos - 32f + 16f + (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   xpos - 32f + 16f + (float)posdisp * 25f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f,
                                                    0, 0,
                                                    64, 64,
                                                    (float)Math.Exp(+3 * displacement) * 1.0f * opac);
                                                rt.DrawBitmapSrc(bomb,
-                                                   xpos - 32f + 16f - (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   xpos - 32f + 16f - (float)posdisp * 25f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f,
                                                    0, 0,
                                                    64, 64,
                                                    (float)Math.Exp(+3 * displacement) * 1.0f * opac);
@@ -504,10 +573,20 @@ namespace HeartBeatCore
 
                                                //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
                                                rt.DrawBitmapSrc(bomb,
-                                                   xpos - 32f + 16f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   xpos - 32f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f,
                                                    idx % 8 * 64, idx / 8 * 64,
                                                    64, 64,
                                                    1.0f, 1.0f);
+
+                                               int judgeindex = (int)Math.Floor(timedifference / 0.02);
+                                               if (judgeindex >= 4) judgeindex = 3;
+
+                                               rt.DrawBitmapSrc(judgement,
+                                                   xpos - 64f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f + 39f,
+                                                   idx % 2 * 128, judgeindex * 64,
+                                                   128, 64,
+                                                   1.0f, 1.0f);
+
                                            }
                                        }
                                    }
@@ -599,6 +678,54 @@ namespace HeartBeatCore
                         }
                     }
                 },
+                async () =>  // bmpの読み込み
+                {
+                    foreach (var x in b.GraphicBMObjects)
+                    {
+                        while (x.Seconds * SecPerSec >= elapsedsec + starttime)
+                        {
+                            await Task.Delay(100);
+                            elapsedsec = s.ElapsedMilliseconds / 1000.0 + OffsetTime;
+                        }
+
+                        if (x.Seconds * SecPerSec >= starttime)
+                        {
+                            BitmapData sbuf;
+                            string fn;
+
+                            if (b.BitmapDefinitionList.TryGetValue(x.Wavid, out fn)
+                                && File.Exists(Path.Combine(Path.GetDirectoryName(path), fn))
+                                && !dictbmp.TryGetValue(x.Wavid, out sbuf))
+                            {
+                                // lockの範囲おかしくない？
+                                lock (dictbmp)
+                                {
+                                    dictbmp[x.Wavid] = null;  // 同じ音の多重読み込みを防止
+                                }
+
+                                // await しない！！！！！！！！！！！！！！！！！するな！！！！！！！！！！！！！！
+                                await Task.Run(() =>
+                                {
+                                    try
+                                    {
+                                        sbuf = new BitmapData(hdraw.HatoRenderTarget, Path.Combine(Path.GetDirectoryName(path), fn));
+                                        
+                                        lock (dict)
+                                        {
+                                            dictbmp[x.Wavid] = sbuf;
+                                            //TraceMessage("    " + b.WavDefinitionList[x.Wavid] + " Load Completed (" + dict.Count + "/" + b.WavDefinitionList.Count + ")");
+                                        }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        TraceWarning("  Exception: " + e.ToString());
+                                    }
+                                    
+                                });
+                            }
+                        }
+                    }
+                },
                 async () =>  // キー音の割り当て
                 {
                     foreach (var x in b.SoundBMObjects)
@@ -658,6 +785,52 @@ namespace HeartBeatCore
                                 {
                                     TraceWarning("  Warning : " + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
                                 }
+                            }
+                        }
+                    }
+                },
+                async () =>  // wavの再生
+                {
+                    foreach (var x in b.GraphicBMObjects)
+                    {
+                        while (x.Seconds * SecPerSec >= elapsedsec + starttime - WavFileLoadingDelayTime)
+                        {
+                            // TaskSchedulerException・・・？？
+                            // Thread.Sleep(10);
+                            await Task.Delay(5);
+                            elapsedsec = s.ElapsedMilliseconds / 1000.0 + OffsetTime;
+                        }
+
+                        if (x.Seconds * SecPerSec >= starttime)
+                        {
+                            BitmapData sbuf;
+
+                            if (dictbmp.TryGetValue(x.Wavid, out sbuf) && sbuf != null)
+                            {
+                                    /*
+                                     * 04	[objs/bmp] BGA-BASE
+                                     * 05
+                                     * 06	[objs/bmp] BGA-POOR
+                                     * 07	[objs/bmp] BGA-LAYER
+                                     */
+                                switch (x.BMSChannel)
+                                {
+                                    case 4:
+                                        bga_back = sbuf;
+                                        break;
+                                    case 6:
+                                        bga_poor = sbuf;
+                                        break;
+                                    case 7:
+                                        bga_front = sbuf;
+                                        break;
+                                    default:
+                                        throw new Exception("それ画像じゃない");
+                                }
+                            }
+                            else
+                            {
+                                TraceWarning("  Warning : " + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
                             }
                         }
                     }

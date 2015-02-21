@@ -34,7 +34,7 @@ namespace HeartBeatBeta
                 }
             }
         }
-        static bool autoplay_ = true;
+        static bool autoplay_ = false;  // 初期設定値
         static bool autoplay
         {
             get
@@ -47,6 +47,22 @@ namespace HeartBeatBeta
                 if (player != null)
                 {
                     player.autoplay = value;
+                }
+            }
+        }
+        static float RingShowingPeriodByMeasure_ = 2.0f;  // 初期設定値
+        static float RingShowingPeriodByMeasure
+        {
+            get
+            {
+                return RingShowingPeriodByMeasure_;
+            }
+            set
+            {
+                RingShowingPeriodByMeasure_ = value;
+                if (player != null)
+                {
+                    player.RingShowingPeriodByMeasure = value;
                 }
             }
         }
@@ -95,6 +111,10 @@ namespace HeartBeatBeta
                 {
                     startmeasure = Convert.ToInt32(cmd.Substring(2));
                 }
+                else if (cmd.Length >= 2 && cmd[0] == '-' && cmd[1] == 'R')
+                {
+                    RingShowingPeriodByMeasure = Convert.ToSingle(cmd.Substring(2));
+                }
                 else if (cmd.Length >= 1 && cmd[0] != '-')
                 {
                     // 空白を含む場合は？→なぜか普通に実行できて怖い
@@ -114,6 +134,7 @@ namespace HeartBeatBeta
                 if ((Control.ModifierKeys & Keys.Shift) != 0) player.autoplay = false;  // 2曲目移行でShiftが押されていなければ、現在のモードのまま
                 player.Playside2P = playside2p;
                 player.autoplay = autoplay;
+                player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;
                 player.LoadAndPlay(filename, startmeasure);
             }
 
@@ -126,6 +147,21 @@ namespace HeartBeatBeta
                 if (e.KeyCode == Keys.A && e.Control)
                 {
                     autoplay = !autoplay;
+                }
+                if (e.KeyCode == Keys.R && e.Control)
+                {
+                    if (RingShowingPeriodByMeasure == 2.0f)
+                    {
+                        RingShowingPeriodByMeasure = 1.0f;
+                    }
+                    else if (RingShowingPeriodByMeasure == 1.0f)
+                    {
+                        RingShowingPeriodByMeasure = 0.5f;
+                    }
+                    else if (RingShowingPeriodByMeasure == 0.5f)
+                    {
+                        RingShowingPeriodByMeasure = 2.0f;
+                    }
                 }
             };
 
@@ -180,6 +216,7 @@ namespace HeartBeatBeta
                 player.autoplay = ((Control.ModifierKeys & Keys.Shift) == 0);
                 player.Playside2P = playside2p;
                 player.autoplay = autoplay;
+                player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;
                 player.LoadAndPlay(files[0], startmeasure);
             }
         }

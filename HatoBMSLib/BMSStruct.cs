@@ -44,6 +44,7 @@ namespace HatoBMSLib
 
         public double BPM;
         //******************************************//
+        // BMS Objects and Definition
 
         // #mmm02:の行が無い場合でも、デフォルトテンポの指定が入るため、空にはなりません。
         public Transport transp = new Transport();
@@ -57,6 +58,9 @@ namespace HatoBMSLib
         public List<BMObject> OtherBMObjects = new List<BMObject>();
 
         public Dictionary<int, string> WavDefinitionList = new Dictionary<int, string>();
+        public Dictionary<int, string> BitmapDefinitionList = new Dictionary<int, string>();
+
+        //******************************************//
 
         public BMSStruct(Stream str)
         {
@@ -123,12 +127,19 @@ namespace HatoBMSLib
                                 var val = MatchHeaderLine.Groups[2].Captures[0].Value;
 
                                 var MatchWavXX = Regex.Match(header, @"^WAV([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                                var MatchBMPXX = Regex.Match(header, @"^BMP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                                 if (MatchWavXX.Success)
                                 {
                                     // #WAVxx にマッチ
                                     int wavid = BMConvert.FromBase36(MatchWavXX.Groups[1].Captures[0].Value);
                                     WavDefinitionList.Add(wavid, val);
+                                }
+                                else if (MatchBMPXX.Success)
+                                {
+                                    // #BMPxx にマッチ
+                                    int wavid = BMConvert.FromBase36(MatchBMPXX.Groups[1].Captures[0].Value);
+                                    BitmapDefinitionList.Add(wavid, val);
                                 }
                                 else
                                 {
