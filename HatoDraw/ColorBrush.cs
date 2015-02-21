@@ -22,6 +22,14 @@ namespace HatoDraw
             d2dBrush = new D2D.SolidColorBrush(renderTarget.d2dRenderTarget, Color.FromBgra(colorRgb | 0xFF000000u));  // 0xAARRGGBB の順
         }
 
+        public ColorBrush(RenderTarget renderTarget, uint colorRgb, float opacity)
+        {
+            int opacity2 = (int)Math.Round(opacity * 255);
+            if (opacity2 > 255) opacity2 = 255;
+            if (opacity2 < 0) opacity2 = 0;
+            d2dBrush = new D2D.SolidColorBrush(renderTarget.d2dRenderTarget, Color.FromBgra(colorRgb | ((uint)opacity2 << 24)));  // 0xAARRGGBB の順
+        }
+
         //********* implementation of IDisposable *********//
 
         // Flag: Has Dispose already been called?

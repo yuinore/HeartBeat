@@ -21,6 +21,8 @@ namespace HeartBeatCore
 
         public bool autoplay = true;
 
+        public bool BMSMode = false;  // TODO: 分岐はハードコーディングじゃなくてスキンで解決したい
+
         HatoDrawDevice hdraw;
         HatoSoundPlayer hsound;
 
@@ -285,14 +287,15 @@ namespace HeartBeatCore
                     {
                         bmp = new BitmapData(rt, b.ToFullPath(b.Stagefile));
                     }
-                    bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "bomb1.png"));
-                    //bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "ring1.png"));
+                    //bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "bomb1.png"));
+                    bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "ring1.png"));
 
                     //System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.AboveNormal;
 
                 }
                 onPaint = (rt) =>
                    {
+                       double JustSecondsOffset = starttime - WavFileLoadingDelayTime + OffsetTime;
                        double JustSeconds = s.ElapsedMilliseconds / 1000.0 + starttime - WavFileLoadingDelayTime + OffsetTime;
                        double JustDisplacement = b.transp.SecondsToBeat(JustSeconds);
                        double AppearDisplacement = JustDisplacement + 4.0;
@@ -322,86 +325,194 @@ namespace HeartBeatCore
                        brushes[1] = new ColorBrush(rt, 0x0066FF);
                        brushes[0] = new ColorBrush(rt, 0xFF3333);
 
+
+
                        //Console.WriteLine(left + " / " + right);
-                       for (int i = left; i < right; i++)
+                       if (false)
                        {
-                           var x = b.SoundBMObjects[i];
-                           if (x.Beat >= starttime)
+                           for (int i = left; i < right; i++)
                            {
-                               var displacement = (JustDisplacement - x.Beat) * HiSpeed;  // <= 0
-                               if (x.IsPlayable() && x.Seconds >= starttime && (x.BMSChannel / 36 <= 2 || 5 <= x.BMSChannel / 36))
-                               {
-                                   var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
-                                   rt.DrawRectangle(xpos, 400f + (float)displacement * 500f, 32f, 12f, blackpen, 3.0f);
-                                   rt.FillRectangle(xpos, 400f + (float)displacement * 500f, 32f, 12f, brushes[ObjectColor[(x.BMSChannel - 36) % 72]]);
-                               }
-                           }
-                       }
-                       if (autoplay)
-                       {
-                           // BMSモードの場合
-                           for (int i = left - 30; i < left; i++)
-                           {
-                               if (i < 0) continue;
-
-                               var x = b.SoundBMObjects[i];
-                               if (x.Seconds >= starttime)
-                               {
-                                   if (x.IsPlayable() && (x.BMSChannel / 36 <= 2 || 5 <= x.BMSChannel / 36))
-                                   {
-                                       var displacement = (JustSeconds - x.Seconds) * 1.2;  // >= 0
-
-                                       var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
-                                       rt.DrawBitmap(bomb, xpos - 72f, 400f - 40f, (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
-                                   }
-                               }
-                           }
-                           /* Ringモードの場合
-                           for (int i = left - 20; i < right; i++)
-                           {
-                               if (i < 0) continue;
-
                                var x = b.SoundBMObjects[i];
                                if (x.Beat >= starttime)
                                {
-                                   if (x.IsPlayable())
+                                   var displacement = (JustDisplacement - x.Beat) * HiSpeed;  // <= 0
+                                   if (x.IsPlayable() && x.Seconds >= starttime && (x.BMSChannel / 36 <= 2 || 5 <= x.BMSChannel / 36))
                                    {
-                                       var displacement = (JustDisplacementSeconds - x.Seconds) * 1.2;  // >= 0
-                                       int idx = (int)Math.Floor(displacement * 30) + 1;
+                                       var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
+                                       rt.DrawRectangle(xpos, 400f + (float)displacement * 500f, 32f, 12f, blackpen, 3.0f);
+                                       rt.FillRectangle(xpos, 400f + (float)displacement * 500f, 32f, 12f, brushes[ObjectColor[(x.BMSChannel - 36) % 72]]);
+                                   }
+                               }
+                           }
+                       }
 
-                                       if (idx <= 0)
+                       if (autoplay)
+                       {
+                           if (BMSMode)
+                           {
+                               #region BMSオートプレイの場合
+                               for (int i = left - 30; i < left; i++)
+                               {
+                                   if (i < 0) continue;
+
+                                   var x = b.SoundBMObjects[i];
+                                   if (x.Seconds >= starttime)
+                                   {
+                                       if (x.IsPlayable() && (x.BMSChannel / 36 <= 2 || 5 <= x.BMSChannel / 36))
                                        {
-                                           //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
-                                           rt.DrawBitmapSrc(bomb,
-                                               30f + ObjectPosX[(x.BMSChannel - 36) % 72] * 1.5f - 32f + 16f + (float)displacement * 25f, -((float)x.Measure + 1) % 1f * 1f * 360 + 420f - 32f,
-                                               0, 0,
-                                               64, 64,
-                                               (float)Math.Exp(+3 * displacement) * 1.0f, 1.0f);
-                                           rt.DrawBitmapSrc(bomb,
-                                               30f + ObjectPosX[(x.BMSChannel - 36) % 72] * 1.5f - 32f + 16f - (float)displacement * 25f, -((float)x.Measure + 1) % 1f * 1f * 360 + 420f - 32f,
-                                               0, 0,
-                                               64, 64,
-                                               (float)Math.Exp(+3 * displacement) * 1.0f, 1.0f);
-                                       }
-                                       else if (idx < 32)
-                                       {
-                                           //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
-                                           rt.DrawBitmapSrc(bomb,
-                                               30f + ObjectPosX[(x.BMSChannel - 36) % 72] * 1.5f - 32f + 16f, -((float)x.Measure + 1) % 1f * 1f * 360 + 420f - 32f,
-                                               idx % 8 * 64, idx / 8 * 64,
-                                               64, 64,
-                                               1.0f, 1.0f);
+                                           var displacement = (JustSeconds - x.Seconds) * 1.2;  // >= 0
+
+                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
+                                           rt.DrawBitmap(bomb, xpos - 72f, 400f - 40f, (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
                                        }
                                    }
                                }
-                           }*/
+                               #endregion
+                           }
+                           else
+                           {
+                               #region Ringモード オートプレイの場合
+                               for (int i = left - 20; i < right; i++)
+                               {
+                                   if (i < 0) continue;
+
+                                   var x = b.SoundBMObjects[i];
+                                   if (x.Beat >= starttime)
+                                   {
+                                       if (x.IsPlayable())
+                                       {
+                                           float period = 2.0f;
+
+                                           var posdisp = (b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 1.7;
+                                           var displacement = (b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 1.2 / period;  // >= 0
+                                           int idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
+                                           //int idx = (int)Math.Floor(displacement * 3) + 1;
+                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
+
+                                           if (idx <= 0)
+                                           {
+                                               //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
+                                               rt.DrawBitmapSrc(bomb,
+                                                   xpos - 32f + 16f + (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   0, 0,
+                                                   64, 64,
+                                                   (float)Math.Exp(+3 * displacement) * 1.0f, 1.0f);
+                                               rt.DrawBitmapSrc(bomb,
+                                                   xpos - 32f + 16f - (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   0, 0,
+                                                   64, 64,
+                                                   (float)Math.Exp(+3 * displacement) * 1.0f, 1.0f);
+
+                                               Console.WriteLine(xpos - 32f + 16f - (float)displacement * 25f);
+                                               Console.WriteLine(-((float)x.Measure + 1) % 1f * 1f * 360 + 420f - 32f);
+                                           }
+                                           else if (idx < 32)
+                                           {
+                                               //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
+                                               rt.DrawBitmapSrc(bomb,
+                                                   xpos - 32f + 16f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   idx % 8 * 64, idx / 8 * 64,
+                                                   64, 64,
+                                                   1.0f, 1.0f);
+                                           }
+                                       }
+                                   }
+                               }
+                               #endregion
+                           }
                        }
                        else
                        {
-                           foreach (var kvpair in lastkeydowntime)
+                           if (BMSMode)
                            {
-                               var displacement = s.ElapsedMilliseconds / 1000.0 - kvpair.Value;  // >= 0
-                               rt.DrawBitmap(bomb, 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f - 72f, 400f - 40f, (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
+                               #region BMSモード 非オートプレイの場合（bomb描画）
+                               foreach (var kvpair in lastkeydowntime)
+                               {
+                                   var displacement = s.ElapsedMilliseconds / 1000.0 - kvpair.Value;  // >= 0
+                                   rt.DrawBitmap(bomb, 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f - 72f, 400f - 40f, (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
+                               }
+                               #endregion
+                           }
+                           else
+                           {
+                               #region Ringモード 非オートプレイの場合（キー反応描画）
+                               foreach (var kvpair in lastkeydowntime)
+                               {
+                                   var xpos = 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f - 72f;
+                                   var displacement = s.ElapsedMilliseconds / 1000.0 - kvpair.Value;  // >= 0
+
+                                   rt.FillRectangle(
+                                                   xpos - 32f + 16f + 96f - 16f, 0,
+                                                   48, 480,
+                                                   new ColorBrush(rt, 0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.3f));
+                               }
+                               #endregion
+
+                               #region Ringモード 非オートプレイの場合
+                               for (int i = left - 20; i < right; i++)
+                               {
+                                   if (i < 0) continue;
+
+                                   var x = b.SoundBMObjects[i];
+                                   if (x.Beat >= starttime)
+                                   {
+                                       if (x.IsPlayable())
+                                       {
+                                           float period = 2.0f;
+
+                                           var posdisp = (JustSeconds - x.Seconds) * 1.7;
+                                           var displacement = (JustSeconds - x.Seconds) * 1.2 / period;  // >= 0
+                                           //int idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
+                                           int idx = 0;
+                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
+
+                                           double lasttime;
+                                           if (lastkeydowntime.TryGetValue(x.BMSChannel, out lasttime) && Math.Abs(lasttime + JustSecondsOffset - x.Seconds) < 0.1)
+                                           {
+                                               // キー押し下しがあった
+                                               idx = (int)Math.Floor((JustSeconds - (lasttime + JustSecondsOffset)) * 30) + 1;
+                                           }
+
+                                           if (idx <= 0)
+                                           {
+                                               // キー押し下しがなかった場合の処理
+
+                                               idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
+                                               var opac = (idx >= 0 ? (0.6f / (idx * 6f + 1f)) : 1.0f);
+
+                                               if (posdisp > 0) posdisp = 0;
+                                               if (displacement > 0) displacement = 0;
+
+                                               //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
+                                               rt.DrawBitmapSrc(bomb,
+                                                   xpos - 32f + 16f + (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   0, 0,
+                                                   64, 64,
+                                                   (float)Math.Exp(+3 * displacement) * 1.0f * opac);
+                                               rt.DrawBitmapSrc(bomb,
+                                                   xpos - 32f + 16f - (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   0, 0,
+                                                   64, 64,
+                                                   (float)Math.Exp(+3 * displacement) * 1.0f * opac);
+
+                                               Console.WriteLine(xpos - 32f + 16f - (float)displacement * 25f);
+                                               Console.WriteLine(-((float)x.Measure + 1) % 1f * 1f * 360 + 420f - 32f);
+                                           }
+                                           else if (idx < 32)
+                                           {
+                                               // キー押し下しがあった場合の処理
+
+                                               //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
+                                               rt.DrawBitmapSrc(bomb,
+                                                   xpos - 32f + 16f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
+                                                   idx % 8 * 64, idx / 8 * 64,
+                                                   64, 64,
+                                                   1.0f, 1.0f);
+                                           }
+                                       }
+                                   }
+                               }
+                               #endregion
                            }
                        }
                        //rt.FillRectangle(5f, 5f, 630f, 470f, brush);
