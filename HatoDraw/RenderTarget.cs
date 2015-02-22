@@ -66,11 +66,11 @@ namespace HatoDraw
             d2dRenderTarget.DrawRectangle(new RectangleF(posX * sr, posY * sr, width * sr, height * sr), brush.d2dBrush, strokewidth);
         }
 
-        public void DrawText(BitmapData font, string text, float posX, float posY)
+        public void DrawText(BitmapData font, string text, float posX, float posY, float scale = 0.75f)
         {
             int x = 0;
             int y = 0;
-            float s = 0.75f;
+            float s = scale;
 
             foreach (var c in text)
             {

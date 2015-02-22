@@ -160,6 +160,9 @@ namespace HeartBeatCore
             b = new BMSStruct(new FileStream(path, FileMode.Open, FileAccess.Read));
             b.DirectoryName = Path.GetDirectoryName(path);
 
+            int maxscore = b.SoundBMObjects.Where(x => x.IsPlayable()).Count();
+            var scoretable = new Dictionary<int, int>();  // not exist:poor, 0:bad, 1:good, 2:great, 3:pg
+
             //b.WavDefinitionList[2] = b.WavDefinitionList[1];
 
             //b.ToString();/
@@ -319,7 +322,7 @@ namespace HeartBeatCore
                 onPaint = (rt) =>
                    {
                        double JustSecondsOffset = starttime - WavFileLoadingDelayTime + OffsetTime;
-                       double JustSeconds = s.ElapsedMilliseconds / 1000.0 + starttime - WavFileLoadingDelayTime + OffsetTime;
+                       double JustSeconds = s.ElapsedMilliseconds / 1000.0 + JustSecondsOffset;
                        double JustDisplacement = b.transp.SecondsToBeat(JustSeconds);
                        double AppearDisplacement = JustDisplacement + 4.0;
 
@@ -334,6 +337,40 @@ namespace HeartBeatCore
                        if (bga_front != null)
                        {
                            rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
+                       }
+
+                       {
+                           //int scoretotal = scoretable.Select(x => x.Value >= 2 ? x.Value - 1 : 0).Sum();
+                           /*
+                           int scoretotal = scoretable.Select(x => x.Value).Sum();
+                           float scorerate = scoretotal / (float)(maxscore * 3);
+                           float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 3);
+                            */
+                           int scoretotal = scoretable.Select(x => x.Value >= 1 ? 1 : 0).Sum();
+                           float scorerate = scoretotal / (float)(maxscore * 1);
+                           float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 1);
+
+                           rt.FillRectangle(780f - 40f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
+                           rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0xFF8888));
+
+                           rt.DrawText(font, "Gauge:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 300, 1.0f);
+                       }
+
+                       {
+                           //int scoretotal = scoretable.Select(x => x.Value >= 2 ? x.Value - 1 : 0).Sum();
+                           /*
+                           int scoretotal = scoretable.Select(x => x.Value).Sum();
+                           float scorerate = scoretotal / (float)(maxscore * 3);
+                           float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 3);
+                            */
+                           int scoretotal = scoretable.Select(x => x.Value >= 2 ? x.Value - 1 : 0).Sum();
+                           float scorerate = scoretotal / (float)(maxscore * 2);
+                           float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 2);
+
+                           rt.FillRectangle(780f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
+                           rt.FillRectangle(780f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0x88FF88));
+
+                           rt.DrawText(font, "Rate:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 400f, 1.0f);
                        }
 
                        for (; left < b.SoundBMObjects.Count; left++)  // 消える箇所、left <= right
@@ -517,7 +554,7 @@ namespace HeartBeatCore
                                #endregion
 
                                #region Ringモード 非オートプレイの場合
-                               for (int i = left - 20; i < right; i++)
+                               for (int i = left - 50; i < right; i++)
                                {
                                    if (i < 0) continue;
 
@@ -536,10 +573,10 @@ namespace HeartBeatCore
 
                                            double lasttime;
                                            if (lastkeydowntime.TryGetValue(x.BMSChannel, out lasttime) &&
-                                                (timedifference = Math.Abs(lasttime + JustSecondsOffset - x.Seconds)) < 0.1)
+                                                (timedifference = Math.Abs(lasttime + JustSecondsOffset - x.Seconds)) < 0.12)
                                            {
                                                // キー押し下しがあった
-                                               idx = (int)Math.Floor((JustSeconds - (lasttime + JustSecondsOffset)) * 30) + 1;
+                                               idx = (int)Math.Floor((JustSeconds - (lasttime + JustSecondsOffset)) * 60) + 1;
                                            }
 
                                            if (idx <= 0)
@@ -578,8 +615,28 @@ namespace HeartBeatCore
                                                    64, 64,
                                                    1.0f, 1.0f);
 
-                                               int judgeindex = (int)Math.Floor(timedifference / 0.02);
+                                               int judgeindex = -1;
+                                               if (timedifference <= 0.02)
+                                               {
+                                                   judgeindex = 0;
+                                               }
+                                               else if (timedifference <= 0.04)
+                                               {
+                                                   judgeindex = 1;
+                                               }
+                                               else if (timedifference <= 0.10)
+                                               {
+                                                   judgeindex = 2;
+                                               }
+                                               else
+                                               {
+                                                   judgeindex = 3;
+                                               }
+
                                                if (judgeindex >= 4) judgeindex = 3;
+
+                                               // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
+                                               scoretable[i] = 3 - judgeindex;  // 0,1,2,3. 3:pg;
 
                                                rt.DrawBitmapSrc(judgement,
                                                    xpos - 64f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f + 39f,
