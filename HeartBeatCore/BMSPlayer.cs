@@ -107,6 +107,8 @@ namespace HeartBeatCore
 
         BitmapData bmp = null;
         BitmapData bomb = null;
+        BitmapData bar = null;
+        BitmapData bar_white = null;
         BitmapData judgement = null;
         BitmapData font = null;
         Action<RenderTarget> onPaint;
@@ -207,10 +209,12 @@ namespace HeartBeatCore
             double tempomedian = b.CalcTempoMedian(0.667);  // 3分の2くらいが低速だったらそっちに合わせようかな、という気持ち
             double HiSpeed = 0.6 * (150.0 / tempomedian);
 
-            double WavFileLoadingDelayTime = 10.0;  // 先読みする時間量
+            int PreLoadingTimeousMilliSeconds = 20000;
+
+            double WavFileLoadingDelayTime = 30.0;  // 先読みする時間量
             double DelayingTimeBeforePlay = autoplay ? 1.0 :
                 (b.SoundBMObjects.Where(x => x.IsPlayable()).Count() >= 1 ?
-                Math.Max(0.5, 3.0 - (b.SoundBMObjects.Where(x => x.IsPlayable()).First().Seconds - starttime)) : 1.0);
+                Math.Max(1.0, 3.0 - (b.SoundBMObjects.Where(x => x.IsPlayable()).First().Seconds - starttime)) : 1.0);
             double OffsetTime = WavFileLoadingDelayTime - DelayingTimeBeforePlay;  // 起動から2.2秒遅れて再生開始(1本wavかつwav形式だと1秒では読み込めないことがあるかも)
             // というか一本wav(Delicious Rabbitとか)問題はいろいろと解決しなければならなさそう
             // 8192サンプル間隔くらいごとにストリーミングした方がいいのでは
@@ -283,8 +287,7 @@ namespace HeartBeatCore
 
                 // Asynchronously wait for Task<T> to complete with timeout
                 // http://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
-                int timeout = 10000;
-                if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+                if (await Task.WhenAny(task, Task.Delay(PreLoadingTimeousMilliSeconds)) == task)
                 {
                     TraceMessage("(^^)");
                     // task completed within timeout
@@ -314,6 +317,8 @@ namespace HeartBeatCore
                     }
                     //bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "bomb1.png"));
                     bomb = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "ring1.png"));
+                    bar = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "bar1.png"));
+                    bar_white = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "bar1_white.png"));
 
                     judgement = new BitmapData(rt, Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "judgement.png"));
                     //System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.AboveNormal;
@@ -541,15 +546,41 @@ namespace HeartBeatCore
                                                    new ColorBrush(rt, 0x888888, 0.12f));
                                }
 
-                               foreach (var kvpair in lastkeydowntime)
+                               while (true)
                                {
+                                   if (lastkeydowntime.Count == 0) break;
+
+                                   var kvpair = lastkeydowntime.OrderByDescending(x => x.Value).FirstOrDefault();
+
+                               
                                    var xpos = 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
+                                   var xpos2 = 40f + 180 * ttt * 0.8f;
                                    var displacement = s.ElapsedMilliseconds / 1000.0 - kvpair.Value;  // >= 0
 
                                    rt.FillRectangle(
                                                    xpos - 32f + 16f + 96f - 16f, 0,
                                                    48, 480,
                                                    new ColorBrush(rt, 0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.20f));
+
+                                   if (((int)(displacement * 30)) < 16)
+                                   {
+                                       rt.DrawBitmapSrc(bar_white,
+                                           xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(kvpair.Value + JustSecondsOffset) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
+                                           //0, 0 + 12, 
+                                           0, ((int)(displacement * 30)) * 16,
+                                           512, 16,
+                                           0.5f);
+                                   }
+                                   if (((int)(displacement * 30)) < 16)
+                                   {
+                                       rt.DrawBitmapSrc(bar_white,
+                                           xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(kvpair.Value + JustSecondsOffset) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f + RingShowingPeriodByMeasure) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
+                                           //0, 0 + 12,
+                                           0, ((int)(displacement * 30)) * 16,
+                                           512, 16,
+                                           0.5f);
+                                   }
+                                   break;
                                }
                                #endregion
 
@@ -569,6 +600,7 @@ namespace HeartBeatCore
                                            //int idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
                                            int idx = 0;
                                            var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f;
+                                           var xpos2 = 40f + 180 * ttt * 0.8f;
                                            double timedifference = 0;
 
                                            double lasttime;
@@ -600,9 +632,11 @@ namespace HeartBeatCore
                                                    0, 0,
                                                    64, 64,
                                                    (float)Math.Exp(+3 * displacement) * 1.0f * opac);
-
-                                               Console.WriteLine(xpos - 32f + 16f - (float)displacement * 25f);
-                                               Console.WriteLine(-((float)x.Measure + 1) % 1f * 1f * 360 + 420f - 32f);
+                                               rt.DrawBitmapSrc(bar,
+                                                   xpos2 - 256f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 16f,
+                                                   0, 0,
+                                                   512, 32,
+                                                   (float)Math.Exp(+3 * displacement) * 0.5f * opac);
                                            }
                                            else if (idx < 32)
                                            {
@@ -613,7 +647,12 @@ namespace HeartBeatCore
                                                    xpos - 32f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f,
                                                    idx % 8 * 64, idx / 8 * 64,
                                                    64, 64,
-                                                   1.0f, 1.0f);
+                                                   1.0f);
+                                               rt.DrawBitmapSrc(bar,
+                                                   xpos2 - 256f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 16f,
+                                                   0, idx / 2 * 32,
+                                                   512, 32,
+                                                   0.1f);
 
                                                int judgeindex = -1;
                                                if (timedifference <= 0.02)
@@ -640,7 +679,7 @@ namespace HeartBeatCore
 
                                                rt.DrawBitmapSrc(judgement,
                                                    xpos - 64f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f + 39f,
-                                                   idx % 2 * 128, judgeindex * 64,
+                                                   idx / 2 % 2 * 128, judgeindex * 64,
                                                    128, 64,
                                                    1.0f, 1.0f);
 
@@ -766,8 +805,8 @@ namespace HeartBeatCore
                                     try
                                     {
                                         sbuf = new BitmapData(hdraw.HatoRenderTarget, Path.Combine(Path.GetDirectoryName(path), fn));
-                                        
-                                        lock (dict)
+
+                                        lock (dictbmp)
                                         {
                                             dictbmp[x.Wavid] = sbuf;
                                             //TraceMessage("    " + b.WavDefinitionList[x.Wavid] + " Load Completed (" + dict.Count + "/" + b.WavDefinitionList.Count + ")");
