@@ -28,7 +28,7 @@ namespace HatoSound
         /// </summary>
         /// <param name="hsound"></param>
         /// <param name="bufcount"></param>
-        public SecondaryBuffer(HatoSoundPlayer hsound, int bufSamplesCount, int channelsCount = 2, int samplingRate = 44100)
+        public SecondaryBuffer(HatoSoundDevice hsound, int bufSamplesCount, int channelsCount = 2, int samplingRate = 44100)
         {
             SamplingRate = samplingRate;
             BufSamplesCount = bufSamplesCount;
@@ -44,7 +44,7 @@ namespace HatoSound
         /// </summary>
         /// <param name="hsound"></param>
         /// <param name="filename"></param>
-        public SecondaryBuffer(HatoSoundPlayer hsound, string filename)
+        public SecondaryBuffer(HatoSoundDevice hsound, string filename)
         {
             // TODO: WaveFileReaderをAudioFileReaderに置き換え
 
@@ -74,7 +74,7 @@ namespace HatoSound
         /// </summary>
         /// <param name="hsound"></param>
         /// <param name="filename"></param>
-        private void CreateBuffer(HatoSoundPlayer hsound)
+        private void CreateBuffer(HatoSoundDevice hsound)
         {
             var waveFormat = new SharpDX.Multimedia.WaveFormat(SamplingRate, 16, ChannelsCount);
 

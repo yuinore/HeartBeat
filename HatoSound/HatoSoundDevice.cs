@@ -8,11 +8,11 @@ using System.Windows.Forms;
 
 namespace HatoSound
 {
-    public class HatoSoundPlayer
+    public class HatoSoundDevice
     {
         internal DirectSound dsound;
 
-        public HatoSoundPlayer(Form form)
+        public HatoSoundDevice(Form form)
         {
             // 参考(SlimDXだけど)
             // http://slimdx.googlecode.com/svn-history/r1737/branches/v2/Samples/DirectSound/PlaySound/Program.cs

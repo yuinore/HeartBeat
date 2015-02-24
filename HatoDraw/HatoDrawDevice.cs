@@ -28,12 +28,12 @@ namespace HatoDraw
         /// <summary>
         /// スキンに固有の値の、描画領域の幅(dip)
         /// </summary>
-        public float SurfaceWidth = 640;
+        public float DeviceIndependentWidth = 640;
 
         /// <summary>
         /// スキンに固有の値の、描画領域の高さ(dip)
         /// </summary>
-        public float SurfaceHeight = 480;
+        public float DeviceIndependentHeight = 480;
 
         /// <summary>
         /// ウィンドウモード時の描画領域の幅(pixels)
@@ -145,7 +145,7 @@ namespace HatoDraw
                 //dpi = new Size2F(dpi.Width * 1.25f, dpi.Height * 1.25f);  // ここやばい
                 if (DPI != 0)
                 {
-                    renderDpi = new Size2F(DPI * ClientWidth / SurfaceWidth, DPI * ClientHeight / SurfaceHeight);
+                    renderDpi = new Size2F(DPI * ClientWidth / DeviceIndependentWidth, DPI * ClientHeight / DeviceIndependentHeight);
                 }
 
                 // Create bitmap render target from DXGI surface

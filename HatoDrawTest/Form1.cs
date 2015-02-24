@@ -81,13 +81,13 @@ namespace HatoDrawTest
             });
         }
 
-        HatoSoundPlayer hsound;
+        HatoSoundDevice hsound;
 
         private void button2_Click(object sender, EventArgs e)
         {
             if (hsound == null)
             {
-                hsound = new HatoSoundPlayer(this);  // thisでもいいのか？
+                hsound = new HatoSoundDevice(this);  // thisでもいいのか？
             }
 
             SecondaryBuffer sbuf = new SecondaryBuffer(hsound, @"1.wav");
@@ -100,7 +100,7 @@ namespace HatoDrawTest
             // スレッド問題
             // HatoDrawとHatoSoundは統合したほうが良い感じもあるというアレ
 
-            SecondaryBuffer sbuf = new SecondaryBuffer(new HatoSoundPlayer(form), filename);
+            SecondaryBuffer sbuf = new SecondaryBuffer(new HatoSoundDevice(form), filename);
             sbuf.Play();
         }
 
@@ -108,7 +108,7 @@ namespace HatoDrawTest
         {
             if (hsound == null)
             {
-                hsound = new HatoSoundPlayer(this);  // thisでもいいのか？
+                hsound = new HatoSoundDevice(this);  // thisでもいいのか？
             }
 
             int j = 0;
@@ -168,8 +168,8 @@ namespace HatoDrawTest
 
             hdraw = new HatoDrawDevice()
             {
-                SurfaceWidth = 640,
-                SurfaceHeight = 480,
+                DeviceIndependentWidth = 640,
+                DeviceIndependentHeight = 480,
                 ClientWidth = 640,
                 ClientHeight = 480,
                 DPI = 96,
@@ -211,7 +211,7 @@ namespace HatoDrawTest
 
             if (hsound == null)
             {
-                hsound = new HatoSoundPlayer(this);  // thisでもいいのか？
+                hsound = new HatoSoundDevice(this);  // thisでもいいのか？
             }
             var b = new BMSStruct(new FileStream(@"1.bml", FileMode.Open, FileAccess.Read));
 

@@ -26,7 +26,7 @@ namespace HeartBeatCore
         public float RingShowingPeriodByMeasure = 2.0f;
 
         HatoDrawDevice hdraw;
-        HatoSoundPlayer hsound;
+        HatoSoundDevice hsound;
 
         short[] ObjectPosX = {
             0,60,100,140,180,220,0,0,260,300,
@@ -72,8 +72,8 @@ namespace HeartBeatCore
         {
             hdraw = new HatoDrawDevice()
             {
-                SurfaceWidth = 853,
-                SurfaceHeight = 480,
+                DeviceIndependentWidth = 853,
+                DeviceIndependentHeight = 480,
                 ClientWidth = 853,
                 ClientHeight = 480,
                 DPI = 96,
@@ -224,7 +224,7 @@ namespace HeartBeatCore
 
             if (hsound == null)
             {
-                hsound = new HatoSoundPlayer(form);  // thisでもいいのか？
+                hsound = new HatoSoundDevice(form);  // thisでもいいのか？
             }
 
             //s.Start();

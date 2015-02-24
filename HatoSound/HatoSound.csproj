@@ -49,7 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HatoSoundPlayer.cs" />
+    <Compile Include="HatoSoundDevice.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SecondaryBuffer.cs" />
   </ItemGroup>
