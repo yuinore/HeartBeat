@@ -46,8 +46,6 @@ namespace HatoSound
         /// <param name="filename"></param>
         public SecondaryBuffer(HatoSoundDevice hsound, string filename)
         {
-            // TODO: WaveFileReaderをAudioFileReaderに置き換え
-
             try
             {
                 fbuf = AudioFileReader.ReadAllSamples(filename);  // ここで一度8/16bitから32bitに変換されてしまうんですよね・・・無駄・・・
@@ -66,6 +64,20 @@ namespace HatoSound
                 CreateBuffer(hsound);
                 WriteSamples(fbuf);
             }
+        }
+
+        /// <summary>
+        /// 空のバッファを作成します。
+        /// </summary>
+        public SecondaryBuffer(HatoSoundDevice hsound)
+        {
+            fbuf = new float[][] { new float[] { 0 } };
+            BufSamplesCount = 1;
+            ChannelsCount = 1;
+            SamplingRate = 44100;
+
+            CreateBuffer(hsound);
+            WriteSamples(fbuf);
         }
 
         /// <summary>
@@ -98,7 +110,11 @@ namespace HatoSound
         /// <param name="data"></param>
         public void WriteSamples(float[][] data)
         {
-            WriteSamples(data, 0, BufSamplesCount);
+            if (data.Length <= 0)
+            {
+                throw new Exception("オーディオのチャンネル数が0です。");
+            }
+            WriteSamples(data, 0, data[0].Length);
         }
 
         /// <summary>
@@ -107,6 +123,7 @@ namespace HatoSound
         /// <param name="data"></param>
         public void WriteSamples(float[][] data, int dstPositionInSample, int count)
         {
+            // TODO: バッファが短すぎる場合の例外
             // TODO: クリッピングの処理
             short[][] sdata = data.Select(x => x.Select(y => (short)(32767 * y)).ToArray()).ToArray();  // こ　れ　は　ひ　ど　い
 
