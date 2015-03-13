@@ -15,6 +15,8 @@ namespace HatoPainter
         // あと、BGAな
         public abstract void DrawBack(RenderTarget rt, BMSStruct b, PlayingState ps);
 
+        public abstract void DrawKeyFlash(RenderTarget rt, BMSStruct b, BMObject obj);
+
         public abstract void DrawNote(RenderTarget rt, BMSStruct b, PlayingState ps, BMObject obj);
 
         public abstract void DrawBarLine(RenderTarget rt, BMSStruct b, PlayingState ps, BMObject obj);

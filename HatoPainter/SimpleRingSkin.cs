@@ -19,8 +19,6 @@ namespace HatoPainter
         private BitmapData bar_white;
         private BitmapData judgement;
 
-        int left = 0;
-        int right = 0;
         private BitmapData bga_back;
         private BitmapData bga_front;
 
@@ -54,6 +52,26 @@ namespace HatoPainter
                 rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
             }
             #endregion
+        }
+
+        public override void DrawKeyFlash(RenderTarget rt, BMSStruct b, BMObject obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void DrawNote(RenderTarget rt, BMSStruct b, PlayingState ps, BMObject obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void DrawBarLine(RenderTarget rt, BMSStruct b, PlayingState ps, BMObject obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void DrawFront(RenderTarget rt, BMSStruct b, PlayingState ps)
+        {
+            throw new NotImplementedException();
         }
     }
 }

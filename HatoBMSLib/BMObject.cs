@@ -82,6 +82,10 @@ namespace HatoBMSLib
         public double Seconds;  // 秒
         public double Disp;  // 通常はbeatに比例
 
+        public bool Broken;  // 破壊されたか？
+        public Judgement Judge;
+        public double BrokeAt;  // 破壊された時刻（秒）
+
         // これは、IsSoundがTrueである（または将来そうなるべきである）場合にのみ、意味のある値となります。
         public bool IsLongNoteTerminal
         {

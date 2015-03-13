@@ -42,6 +42,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BMSPlayer.cs" />
+    <Compile Include="GameRegulation.cs" />
+    <Compile Include="HeartBeatRegulation.cs" />
+    <Compile Include="KeyEvent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -18,6 +18,9 @@ namespace HeartBeatCore
     {
         public BMSStruct b;  // ガベージコレクタに回収されてはならないんだぞ
 
+        // TODO: これ↓の初期化処理
+        public GameRegulation regulation = new HeartBeatRegulation();
+
         public bool Playside2P = false;
 
         public bool autoplay = false;
@@ -135,28 +138,57 @@ namespace HeartBeatCore
             thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
 
             Dictionary<int, int> keysound = new Dictionary<int, int>();
-            Dictionary<int, double> lastkeydowntime = new Dictionary<int, double>();
+            //Dictionary<int, double> lastkeydowntime = new Dictionary<int, double>();
 
             s = new Stopwatch();
 
+            Dictionary<int, double> lastKeyDown = new Dictionary<int, double>();
+            Queue<KeyEvent> keyEventList = new Queue<KeyEvent>();
+            KeyEvent lastKeyEvent = null;
+
             hdraw.OnKeyDown = (o, ev, ddrawForm) =>
             {
-                int wavid;
+                // lastkeydowntime[36 + 2] = CurrentSongPosition(); 
+                // if (keysound.TryGetValue(36 + 2, out wavid)) {
+                //    hplayer.PlaySound(wavid, true);
+                // }
 
-                if (ev.KeyCode == Keys.Z) { lastkeydowntime[36 + 1] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 1, out wavid)) { hplayer.PlaySound(wavid, true); } }
-                if (ev.KeyCode == Keys.S) { lastkeydowntime[36 + 2] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 2, out wavid)) { hplayer.PlaySound(wavid, true); } }
-                if (ev.KeyCode == Keys.X) { lastkeydowntime[36 + 3] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 3, out wavid)) { hplayer.PlaySound(wavid, true); } }
-                if (ev.KeyCode == Keys.D) { lastkeydowntime[36 + 4] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 4, out wavid)) { hplayer.PlaySound(wavid, true); } }
-                if (ev.KeyCode == Keys.C) { lastkeydowntime[36 + 5] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 5, out wavid)) { hplayer.PlaySound(wavid, true); } }
-                if (ev.KeyCode == Keys.F) { lastkeydowntime[36 + 8] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 8, out wavid)) { hplayer.PlaySound(wavid, true); } }
-                if (ev.KeyCode == Keys.V) { lastkeydowntime[36 + 9] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 9, out wavid)) { hplayer.PlaySound(wavid, true); } }
+                int? keyid = null;
+
+                if (ev.KeyCode == Keys.Z) { keyid = 1; }
+                if (ev.KeyCode == Keys.S) { keyid = 2; }
+                if (ev.KeyCode == Keys.X) { keyid = 3; }
+                if (ev.KeyCode == Keys.D) { keyid = 4; }
+                if (ev.KeyCode == Keys.C) { keyid = 5; }
+                if (ev.KeyCode == Keys.F) { keyid = 8; }
+                if (ev.KeyCode == Keys.V) { keyid = 9; }
                 if (!Playside2P)
                 {
-                    if (ev.KeyCode == Keys.ShiftKey) { lastkeydowntime[36 + 6] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 6, out wavid)) { hplayer.PlaySound(wavid, true); } }
+                    if (ev.KeyCode == Keys.ShiftKey) { keyid = 6; }
                 }
                 else
                 {
-                    if (ev.KeyCode == Keys.B) { lastkeydowntime[36 + 6] = CurrentSongPosition(); if (keysound.TryGetValue(36 + 6, out wavid)) { hplayer.PlaySound(wavid, true); } }
+                    if (ev.KeyCode == Keys.B) { keyid = 6; }
+                }
+
+                if (keyid != null)
+                {
+                    int wavid;
+                    double CSP = CurrentSongPosition();
+
+                    lastKeyEvent = new KeyEvent
+                    {
+                        keyid = (int)keyid,
+                        seconds = CSP
+                    };
+                    lastKeyDown[(int)keyid] = CSP;
+                    
+                    keyEventList.Enqueue(lastKeyEvent);
+
+                    if (keysound.TryGetValue(36 + (int)keyid, out wavid))
+                    {
+                        hplayer.PlaySound(wavid, true);
+                    }
                 }
             };
 
@@ -262,6 +294,8 @@ namespace HeartBeatCore
             {
                 int left = 0;
                 int right = 0;
+                int hitzoneLeft = 0;
+                int hitzoneRight = 0;
                 //form = hdraw.OpenForm();
                 {
                     var rt = hdraw.HatoRenderTarget;
@@ -350,6 +384,50 @@ namespace HeartBeatCore
                            var x = b.SoundBMObjects[right];
                            if (x.Beat >= AppearDisplacement) break;
                        }
+                       for (; hitzoneLeft < b.SoundBMObjects.Count; hitzoneLeft++)  // 消える箇所、left <= right
+                       {
+                           var x = b.SoundBMObjects[hitzoneLeft];
+                           if (x.Seconds + regulation.JudgementWindowSize >= current.Seconds) break;
+                       }
+                       for (; hitzoneRight < b.SoundBMObjects.Count; hitzoneRight++)  // 出現する箇所、left <= right
+                       {
+                           var x = b.SoundBMObjects[hitzoneRight];
+                           if (x.Seconds - regulation.JudgementWindowSize >= current.Seconds) break;
+                       }
+
+                       #region キー入力キューの消化試合
+                       // キー入力に最近のオブジェを探す
+                       // 当たり判定があった場合はいろいろする
+                       while(keyEventList.Count!=0){
+                           var kvpair = keyEventList.Dequeue();
+                           double min = double.MaxValue;
+                           BMObject minAt = null;
+
+                           for (int i = hitzoneLeft; i < hitzoneRight; i++)
+                           {
+                               var obj = b.SoundBMObjects[i];
+                               var dif = Math.Abs(obj.Seconds - CurrentSongPosition());
+                               if (dif < min &&
+                                   obj.Broken == false &&
+                                   (obj.BMSChannel - 36) % 72 == kvpair.keyid)
+                               {
+                                   min = dif;
+                                   minAt = b.SoundBMObjects[i];
+                               }
+                           }
+
+                           if (minAt != null)
+                           {
+                               Judgement judge = regulation.SecondsToJudgement(min);
+                               if (judge != Judgement.None)  // 判定無しでなければ
+                               {
+                                   minAt.Broken = true;
+                                   minAt.Judge = regulation.SecondsToJudgement(min);
+                                   minAt.BrokeAt = kvpair.seconds;
+                               }
+                           }
+                       }
+                       #endregion
 
                        ColorBrush blackpen = new ColorBrush(rt, 0x000000);
 
@@ -382,33 +460,9 @@ namespace HeartBeatCore
                            }
                        }
 
-                       if (autoplay)
                        {
-                           if (BMSMode)
                            {
-                               #region BMSオートプレイの場合
-                               for (int i = left - 30; i < left; i++)
-                               {
-                                   if (i < 0) continue;
-
-                                   var x = b.SoundBMObjects[i];
-                                   if (x.Seconds >= PlayFrom)
-                                   {
-                                       if (x.IsPlayable() && (x.BMSChannel / 36 <= 2 || 5 <= x.BMSChannel / 36))
-                                       {
-                                           var displacement = (CurrentSongPosition() - x.Seconds) * 1.2;  // >= 0
-
-                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
-                                           rt.DrawBitmap(bomb, xpos - 72f, 400f - 40f, (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
-                                       }
-                                   }
-                               }
-                               #endregion
-                           }
-                           else
-                           {
-                               #region Ringモード 非オートプレイの場合（キー反応描画）
-
+                               #region Ringモード 非オートプレイの場合（キーフラッシュ）
                                foreach (var bmschannel in new int[] { 36 + 1, 36 + 3, 36 + 5, 36 + 9 })
                                {
                                    var xpos = 40f + ObjectPosX[(bmschannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
@@ -418,106 +472,14 @@ namespace HeartBeatCore
                                                    48, 480,
                                                    new ColorBrush(rt, 0x888888, 0.12f));
                                }
-
-                               foreach (var kvpair in lastkeydowntime)
-                               {
-                                   var xpos = 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
-                                   var displacement = CurrentSongPosition() - kvpair.Value;  // >= 0
-
-                                   rt.FillRectangle(
-                                                   xpos - 32f + 16f + 96f - 16f, 0,
-                                                   48, 480,
-                                                   new ColorBrush(rt, 0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.20f));
-                               }
                                #endregion
 
-                               #region Ringモード オートプレイの場合
-                               for (int i = left - 20; i < right; i++)
+                               #region キー入力時間を示す白いバー（多分）
+                               while (lastKeyEvent != null)
                                {
-                                   if (i < 0) continue;
-
-                                   var x = b.SoundBMObjects[i];
-                                   if (x.Beat >= PlayFrom)
-                                   {
-                                       if (x.IsPlayable())
-                                       {
-                                           float period = 2.0f;
-
-                                           var posdisp = (CurrentSongPosition() - x.Seconds) * 1.7;
-                                           var displacement = (CurrentSongPosition() - x.Seconds) * 1.2 / period;  // >= 0
-                                           int idx = (int)Math.Floor((CurrentSongPosition() - x.Seconds) * 30) + 1;
-                                           //int idx = (int)Math.Floor(displacement * 3) + 1;
-                                           var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f;
-
-                                           if (idx <= 0)
-                                           {
-                                               //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
-                                               rt.DrawBitmapSrc(bomb,
-                                                   xpos - 32f + 16f + (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
-                                                   0, 0,
-                                                   64, 64,
-                                                   (float)Math.Exp(+3 * displacement) * 1.0f, 1.0f);
-                                               rt.DrawBitmapSrc(bomb,
-                                                   xpos - 32f + 16f - (float)posdisp * 25f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
-                                                   0, 0,
-                                                   64, 64,
-                                                   (float)Math.Exp(+3 * displacement) * 1.0f, 1.0f);
-
-                                               Console.WriteLine(xpos - 32f + 16f - (float)displacement * 25f);
-                                               Console.WriteLine(-((float)x.Measure + 1) % 1f * 1f * 360 + 420f - 32f);
-                                           }
-                                           else if (idx < 32)
-                                           {
-                                               //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
-                                               rt.DrawBitmapSrc(bomb,
-                                                   xpos - 32f + 16f, -((float)x.Measure + 1) % period / period * 360 + 420f - 32f,
-                                                   idx % 8 * 64, idx / 8 * 64,
-                                                   64, 64,
-                                                   1.0f, 1.0f);
-                                           }
-                                       }
-                                   }
-                               }
-                               #endregion
-                           }
-                       }
-                       else
-                       {
-                           if (BMSMode)
-                           {
-                               #region BMSモード 非オートプレイの場合（bomb描画）
-                               foreach (var kvpair in lastkeydowntime)
-                               {
-                                   var displacement = CurrentSongPosition() - kvpair.Value;  // >= 0
-                                   rt.DrawBitmap(bomb, 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f - 72f, 400f - 40f,
-                                       (float)Math.Exp(-6 * displacement) * 1.0f, 0.1f);
-                               }
-                               #endregion
-                           }
-                           else
-                           {
-                               #region Ringモード 非オートプレイの場合（キー反応描画）
-
-                               foreach (var bmschannel in new int[] { 36 + 1, 36 + 3, 36 + 5, 36 + 9 })
-                               {
-                                   var xpos = 40f + ObjectPosX[(bmschannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
-
-                                   rt.FillRectangle(
-                                                   xpos - 32f + 16f + 96f - 16f, 0,
-                                                   48, 480,
-                                                   new ColorBrush(rt, 0x888888, 0.12f));
-                               }
-
-                               while (true)
-                               {
-                                   if (lastkeydowntime.Count == 0) break;
-
-                                   var kvpair = lastkeydowntime.OrderByDescending(x => x.Value).FirstOrDefault();
-
-                               
-                                   var xpos = 40f + ObjectPosX[(kvpair.Key + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
+                                   var xpos = 40f + ObjectPosX[(lastKeyEvent.keyid + 36 + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
                                    var xpos2 = 40f + 180 * ttt * 0.8f;
-                                   var displacement = CurrentSongPosition() - kvpair.Value;  // >= 0
+                                   var displacement = CurrentSongPosition() - lastKeyEvent.seconds;  // >= 0
 
                                    rt.FillRectangle(
                                                    xpos - 32f + 16f + 96f - 16f, 0,
@@ -527,7 +489,7 @@ namespace HeartBeatCore
                                    if (((int)(displacement * 30)) < 16)
                                    {
                                        rt.DrawBitmapSrc(bar_white,
-                                           xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(kvpair.Value) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
+                                           xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(lastKeyEvent.seconds) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
                                            //0, 0 + 12, 
                                            0, ((int)(displacement * 30)) * 16,
                                            512, 16,
@@ -536,7 +498,7 @@ namespace HeartBeatCore
                                    if (((int)(displacement * 30)) < 16)
                                    {
                                        rt.DrawBitmapSrc(bar_white,
-                                           xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(kvpair.Value) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f + RingShowingPeriodByMeasure) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
+                                           xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(lastKeyEvent.seconds) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f + RingShowingPeriodByMeasure) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
                                            //0, 0 + 12,
                                            0, ((int)(displacement * 30)) * 16,
                                            512, 16,
@@ -562,14 +524,11 @@ namespace HeartBeatCore
                                            int idx = 0;
                                            var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * ttt * 0.8f;
                                            var xpos2 = 40f + 180 * ttt * 0.8f;
-                                           double timedifference = 0;
 
-                                           double lasttime;
-                                           if (lastkeydowntime.TryGetValue(x.BMSChannel, out lasttime) &&
-                                                (timedifference = Math.Abs(lasttime - x.Seconds)) < 0.12)
+                                           if (x.Broken)
                                            {
                                                // キー押し下しがあった
-                                               idx = (int)Math.Floor((CurrentSongPosition() - lasttime) * 60) + 1;
+                                               idx = (int)Math.Floor((CurrentSongPosition() - x.BrokeAt) * 60) + 1;
                                            }
 
                                            if (idx <= 0)
@@ -615,32 +574,13 @@ namespace HeartBeatCore
                                                    512, 32,
                                                    0.1f);
 
-                                               int judgeindex = -1;
-                                               if (timedifference <= 0.02)
-                                               {
-                                                   judgeindex = 0;
-                                               }
-                                               else if (timedifference <= 0.04)
-                                               {
-                                                   judgeindex = 1;
-                                               }
-                                               else if (timedifference <= 0.10)
-                                               {
-                                                   judgeindex = 2;
-                                               }
-                                               else
-                                               {
-                                                   judgeindex = 3;
-                                               }
-
-                                               if (judgeindex >= 4) judgeindex = 3;
-
                                                // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
-                                               scoretable[i] = 3 - judgeindex;  // 0,1,2,3. 3:pg;
+                                               scoretable[i] = (int)x.Judge - 1;  // 0,1,2,3. 3:pg;
+                                               if (scoretable[i] < 0) scoretable[i] = 0;
 
                                                rt.DrawBitmapSrc(judgement,
                                                    xpos - 64f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f + 39f,
-                                                   idx / 2 % 2 * 128, judgeindex * 64,
+                                                   idx / 2 % 2 * 128, (3 - scoretable[i]) * 64,
                                                    128, 64,
                                                    1.0f, 1.0f);
 
