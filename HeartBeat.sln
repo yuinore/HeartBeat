@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeatBeta", "HeartBeatB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPlayer", "HatoPlayer\HatoPlayer.csproj", "{94B5907D-6278-4D22-B95C-5D58DD5BED4F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPainter", "HatoPainter\HatoPainter.csproj", "{7346C91F-817D-47AB-B584-FB05A34390FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7346C91F-817D-47AB-B584-FB05A34390FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7346C91F-817D-47AB-B584-FB05A34390FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7346C91F-817D-47AB-B584-FB05A34390FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7346C91F-817D-47AB-B584-FB05A34390FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

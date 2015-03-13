@@ -62,11 +62,11 @@ namespace HatoBMSLib
     
     public class BMObject : IComparable<BMObject>
     {
-        public BMObject(int bmsch, int wavid, Rational beat)
+        public BMObject(int bmsch, int wavid, Rational measure)
         {
             this.BMSChannel = bmsch;
             this.Wavid = wavid;
-            this.Measure = beat;
+            this.Measure = measure;
         }
 
         public int CompareTo(BMObject b)
@@ -80,7 +80,7 @@ namespace HatoBMSLib
 
         public double Beat;
         public double Seconds;  // 秒
-        public double Displacement;  // 通常はbeatに比例
+        public double Disp;  // 通常はbeatに比例
 
         // これは、IsSoundがTrueである（または将来そうなるべきである）場合にのみ、意味のある値となります。
         public bool IsLongNoteTerminal
@@ -112,6 +112,12 @@ namespace HatoBMSLib
             int hc = BMSChannel / 36;
             int lc = BMSChannel % 36;
             return (1 <= hc && hc <= 6) || (0xD <= hc && hc <= 0xE);
+        }
+
+        public bool IsInvisible()
+        {
+            int hc = BMSChannel / 36;
+            return (3 <= hc && hc <= 4);
         }
 
         public bool IsGraphic()

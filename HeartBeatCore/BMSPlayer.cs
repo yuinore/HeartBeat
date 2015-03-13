@@ -132,8 +132,7 @@ namespace HeartBeatCore
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
             Process thisProcess = System.Diagnostics.Process.GetCurrentProcess();
-            thisProcess.PriorityClass = ProcessPriorityClass.High;
-
+            thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
 
             Dictionary<int, int> keysound = new Dictionary<int, int>();
             Dictionary<int, double> lastkeydowntime = new Dictionary<int, double>();
@@ -194,7 +193,6 @@ namespace HeartBeatCore
 
             TraceMessage("Timer Started.");
 
-            double SecPerSec = 1.0;
             double tempomedian = b.CalcTempoMedian(0.667);  // 3分の2くらいが低速だったらそっちに合わせようかな、という気持ち
             double HiSpeed = 0.6 * (150.0 / tempomedian);
 
@@ -282,9 +280,28 @@ namespace HeartBeatCore
                 }
                 onPaint = (rt) =>
                    {
-                       double JustDisplacement = b.transp.SecondsToBeat(CurrentSongPosition());
-                       double AppearDisplacement = JustDisplacement + 4.0;
+                       BMTime current = new BMTime
+                       {
+                           Disp = b.transp.SecondsToBeat(CurrentSongPosition()),
+                           Beat = b.transp.SecondsToBeat(CurrentSongPosition()),
+                           Seconds = CurrentSongPosition(),
+                           Measure = 0
+                       };
 
+                       PlayingState ps = new PlayingState
+                       {
+                           Combo = 0,
+                           Gauge = 0,
+                           CurrentMaximumExScore = 0,
+                           TotalExScore = 0,
+                           LastJudgement = Judgement.None,
+                           Current = current
+                       };
+
+                       //double JustDisplacement = b.transp.SecondsToBeat(CurrentSongPosition());
+                       double AppearDisplacement = current.Disp + 4.0;
+
+                       #region BGA表示
                        if (bmp != null)
                        {
                            rt.DrawBitmap(bmp, 0f, 0f, 0.10f, 480f / bmp.Height);
@@ -297,14 +314,10 @@ namespace HeartBeatCore
                        {
                            rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
                        }
+                       #endregion
 
+                       #region ゲージ・スコアレート表示
                        {
-                           //int scoretotal = scoretable.Select(x => x.Value >= 2 ? x.Value - 1 : 0).Sum();
-                           /*
-                           int scoretotal = scoretable.Select(x => x.Value).Sum();
-                           float scorerate = scoretotal / (float)(maxscore * 3);
-                           float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 3);
-                            */
                            int scoretotal = scoretable.Select(x => x.Value >= 1 ? 1 : 0).Sum();
                            float scorerate = scoretotal / (float)(maxscore * 1);
                            float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 1);
@@ -316,12 +329,6 @@ namespace HeartBeatCore
                        }
 
                        {
-                           //int scoretotal = scoretable.Select(x => x.Value >= 2 ? x.Value - 1 : 0).Sum();
-                           /*
-                           int scoretotal = scoretable.Select(x => x.Value).Sum();
-                           float scorerate = scoretotal / (float)(maxscore * 3);
-                           float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 3);
-                            */
                            int scoretotal = scoretable.Select(x => x.Value >= 2 ? x.Value - 1 : 0).Sum();
                            float scorerate = scoretotal / (float)(maxscore * 2);
                            float scorepixel = (480 - 276 - 20) * scoretotal / (float)(maxscore * 2);
@@ -331,11 +338,12 @@ namespace HeartBeatCore
 
                            rt.DrawText(font, "Rate:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 400f, 1.0f);
                        }
+                       #endregion
 
                        for (; left < b.SoundBMObjects.Count; left++)  // 消える箇所、left <= right
                        {
                            var x = b.SoundBMObjects[left];
-                           if (x.Beat >= JustDisplacement) break;
+                           if (x.Beat >= current.Disp) break;
                        }
                        for (; right < b.SoundBMObjects.Count; right++)  // 出現する箇所、left <= right
                        {
@@ -363,7 +371,7 @@ namespace HeartBeatCore
                                var x = b.SoundBMObjects[i];
                                if (x.Beat >= PlayFrom)
                                {
-                                   var displacement = (JustDisplacement - x.Beat) * HiSpeed;  // <= 0
+                                   var displacement = (current.Disp - x.Beat) * HiSpeed;  // <= 0
                                    if (x.IsPlayable() && x.Seconds >= PlayFrom && (x.BMSChannel / 36 <= 2 || 5 <= x.BMSChannel / 36))
                                    {
                                        var xpos = 40f + ObjectPosX[(x.BMSChannel + (Playside2P ? 0 : 1) * 36) % 72] * 0.8f;
@@ -548,7 +556,6 @@ namespace HeartBeatCore
                                    {
                                        if (x.IsPlayable())
                                        {
-
                                            var posdisp = (CurrentSongPosition() - x.Seconds) * 2.4;
                                            var displacement = (CurrentSongPosition() - x.Seconds) * 1.2 / RingShowingPeriodByMeasure;  // >= 0
                                            //int idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
@@ -662,12 +669,12 @@ namespace HeartBeatCore
                 {
                     foreach (var x in b.SoundBMObjects)
                     {
-                        while (x.Seconds * SecPerSec >= CurrentSongPosition() + WavFileLoadingDelayTime)
+                        while (x.Seconds >= CurrentSongPosition() + WavFileLoadingDelayTime)
                         {
                             await Task.Delay(100);
                         }
 
-                        if (x.Seconds * SecPerSec >= PlayFrom)
+                        if (x.Seconds >= PlayFrom)
                         {
                             await Task.Run(() => hplayer.PrepareSound(x.Wavid));
                         }
@@ -677,12 +684,12 @@ namespace HeartBeatCore
                 {
                     foreach (var x in b.GraphicBMObjects)
                     {
-                        while (x.Seconds * SecPerSec >= CurrentSongPosition() + WavFileLoadingDelayTime)
+                        while (x.Seconds >= CurrentSongPosition() + WavFileLoadingDelayTime)
                         {
                             await Task.Delay(100);
                         }
 
-                        if (x.Seconds * SecPerSec >= PlayFrom)
+                        if (x.Seconds >= PlayFrom)
                         {
                             BitmapData sbuf;
                             string fn;
@@ -723,13 +730,13 @@ namespace HeartBeatCore
                 {
                     foreach (var x in b.SoundBMObjects)
                     {
-                        while (x.Seconds * SecPerSec >= CurrentSongPosition() + 0.3)
+                        while (x.Seconds >= CurrentSongPosition() + 0.3)
                         {
                             //Thread.Sleep(100);
                             await Task.Delay(50);
                         }
 
-                        if (x.Seconds * SecPerSec >= PlayFrom && x.IsPlayable())  // autoplayかどうかによらない
+                        if (x.Seconds >= PlayFrom && x.IsPlayable())  // autoplayかどうかによらない、また、非表示でもOK
                         {
                             keysound[(x.BMSChannel - 36) % 72 + 36] = x.Wavid;
 
@@ -742,15 +749,15 @@ namespace HeartBeatCore
                 {
                     foreach (var x in b.SoundBMObjects)
                     {
-                        while (x.Seconds * SecPerSec >= CurrentSongPosition())
+                        while (x.Seconds >= CurrentSongPosition())
                         {
                             // TaskSchedulerException・・・？？
                             await Task.Delay(5);
                         }
 
-                        if (x.Seconds * SecPerSec >= PlayFrom)
+                        if (x.Seconds >= PlayFrom)
                         {
-                            if ((autoplay || !x.IsPlayable()) && (x.BMSChannel / 36 <= 2 || 5 <= x.BMSChannel / 36))
+                            if ((autoplay || !x.IsPlayable()) && !x.IsInvisible())
                             {
                                 hplayer.PlaySound(x.Wavid, false);
                             }
@@ -761,12 +768,12 @@ namespace HeartBeatCore
                 {
                     foreach (var x in b.GraphicBMObjects)
                     {
-                        while (x.Seconds * SecPerSec >= CurrentSongPosition())
+                        while (x.Seconds >= CurrentSongPosition())
                         {
                             await Task.Delay(10);
                         }
 
-                        if (x.Seconds * SecPerSec >= PlayFrom)
+                        if (x.Seconds >= PlayFrom)
                         {
                             BitmapData bmpdata;
 
