@@ -74,9 +74,6 @@ namespace HatoDraw
         /// </summary>
         public float DPI = 0f;
 
-
-        public Action<object, KeyEventArgs, Form> OnKeyDown = null;
-
         private Device device;
         private SwapChain swapChain;
         private D2D.RenderTarget d2dRenderTarget;
@@ -99,9 +96,12 @@ namespace HatoDraw
 
         RenderForm form;
 
+        /// <summary>
+        /// 同期的にフォームを開きます。
+        /// Run()を呼び出すまで、レンダリングループは開始されません。
+        /// </summary>
         public Form OpenForm()
         {
-
             form = new RenderForm(Caption);
             // 同じスレッドで処理されることを保証できるか？
             // レンダリング対象のウィンドウを作成
@@ -113,9 +113,6 @@ namespace HatoDraw
             // Prevent window from being re-sized
             form.AutoSizeMode = AutoSizeMode.GrowOnly;
 
-
-            //Task.Run(() =>  // これが無くても非同期的に処理がされているの、謎すぎる
-            //{
             // swap chain description を作成する
             var swapChainDesc = new SwapChainDescription()
             {
@@ -174,77 +171,38 @@ namespace HatoDraw
                 {
                     swapChain.IsFullScreen = !swapChain.IsFullScreen;
                 }
-                else
-                {
-                    if (OnKeyDown != null) OnKeyDown(o, e, form);
-                }
             };
 
             return form;
-
         }
 
         /// <summary>
-        /// Windowsフォームを非同期的に開きます。（従って、awaitする必要はありません。）
+        /// レンダーループを同期的に開始します。
+        /// DirectXフォームが閉じられると、処理が返ります。
         /// </summary>
-        /// <param name="onLoad"></param>
-        /// <param name="onPaint"></param>
         public void Start(Action<RenderTarget> onLoad, Action<RenderTarget> onPaint)
         {
             if (started) return;  // 適当
 
             started = true;
 
+            onLoad(HatoRenderTarget);
 
-                onLoad(HatoRenderTarget);
+            // Rendering function
+            RenderLoop.Run(form, () =>
+            {
+                d2dRenderTarget.BeginDraw();
+                d2dRenderTarget.Transform = Matrix3x2.Identity;
 
-                // Rendering function
-                RenderLoop.Run(form, () =>
-                {
-                    d2dRenderTarget.BeginDraw();
-                    d2dRenderTarget.Transform = Matrix3x2.Identity;
-                    //d2dRenderTarget.Clear(Color.White);
+                onPaint(HatoRenderTarget);
 
-                    onPaint(HatoRenderTarget);
+                d2dRenderTarget.EndDraw();
 
-                    d2dRenderTarget.EndDraw();
+                swapChain.Present(SyncInterval, PresentFlags.None);
+            });
 
-                    /*var datarect = backBuffer.Map(SharpDX.DXGI.MapFlags.Write);
-                    
-                    var tex = new Texture2D(device, new Texture2DDescription() {
-                        Width = 400,
-                        Height = 100,
-                        MipLevels = 1,
-                        ArraySize = 1,
-                        Format = Format.B8G8R8A8_UNorm,
-                        Usage = ResourceUsage.Default,
-                        SampleDescription = new SampleDescription(1, 0),
-                        BindFlags = BindFlags.DepthStencil,
-                        CpuAccessFlags = 0,
-                        OptionFlags = 0,
-                    });
-                    var texsur = new Surface(tex.NativePointer);*/
-
-
-                    //swapChain.Present(0, PresentFlags.None);
-                    swapChain.Present(SyncInterval, PresentFlags.None);
-                });
-
-                Dispose();
-            //});
-
-            //return form;
+            Dispose();
         }
-
-        //public void Stop()
-        //{
-        //    Dispose();
-        //}
-
-        //public BitmapData LoadBitmap()
-        //{
-        //    return new BitmapData();
-        //}
 
         //********* implementation of IDisposable *********//
 
@@ -289,6 +247,5 @@ namespace HatoDraw
         }
 
         //********* implementation of IDisposable *********//
-
     }
 }

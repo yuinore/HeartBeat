@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HatoDraw;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,11 +10,11 @@ namespace HatoPainter
 {
     public class HatoPainterDevice
     {
-        public Form OpenForm()
-        {
-            return null;
-        }
-
-
+        // HatoPainterがひとつのスキンに対応している、ということは、
+        // 言い方を変えればHatoPainterがFormを開くのはおかしいのでは？
+        // うーん？？？
+        // というわけでopenformはBMSPlayerでやってもらいます
+        // ？？？？？？？？
+        // このクラスは一体何？？？？
     }
 }

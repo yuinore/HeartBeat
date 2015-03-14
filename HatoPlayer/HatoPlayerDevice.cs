@@ -44,6 +44,22 @@ namespace HatoPlayer
             }
         }
 
+        public long AudioFileSize(int wavid)
+        {
+            string fn;
+
+            if (!b.WavDefinitionList.TryGetValue(wavid, out fn) ||
+                !AudioFileReader.FileExists(b.ToFullPath(fn)))
+            {
+                // WAV定義がされていなかったか、されていてもファイルが存在しなかった場合（空文字で定義されていた場合を含む）
+                return 0L;
+            }
+            else
+            {
+                return (new FileInfo(AudioFileReader.FileName(fn))).Length;
+            }
+        }
+
         /// <summary>
         /// キー音を　同　期　的　に　読み込みます。
         /// もしキー音がwav/oggであれば、それを読み込みます。

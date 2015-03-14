@@ -16,9 +16,11 @@ namespace HatoBMSLib
 
         public int TotalExScore;
         public int CurrentMaximumExScore;
+        public int MaximumExScore;
 
         public int TotalAcceptance;
         public int CurrentMaximumAcceptance;
+        public int MaximumAcceptance;
 
         public KeyEvent LastKeyEvent;
     }

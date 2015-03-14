@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HatoPainterDevice.cs" />
+    <Compile Include="NullSkin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleRingSkin.cs" />
     <Compile Include="Skin.cs" />

@@ -10,9 +10,13 @@ namespace HatoPainter
 {
     public abstract class Skin
     {
+        // TODO:このメンバをどうにかする
         public float RingShowingPeriodByMeasure = 2.0f;
 
-        public double BombDuration = 2.0;
+        /// <summary>
+        /// キー入力からボム表示終了までの最大時間
+        /// </summary>
+        public abstract double BombDuration { get; }
 
         public abstract void Load(RenderTarget rt, BMSStruct b);
 

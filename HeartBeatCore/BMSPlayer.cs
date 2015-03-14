@@ -31,8 +31,6 @@ namespace HeartBeatCore
 
         public bool autoplay = false;
 
-        public bool BMSMode = false;  // TODO: 分岐はハードコーディングじゃなくてスキンで解決したい
-
         // TODO: Skinへの移行
         public float RingShowingPeriodByMeasure
         {
@@ -62,12 +60,12 @@ namespace HeartBeatCore
             Console.WriteLine(text);
         }
 
-        public BMSPlayer()
-        {
-        }
-
         Form form;
 
+        /// <summary>
+        /// 同期的にフォームを開きます。
+        /// Run()を呼び出すまで、レンダリングループは開始されません。
+        /// </summary>
         public Form OpenForm()
         {
             hdraw = new HatoDrawDevice()
@@ -80,10 +78,15 @@ namespace HeartBeatCore
                 SyncInterval = 1,
             };
 
-            // 本当に非同期である必要があるのか？
-            return form = hdraw.OpenForm();
+            form = hdraw.OpenForm();
+
+            return form;
         }
 
+        /// <summary>
+        /// レンダーループを同期的に開始します。
+        /// DirectXフォームが閉じられると、処理が返ります。
+        /// </summary>
         public void Run()
         {
             hdraw.Start(
@@ -96,12 +99,12 @@ namespace HeartBeatCore
                {
                    rt.ClearBlack();
 
-                   rt.DrawText(font, ConsoleMessage, 4, 4);
-
                    if (onPaint != null)
                    {
                        onPaint(rt);
                    }
+
+                   rt.DrawText(font, ConsoleMessage, 4, 4);
                });
         }
 
@@ -114,7 +117,7 @@ namespace HeartBeatCore
 
         Stopwatch s = new Stopwatch();
 
-        double WavFileLoadingDelayTime = 30.0;  // 先読み対象とする時間量
+        double WavFileLoadingDelayTime = 10.0;  // 先読み対象とする時間量
         double DelayingTimeBeforePlay = 1.0;  // 読み込み完了から曲が再生されるまでの時間
         double PlayFrom = 0.0;  // 曲の再生を開始する地点（秒）
 
@@ -123,6 +126,11 @@ namespace HeartBeatCore
             return s.ElapsedMilliseconds / 1000.0 + PlayFrom - DelayingTimeBeforePlay;
         }
 
+        /// <summary>
+        /// BMSファイルを読み込んで、直ちに再生します。
+        /// Run()より前に呼んでも後に呼んでも構いませんが、
+        /// どちらにしてもRun()を呼び出す必要があります多分。
+        /// </summary>
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
             {
@@ -140,7 +148,8 @@ namespace HeartBeatCore
             // キー入力キューで、フレームごとに消化される。（描画に直接用いることはない）
             Queue<KeyEvent> keyEventList = new Queue<KeyEvent>();
 
-            hdraw.OnKeyDown = (o, ev, ddrawForm) =>
+            // FIXME: LoadAndPlayが2回呼ばれると、イベントハンドラが重複登録される。
+            form.KeyDown += (o, ev) =>
             {
                 int? keyid = null;
 
@@ -170,7 +179,10 @@ namespace HeartBeatCore
                         keyid = (int)keyid,
                         seconds = CSP
                     };
-                    lastKeyEventDict[(int)keyid] = CSP;
+                    lock (lastKeyEventDict)
+                    {
+                        lastKeyEventDict[(int)keyid] = CSP;
+                    }
 
                     keyEventList.Enqueue(ps.LastKeyEvent);
 
@@ -184,7 +196,8 @@ namespace HeartBeatCore
             b = new BMSStruct(new FileStream(path, FileMode.Open, FileAccess.Read));
             b.DirectoryName = Path.GetDirectoryName(path);
 
-            int maxscore = b.PlayableBMObjects.Count();
+            ps.MaximumAcceptance = b.PlayableBMObjects.Count();
+            ps.MaximumExScore = ps.MaximumAcceptance * regulation.MaxScorePerObject;
 
             {
                 string str;
@@ -238,10 +251,16 @@ namespace HeartBeatCore
                 Task task = Task.Factory.StartNew(() =>
                 {
                     Parallel.ForEach(b.SoundBMObjects, (sb) =>
-                    {
-                        if (sb.Seconds < PlayFrom || PlayFrom + WavFileLoadingDelayTime < sb.Seconds) return;  // 等号が入るかどうかに注意な！
-
-                        hplayer.PrepareSound(sb.Wavid);
+                    { 
+                        // 等号が入るかどうかに注意な！
+                        if (sb.Seconds >= PlayFrom && sb.Seconds <= PlayFrom + WavFileLoadingDelayTime)
+                        {
+                            hplayer.PrepareSound(sb.Wavid);
+                        }
+                        else if (hplayer.AudioFileSize(sb.Wavid) >= 524288)  // 512kB以上なら先読み
+                        {
+                            hplayer.PrepareSound(sb.Wavid);
+                        }
 
                         // TraceMessage("    Preload " + sb.Wavid);
                         // 一部の音しかプリロードされないことがある・・・？
@@ -313,36 +332,6 @@ namespace HeartBeatCore
                        }
                        #endregion
 
-                       #region ゲージ・スコアレート表示
-                       {
-                           // 受け入れレート
-                           float scorerate = ps.TotalAcceptance / (float)(maxscore * 1);
-                           float maxrate = ps.CurrentMaximumAcceptance / (float)(maxscore * 1);
-                           float scorepixel = (480 - 276 - 20) * scorerate;
-                           float maxpixel = (480 - 276 - 20) * maxrate;
-
-                           rt.FillRectangle(780f - 40f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
-                           rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, new ColorBrush(rt, 0x884444));
-                           rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0xFF8888));
-
-                           rt.DrawText(font, "Gauge:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 300, 1.0f);
-                       }
-
-                       {
-                           // スコアレート
-                           float scorerate = ps.TotalExScore / (float)(maxscore * regulation.MaxScorePerObject);
-                           float maxrate = ps.CurrentMaximumExScore / (float)(maxscore * regulation.MaxScorePerObject);
-                           float scorepixel = (480 - 276 - 20) * scorerate;
-                           float maxpixel = (480 - 276 - 20) * maxrate;
-
-                           rt.FillRectangle(780f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
-                           rt.FillRectangle(780f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, new ColorBrush(rt, 0x448844));
-                           rt.FillRectangle(780f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0x88FF88));
-
-                           rt.DrawText(font, "Rate:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 400f, 1.0f);
-                       }
-                       #endregion
-
                        #region オブジェ範囲の更新
                        for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
                        {
@@ -381,6 +370,8 @@ namespace HeartBeatCore
                        }
                        #endregion
 
+                       // キー入力キューの消化は描画処理じゃないと思うんですがそれは・・・
+                       // 　→判定処理は、オブジェに時間幅があるので、ここで処理するのが良い。
                        #region キー入力キューの消化試合
                        // キー入力に最近のオブジェを探す
                        // 当たり判定があった場合はいろいろする
@@ -393,7 +384,7 @@ namespace HeartBeatCore
                            for (int i = hitzoneLeft; i < hitzoneRight; i++)
                            {
                                var obj = b.PlayableBMObjects[i];
-                               var dif = Math.Abs(obj.Seconds - CurrentSongPosition());
+                               var dif = Math.Abs(obj.Seconds - kvpair.seconds);
                                if (dif < min &&
                                    obj.Broken == false &&
                                    (obj.BMSChannel - 36) % 72 == kvpair.keyid)
@@ -427,10 +418,13 @@ namespace HeartBeatCore
                        skin.DrawBack(rt, b, ps);
 
                        // キーフラッシュ
-                       foreach (var x in lastKeyEventDict)
+                       lock (lastKeyEventDict)
                        {
-                           skin.DrawKeyFlash(rt, b, ps,
-                               new KeyEvent { keyid = x.Key, seconds = x.Value });
+                           foreach (var x in lastKeyEventDict)  // 例外：コレクションが変更されました。列挙操作は実行されない可能性があります。
+                           {
+                               skin.DrawKeyFlash(rt, b, ps,
+                                   new KeyEvent { keyid = x.Key, seconds = x.Value });
+                           }
                        }
 
                        // 音符
@@ -449,6 +443,7 @@ namespace HeartBeatCore
             }
             #endregion
 
+            #region wav/bmpの読み込み・再生
             await Task.Run(() => Parallel.Invoke(
                 async () =>  // wavの読み込み
                 {
@@ -591,7 +586,41 @@ namespace HeartBeatCore
                             }
                         }
                     }
+                },
+                async () =>  // オートプレイ
+                {
+                    foreach (var x in b.PlayableBMObjects)
+                    {
+                        while (x.Seconds - 0.0025 >= CurrentSongPosition())
+                        {
+                            await Task.Delay(5);
+                        }
+
+                        if (x.Seconds >= PlayFrom && autoplay)
+                        {
+                            int keyid = (x.BMSChannel - 36) % 72;
+                            double CSP = CurrentSongPosition();
+
+                            ps.LastKeyEvent = new KeyEvent
+                            {
+                                keyid = keyid,
+                                seconds = CSP
+                            };
+                            lock (lastKeyEventDict)
+                            {
+                                lastKeyEventDict[keyid] = CSP;
+                            }
+
+                            keyEventList.Enqueue(ps.LastKeyEvent);
+
+                            /*if (keysound.TryGetValue(36 + keyid, out wavid))
+                            {
+                                hplayer.PlaySound(wavid, true);
+                            }*/
+                        }
+                    }
                 }));
+            #endregion
         }
 
         public void Stop()

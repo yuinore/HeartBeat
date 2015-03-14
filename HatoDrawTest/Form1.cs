@@ -41,23 +41,25 @@ namespace HatoDrawTest
 
             BitmapData bmp = null;
 
-            hdraw.OnKeyDown = (o, ev, ddrawForm) =>
+            Form form2 = hdraw.OpenForm();
+
+            form2.KeyDown += (o, ev) =>
             {
                 if (ev.KeyCode == Keys.Z)
                 {
-                    PlayFile(ddrawForm, @"b_drums1c_v100l16o3c.wav");
+                    PlayFile(form2, @"b_drums1c_v100l16o3c.wav");
                 }
                 if (ev.KeyCode == Keys.X)
                 {
-                    PlayFile(ddrawForm, @"b_drums1c_v96l16o3cp.wav");
+                    PlayFile(form2, @"b_drums1c_v96l16o3cp.wav");
                 }
                 if (ev.KeyCode == Keys.C)
                 {
-                    PlayFile(ddrawForm, @"b_drums1c_v100l16o3g.wav");
+                    PlayFile(form2, @"b_drums1c_v100l16o3g.wav");
                 }
                 if (ev.KeyCode == Keys.V)
                 {
-                    PlayFile(ddrawForm, @"b_drums1c_v100l16o3gp.wav");
+                    PlayFile(form2, @"b_drums1c_v100l16o3gp.wav");
                 }
             };
 
@@ -65,13 +67,13 @@ namespace HatoDrawTest
             hdraw.Start(
                 (rt) =>
             {
-                bmp = new BitmapData(rt, @"1.jpg");
+                //bmp = new BitmapData(rt, @"1.jpg");
             },
                 (rt) =>
             {
                 rt.ClearWhite();
 
-                rt.DrawBitmap(bmp, 100f, 100f);
+                //rt.DrawBitmap(bmp, 100f, 100f);
 
                 using (var brush = new ColorBrush(rt, 0xFF0000))
                 {
@@ -160,7 +162,6 @@ namespace HatoDrawTest
         
         private async void button4_Click(object sender, EventArgs e)
         {
-
             bool autoplay = checkBox_autoplay.Checked;
 
             Process thisProcess = System.Diagnostics.Process.GetCurrentProcess();
@@ -185,20 +186,11 @@ namespace HatoDrawTest
 
             Stopwatch s = new Stopwatch();
 
-            hdraw.OnKeyDown = (o, ev, ddrawForm) =>
+            Form form2 = hdraw.OpenForm();
+
+            form2.KeyDown += (o, ev) =>
             {
                 SecondaryBuffer buf;
-                /*
-                if (ev.KeyCode == Keys.Z) { lastkeydowntime[36 + 1] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 1, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.S) { lastkeydowntime[36 + 2] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 2, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.X) { lastkeydowntime[36 + 3] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 3, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.D) { lastkeydowntime[36 + 4] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 4, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.C) { lastkeydowntime[36 + 5] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 5, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.F) { lastkeydowntime[72 + 2] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(72 + 2, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.V) { lastkeydowntime[72 + 3] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(72 + 3, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.G) { lastkeydowntime[72 + 4] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(72 + 4, out buf)) { buf.StopAndPlay(0); } }
-                if (ev.KeyCode == Keys.B) { lastkeydowntime[72 + 5] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(72 + 5, out buf)) { buf.StopAndPlay(0); } }
-                 */
                 if (ev.KeyCode == Keys.Z) { lastkeydowntime[36 + 1] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 1, out buf)) { buf.StopAndPlay(0); } }
                 if (ev.KeyCode == Keys.S) { lastkeydowntime[36 + 2] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 2, out buf)) { buf.StopAndPlay(0); } }
                 if (ev.KeyCode == Keys.X) { lastkeydowntime[36 + 3] = s.ElapsedMilliseconds / 1000.0; if (keysound.TryGetValue(36 + 3, out buf)) { buf.StopAndPlay(0); } }

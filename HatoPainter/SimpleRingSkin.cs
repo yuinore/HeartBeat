@@ -18,6 +18,7 @@ namespace HatoPainter
         private BitmapData bar;
         private BitmapData bar_white;
         private BitmapData judgement;
+        private BitmapData font;
 
         float ttt = 1.5f;
 
@@ -32,12 +33,15 @@ namespace HatoPainter
 	        0,0,0,0,0,0,
         };
 
+        public override double BombDuration
+        {
+            get { return 2.0; }
+        }
+
         public SimpleRingSkin()
         {
             // 親クラスのフィールドの初期化
             RingShowingPeriodByMeasure = 2.0f;
-
-            BombDuration = 2.0;
         }
 
         public override void Load(RenderTarget rt, BMSStruct b)
@@ -52,6 +56,7 @@ namespace HatoPainter
             bar_white = new BitmapData(rt, HatoPath.FromAppDir( "bar1_white.png"));
 
             judgement = new BitmapData(rt, HatoPath.FromAppDir("judgement.png"));
+            font = new BitmapData(rt, HatoPath.FromAppDir("font1.png"));
         }
 
         public override void DrawBack(RenderTarget rt, BMSStruct b, PlayingState ps)
@@ -70,6 +75,36 @@ namespace HatoPainter
                                 xpos - 32f + 16f + 96f - 16f, 0,
                                 48, 480,
                                 new ColorBrush(rt, 0x888888, 0.12f));
+            }
+            #endregion
+
+            #region ゲージ・スコアレート表示
+            {
+                // 受け入れレート
+                float scorerate = ps.TotalAcceptance / (float)ps.MaximumAcceptance;
+                float maxrate = ps.CurrentMaximumAcceptance / (float)ps.MaximumAcceptance;
+                float scorepixel = (480 - 276 - 20) * scorerate;
+                float maxpixel = (480 - 276 - 20) * maxrate;
+
+                rt.FillRectangle(780f - 40f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
+                rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, new ColorBrush(rt, 0x884444));
+                rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0xFF8888));
+
+                rt.DrawText(font, "Gauge:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 300, 1.0f);
+            }
+
+            {
+                // スコアレート
+                float scorerate = ps.TotalExScore / (float)ps.MaximumExScore;
+                float maxrate = ps.CurrentMaximumExScore / (float)ps.MaximumExScore;
+                float scorepixel = (480 - 276 - 20) * scorerate;
+                float maxpixel = (480 - 276 - 20) * maxrate;
+
+                rt.FillRectangle(780f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
+                rt.FillRectangle(780f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, new ColorBrush(rt, 0x448844));
+                rt.FillRectangle(780f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0x88FF88));
+
+                rt.DrawText(font, "Rate:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 400f, 1.0f);
             }
             #endregion
         }

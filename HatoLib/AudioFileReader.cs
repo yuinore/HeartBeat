@@ -107,5 +107,23 @@ namespace HatoLib
                 || File.Exists(Path.ChangeExtension(filename, ".wav"))
                 || File.Exists(Path.ChangeExtension(filename, ".ogg"));
         }
+
+        public static string FileName(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                return filename;
+            }
+            else if (File.Exists(Path.ChangeExtension(filename, ".wav")))
+            {
+                return Path.ChangeExtension(filename, ".wav");
+            }
+            else if (File.Exists(Path.ChangeExtension(filename, ".ogg")))
+            {
+                return Path.ChangeExtension(filename, ".ogg");
+            }
+
+            return null;
+        }
     }
 }
