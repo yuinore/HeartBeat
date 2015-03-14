@@ -103,7 +103,7 @@ namespace HatoBMSLib
 
         public bool IsSound()
         {
-            // 注：LNObjに関してはどのように扱うべきか？ → WavidがWAVファイルを指していないのでfalse
+            // 注：LNObjに関しては、WavidがWAVファイルを指していないのでfalse
 
             int hc = BMSChannel / 36;
             int lc = BMSChannel % 36;
@@ -112,6 +112,10 @@ namespace HatoBMSLib
 
         public bool IsPlayable()
         {
+            // 注：LNObjに関しては
+            //   ・trueを返す (エディタモードの場合)
+            //   ・そもそもそのようなBMObjectは存在しない（プレイモードの場合）
+
             // TODO:
             int hc = BMSChannel / 36;
             int lc = BMSChannel % 36;

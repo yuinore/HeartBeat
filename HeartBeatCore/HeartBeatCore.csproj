@@ -44,7 +44,6 @@
     <Compile Include="BMSPlayer.cs" />
     <Compile Include="GameRegulation.cs" />
     <Compile Include="HeartBeatRegulation.cs" />
-    <Compile Include="KeyEvent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -59,6 +58,10 @@
     <ProjectReference Include="..\HatoLib\HatoLib.csproj">
       <Project>{9c573aae-1884-4de0-854f-bc31f1fd65e0}</Project>
       <Name>HatoLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HatoPainter\HatoPainter.csproj">
+      <Project>{7346c91f-817d-47ab-b584-fb05a34390ff}</Project>
+      <Name>HatoPainter</Name>
     </ProjectReference>
     <ProjectReference Include="..\HatoPlayer\HatoPlayer.csproj">
       <Project>{94b5907d-6278-4d22-b95c-5d58dd5bed4f}</Project>

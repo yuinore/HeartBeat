@@ -14,7 +14,12 @@ namespace HatoBMSLib
         public Judgement LastJudgement;
         public BMTime Current;
 
-        public double TotalExScore;
-        public double CurrentMaximumExScore;
+        public int TotalExScore;
+        public int CurrentMaximumExScore;
+
+        public int TotalAcceptance;
+        public int CurrentMaximumAcceptance;
+
+        public KeyEvent LastKeyEvent;
     }
 }

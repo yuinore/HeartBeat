@@ -9,9 +9,14 @@ namespace HeartBeatCore
 {
     class HeartBeatRegulation : GameRegulation
     {
-        public HeartBeatRegulation()
+        public override double JudgementWindowSize
         {
-            JudgementWindowSize = 2.0;
+            get { return 2.0; }
+        }
+
+        public override int MaxScorePerObject
+        {
+            get { return 2; }
         }
 
         public override Judgement SecondsToJudgement(double timedifference)
@@ -34,6 +39,16 @@ namespace HeartBeatCore
             }
 
             return Judgement.None;  // 対象を取らない（判定表示も無し）
+        }
+
+        public override int JudgementToScore(Judgement judge)
+        {
+            switch (judge)
+            {
+                case Judgement.Perfect: return 2;
+                case Judgement.Great: return 1;
+                default: return 0;
+            }
         }
     }
 }

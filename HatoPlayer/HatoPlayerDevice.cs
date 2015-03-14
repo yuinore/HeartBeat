@@ -90,7 +90,7 @@ namespace HatoPlayer
                                 WavidToBuffer[wavid] = sbuf;
                             }
                         }
-                        catch (Exception e)
+                        catch
                         {
                             // TODO:例外処理の削除
                             //TraceWarning("  Exception: " + e.ToString());

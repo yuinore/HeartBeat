@@ -53,9 +53,13 @@ namespace HatoBMSLib
 
         public List<BMObject> AllBMObjects = new List<BMObject>();
 
+        // SoundBMObjects と GraphicBMObjects と OtherBMObjects は、
+        // 積集合が空集合で、和集合がAllBMObjectsに等しい。
         public List<BMObject> SoundBMObjects = new List<BMObject>();  // IsSound => true
         public List<BMObject> GraphicBMObjects = new List<BMObject>();  // IsGraphic => true
         public List<BMObject> OtherBMObjects = new List<BMObject>();
+
+        public List<BMObject> PlayableBMObjects = new List<BMObject>();
 
         public Dictionary<int, string> WavDefinitionList = new Dictionary<int, string>();
         public Dictionary<int, string> BitmapDefinitionList = new Dictionary<int, string>();
@@ -209,6 +213,8 @@ namespace HatoBMSLib
             foreach (var obj in AllBMObjects)
             {
                 obj.IsLongNoteTerminal = (obj.Wavid == LNObj);
+
+                if (obj.IsPlayable()) PlayableBMObjects.Add(obj);
 
                 if (obj.IsSound())
                 {
