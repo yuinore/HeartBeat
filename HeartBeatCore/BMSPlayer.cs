@@ -89,7 +89,7 @@ namespace HeartBeatCore
             hdraw.Start(
                (rt) =>
                {
-                   string pathfont1 = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "font1.png");
+                   string pathfont1 = HatoPath.FromAppDir("font1.png");
                    font = new BitmapData(rt, pathfont1);
                },
                (rt) =>
@@ -114,7 +114,7 @@ namespace HeartBeatCore
 
         Stopwatch s = new Stopwatch();
 
-        double WavFileLoadingDelayTime = 30.0;  // 先読みする時間量
+        double WavFileLoadingDelayTime = 30.0;  // 先読み対象とする時間量
         double DelayingTimeBeforePlay = 1.0;  // 読み込み完了から曲が再生されるまでの時間
         double PlayFrom = 0.0;  // 曲の再生を開始する地点（秒）
 
@@ -125,24 +125,23 @@ namespace HeartBeatCore
 
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
-            Process thisProcess = System.Diagnostics.Process.GetCurrentProcess();
-            thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
+            {
+                Process thisProcess = System.Diagnostics.Process.GetCurrentProcess();
+                thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
+            }
 
             Dictionary<int, int> keysound = new Dictionary<int, int>();
-            //Dictionary<int, double> lastkeydowntime = new Dictionary<int, double>();
 
             s = new Stopwatch();
 
-            Dictionary<int, double> lastKeyDown = new Dictionary<int, double>();
+            // 各キーidに対応する、最後に押したキーの時刻。キーフラッシュ用。
+            Dictionary<int, double> lastKeyEventDict = new Dictionary<int, double>();
+
+            // キー入力キューで、フレームごとに消化される。（描画に直接用いることはない）
             Queue<KeyEvent> keyEventList = new Queue<KeyEvent>();
 
             hdraw.OnKeyDown = (o, ev, ddrawForm) =>
             {
-                // lastkeydowntime[36 + 2] = CurrentSongPosition(); 
-                // if (keysound.TryGetValue(36 + 2, out wavid)) {
-                //    hplayer.PlaySound(wavid, true);
-                // }
-
                 int? keyid = null;
 
                 if (ev.KeyCode == Keys.Z) { keyid = 1; }
@@ -171,7 +170,7 @@ namespace HeartBeatCore
                         keyid = (int)keyid,
                         seconds = CSP
                     };
-                    lastKeyDown[(int)keyid] = CSP;
+                    lastKeyEventDict[(int)keyid] = CSP;
 
                     keyEventList.Enqueue(ps.LastKeyEvent);
 
@@ -186,7 +185,7 @@ namespace HeartBeatCore
             b.DirectoryName = Path.GetDirectoryName(path);
 
             int maxscore = b.PlayableBMObjects.Count();
-            
+
             {
                 string str;
 
@@ -223,10 +222,6 @@ namespace HeartBeatCore
                 (b.SoundBMObjects.Where(x => x.IsPlayable()).Count() >= 1 ?
                 Math.Max(1.0, 3.0 - (b.SoundBMObjects.Where(x => x.IsPlayable()).First().Seconds - PlayFrom)) : 1.0);
             // (1本wavかつwav形式だと1秒では読み込めないことがあるかも)
-            // というか一本wav(Delicious Rabbitとか)問題はいろいろと解決しなければならなさそう
-            // 8192サンプル間隔くらいごとにストリーミングした方がいいのでは
-            // まあでもそれより先にogg対応な
-            // と思ったら、間違ったところでawaitしていただけだった・・・
 
             if (hplayer == null)
             {
@@ -240,7 +235,7 @@ namespace HeartBeatCore
             #region プリローディング
             {
                 // ああ、StartNewすればいいのか・・・
-                Task task = Task.Factory.StartNew( () =>
+                Task task = Task.Factory.StartNew(() =>
                 {
                     Parallel.ForEach(b.SoundBMObjects, (sb) =>
                     {
@@ -274,7 +269,7 @@ namespace HeartBeatCore
 
             TraceMessage("    Loading Time: " + loadingTime.ElapsedMilliseconds + "ms");
 
-            var silence = hplayer.LoadAudioFileOrGoEasy(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "silence20s.wav"));
+            var silence = hplayer.LoadAudioFileOrGoEasy(HatoPath.FromAppDir("silence20s.wav"));
             silence.StopAndPlay();  // 無音を再生させて、プライマリバッファが稼働していることを保証させる
 
             s.Start();
@@ -286,7 +281,7 @@ namespace HeartBeatCore
                 int hitzoneLeft = 0;
                 int hitzoneRight = 0;
                 int bombzoneLeft = 0;
-                //form = hdraw.OpenForm();
+
                 {
                     var rt = hdraw.HatoRenderTarget;
 
@@ -301,7 +296,7 @@ namespace HeartBeatCore
                            Seconds = CurrentSongPosition(),
                            Measure = 0
                        };
-                       
+
                        // PlayingStateの設定
                        ps.Current = current;
 
@@ -349,17 +344,17 @@ namespace HeartBeatCore
                        #endregion
 
                        #region オブジェ範囲の更新
-                       for (; left < b.PlayableBMObjects.Count; left++)  // 消える箇所、left <= right
+                       for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[left];
                            if (x.Beat >= current.Disp) break;
                        }
-                       for (; right < b.PlayableBMObjects.Count; right++)  // 出現する箇所、left <= right
+                       for (; right < b.PlayableBMObjects.Count; right++)  // 視界に出現する箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[right];
                            if (x.Beat >= AppearDisplacement) break;
                        }
-                       for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 消える箇所、left <= right
+                       for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 判定ゾーンから消える箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[hitzoneLeft];
                            if (x.Seconds + regulation.JudgementWindowSize >= current.Seconds) break;
@@ -374,7 +369,7 @@ namespace HeartBeatCore
                                }
                            }
                        }
-                       for (; hitzoneRight < b.PlayableBMObjects.Count; hitzoneRight++)  // 出現する箇所、left <= right
+                       for (; hitzoneRight < b.PlayableBMObjects.Count; hitzoneRight++)  // 判定ゾーンに突入する箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[hitzoneRight];
                            if (x.Seconds - regulation.JudgementWindowSize >= current.Seconds) break;
@@ -389,10 +384,11 @@ namespace HeartBeatCore
                        #region キー入力キューの消化試合
                        // キー入力に最近のオブジェを探す
                        // 当たり判定があった場合はいろいろする
-                       while(keyEventList.Count!=0){
+                       while (keyEventList.Count != 0)
+                       {
                            var kvpair = keyEventList.Dequeue();
-                           double min = double.MaxValue;
-                           BMObject minAt = null;
+                           double min = double.MaxValue;  // 最短距離
+                           BMObject minAt = null;  // 最短距離にあるオブジェ
 
                            for (int i = hitzoneLeft; i < hitzoneRight; i++)
                            {
@@ -407,6 +403,7 @@ namespace HeartBeatCore
                                }
                            }
 
+                           // オブジェの破壊が起きた
                            if (minAt != null)
                            {
                                Judgement judge = regulation.SecondsToJudgement(min);
@@ -428,14 +425,14 @@ namespace HeartBeatCore
 
                        #region Skinクラスを使用した描画
                        skin.DrawBack(rt, b, ps);
-                       
+
                        // キーフラッシュ
-                       foreach(var x in lastKeyDown)
+                       foreach (var x in lastKeyEventDict)
                        {
-                           skin.DrawKeyFlash(rt, b, ps, 
+                           skin.DrawKeyFlash(rt, b, ps,
                                new KeyEvent { keyid = x.Key, seconds = x.Value });
                        }
-                       
+
                        // 音符
                        for (int i = bombzoneLeft; i < right; i++)
                        {
@@ -483,7 +480,7 @@ namespace HeartBeatCore
                             string fn;
 
                             if (b.BitmapDefinitionList.TryGetValue(x.Wavid, out fn)
-                                && File.Exists(Path.Combine(Path.GetDirectoryName(path), fn))
+                                && File.Exists(b.ToFullPath(fn))
                                 && !dictbmp.TryGetValue(x.Wavid, out sbuf))
                             {
                                 // lockの範囲おかしくない？
@@ -496,7 +493,7 @@ namespace HeartBeatCore
                                 {
                                     try
                                     {
-                                        sbuf = new BitmapData(hdraw.HatoRenderTarget, Path.Combine(Path.GetDirectoryName(path), fn));
+                                        sbuf = new BitmapData(hdraw.HatoRenderTarget, b.ToFullPath(fn));
 
                                         lock (dictbmp)
                                         {
@@ -508,7 +505,7 @@ namespace HeartBeatCore
                                     {
                                         TraceWarning("  Exception: " + e.ToString());
                                     }
-                                    
+
                                 });
                             }
                         }
@@ -567,12 +564,12 @@ namespace HeartBeatCore
 
                             if (dictbmp.TryGetValue(x.Wavid, out bmpdata) && bmpdata != null)
                             {
-                                    /*
-                                     * 04	[objs/bmp] BGA-BASE
-                                     * 05
-                                     * 06	[objs/bmp] BGA-POOR
-                                     * 07	[objs/bmp] BGA-LAYER
-                                     */
+                                /*
+                                 * 04	[objs/bmp] BGA-BASE
+                                 * 05
+                                 * 06	[objs/bmp] BGA-POOR
+                                 * 07	[objs/bmp] BGA-LAYER
+                                 */
                                 switch (x.BMSChannel)
                                 {
                                     case 4:

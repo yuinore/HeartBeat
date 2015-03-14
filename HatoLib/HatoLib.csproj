@@ -49,6 +49,7 @@
     <Compile Include="Complex.cs" />
     <Compile Include="DictionaryExtension.cs" />
     <Compile Include="HatoPath.cs" />
+    <Compile Include="LazyMatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rational.cs" />
     <Compile Include="VorbisFileReader.cs" />

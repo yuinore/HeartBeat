@@ -70,6 +70,7 @@ namespace HatoBMSLib
         {
             // TODO: Convertクラスでの例外の対応
 
+            #region BMSファイルのパース
             var r = new StreamReader(str, Encoding.GetEncoding("Shift_JIS"));
             var linenumber = 0;
 
@@ -82,139 +83,228 @@ namespace HatoBMSLib
                 if (line.Length >= 1 && line[0] == '#')
                 {
                     // コメントでない行
-                    var MatchMeasureLengthLine = Regex.Match(line, @"^#(\d\d\d)02:([0-9\.]+)$");
+                    Match match;
 
-                    if (MatchMeasureLengthLine.Success)
+                    // 小節長指定行にマッチ
+                    var MatchMeasureLengthLine = new LazyMatch(line,
+                        @"^#(\d\d\d)02:([0-9\.]+)$");
+
+                    // オブジェ行
+                    var MatchDataLine = new LazyMatch(line,
+                        @"^#(\d\d\d)([0-9A-Za-z][0-9A-Za-z]):((?:[0-9A-Za-z][0-9A-Za-z])+)$");
+
+                    // ヘッダ行
+                    var MatchHeaderLine = new LazyMatch(line,
+                        @"^#([^\d\s]\S*)\s*(.*)$");
+
+                    if (MatchMeasureLengthLine.Evaluate(out match))
                     {
                         #region 小節長指定行にマッチ
-                        int measure = Convert.ToInt32(MatchMeasureLengthLine.Groups[1].Captures[0].Value);
-                        var contents = Convert.ToDouble(MatchMeasureLengthLine.Groups[2].Captures[0].Value);
+                        int measure = Convert.ToInt32(match.Groups[1].Captures[0].Value);
+                        var contents = Convert.ToDouble(match.Groups[2].Captures[0].Value);
 
                         transp.AddSignature(measure, contents);
+                        #endregion
+                    }
+                    else if (MatchDataLine.Evaluate(out match))
+                    {
+                        #region データ行にマッチ
+                        int measure = Convert.ToInt32(match.Groups[1].Captures[0].Value);
+                        int bmsch = BMConvert.FromBase36(match.Groups[2].Captures[0].Value);
+                        var contents = match.Groups[3].Captures[0].Value;
+
+                        Rational measureTime;
+                        int partitions = contents.Length / 2;
+                        for (int i = 0; i < partitions; i++)
+                        {
+                            int wavid = BMConvert.FromBase36(contents.Substring(i * 2, 2));
+                            if (wavid != 0)
+                            {
+                                measureTime = measure + new Rational(i, partitions);
+
+                                AllBMObjects.Add(new BMObject(bmsch, wavid, measureTime));
+                            }
+                        }
+                        #endregion
+                    }
+
+                    else if (MatchHeaderLine.Evaluate(out match))
+                    {
+                        #region ヘッダ行にマッチ（内容があるかどうかは問わない）
+                        var header = match.Groups[1].Captures[0].Value;
+                        var val = match.Groups[2].Captures[0].Value;
+
+                        var MatchWavXX = new LazyMatch(header, @"^WAV([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                        var MatchBMPXX = new LazyMatch(header, @"^BMP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                        if (MatchWavXX.Evaluate(out match))
+                        {
+                            // #WAVxx にマッチ
+                            int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
+                            WavDefinitionList.Add(wavid, val);
+                        }
+                        else if (MatchBMPXX.Evaluate(out match))
+                        {
+                            // #BMPxx にマッチ
+                            int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
+                            BitmapDefinitionList.Add(wavid, val);
+                        }
+                        else
+                        {
+                            switch (header.ToUpper())
+                            {
+                                case "TITLE": Title = val; break;
+                                case "SUBTITLE": Subtitle = val; break;
+                                case "ARTIST": Artist = val; break;
+                                case "SUBARTIST": Subartist = val; break;
+                                case "GENRE": Genre = val; break;
+                                case "STAGEFILE": Stagefile = val; break;
+                                case "BACKBMP": BackBMP = val; break;
+                                case "BPM":
+                                    BPM = Convert.ToDouble(val);
+                                    break;
+                                case "PLAYER":
+                                    Player = Convert.ToInt32(val);
+                                    if (Player < 1 || Player > 4) throw new FormatException("#PLAYERの指定が不正です");
+                                    break;
+                                case "PLAYLEVEL":
+                                    Playlevel = Convert.ToInt32(val);
+                                    if (Playlevel < 0) throw new FormatException("#PLAYLEVELの指定が不正です");
+                                    break;
+                                case "RANK":
+                                    Rank = Convert.ToInt32(val);
+                                    if (Rank < 0 || Player > 4) throw new FormatException("#RANKの指定が不正です");
+                                    break;
+                                case "DIFFICULTY":
+                                    Difficulty = Convert.ToInt32(val);
+                                    if (Difficulty < 1 || Difficulty > 5) throw new FormatException("#DIFFICULTYの指定が不正です");
+                                    break;
+                                case "TOTAL":
+                                    Total = Convert.ToDouble(val);
+                                    if (Total < 0) throw new FormatException("#TOTALの指定が不正です");
+                                    break;
+                                case "LNTYPE":
+                                    LNType = Convert.ToInt32(val);
+                                    if (LNType < 1 || LNType > 2) throw new FormatException("#LNTYPEの指定が不正です");
+                                    break;
+                                case "LNOBJ":
+                                    LNObj = BMConvert.FromBase36(val);
+                                    if (LNObj < 1 || LNObj > 36 * 36 - 1) throw new FormatException("#LNOBJの指定が不正です");
+                                    break;
+
+                                default:
+                                    BMSHeader.Add(header.ToUpper(), val);
+                                    break;
+                            }
+                        }
 
                         #endregion
                     }
                     else
                     {
-                        var MatchDataLine = Regex.Match(line, @"^#(\d\d\d)([0-9A-Za-z][0-9A-Za-z]):((?:[0-9A-Za-z][0-9A-Za-z])+)$");  // ここに消えてはならないデリゲートが！？
-                        //var MatchDataLine = Regex.Match(line, @"^#(\d\d\d)02:([0-9\.]+)$");
-                        if (MatchDataLine.Success)
+                        // ヘッダ行でもデータ行でもない（これはキャッチされることを想定している、多分）
+                        // たとえば、 #01:12345 とか、 #7KEYS とか。
+                        throw new FormatException("BMSから不適切な行が検出されました。BMSの読み込みを中断します。 行：" + linenumber + ", \"" + line + "\"");
+                    }
+
+                }
+            }
+
+            r.Close();
+            #endregion
+
+            AllBMObjects.Sort();
+
+            #region LN終端の探索・設定
+            Dictionary<int, BMObject> prevobj = new Dictionary<int, BMObject>();
+            
+            foreach (var obj in AllBMObjects)
+            {
+                // 暫定設定
+                obj.IsLongNoteTerminal = false;
+
+                if (obj.IsPlayable())
+                {
+                    // 暫定設定
+                    obj.IsLongNoteTerminal = (obj.Wavid == LNObj);
+
+                    int keyid = (obj.BMSChannel - 36) % 72;
+                    if (obj.Wavid == LNObj)
+                    {
+                        // LNOBJタイプのロングノートの終端チェック
+                        BMObject longbegin;
+                        if (prevobj.TryGetValue(keyid, out longbegin))
                         {
-                            #region データ行にマッチ
-                            int measure = Convert.ToInt32(MatchDataLine.Groups[1].Captures[0].Value);
-                            int bmsch = BMConvert.FromBase36(MatchDataLine.Groups[2].Captures[0].Value);
-                            var contents = MatchDataLine.Groups[3].Captures[0].Value;
-
-                            Rational measureTime;
-                            int partitions = contents.Length / 2;
-                            for (int i = 0; i < partitions; i++)
+                            // ロングノートの始点が見つかった場合
+                            if (longbegin.Wavid == LNObj || longbegin.IsChannel5X6X())
                             {
-                                int wavid = BMConvert.FromBase36(contents.Substring(i * 2, 2));
-                                if (wavid != 0)
-                                {
-                                    measureTime = measure + new Rational(i, partitions);
-
-                                    AllBMObjects.Add(new BMObject(bmsch, wavid, measureTime));
-                                }
-                            #endregion
+                                throw new FormatException("LNOBJの始点が通常オブジェではありません。BMSファイルが誤っている可能性があります。");
                             }
+                            longbegin.Terminal = obj;
+                            prevobj.Remove(keyid);
                         }
-                    
                         else
                         {
-                            var MatchHeaderLine = Regex.Match(line, @"^#([^\d\s]\S*)\s*(.*)$");
-
-                            if (MatchHeaderLine.Success)
+                            throw new FormatException("LNOBJの始点が見つかりません。BMSファイルが誤っている可能性があります。");
+                        }
+                    }
+                    else if (obj.IsChannel5X6X())
+                    {
+                        // 0x5X 0x6X の始点または終点チェック
+                        BMObject longbegin;
+                        if (prevobj.TryGetValue(keyid, out longbegin))
+                        {
+                            if (longbegin.IsChannel5X6X())
                             {
-                                #region ヘッダ行にマッチ（内容があるかどうかは問わない）
-                                var header = MatchHeaderLine.Groups[1].Captures[0].Value;
-                                var val = MatchHeaderLine.Groups[2].Captures[0].Value;
-
-                                var MatchWavXX = Regex.Match(header, @"^WAV([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                                var MatchBMPXX = Regex.Match(header, @"^BMP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-                                if (MatchWavXX.Success)
-                                {
-                                    // #WAVxx にマッチ
-                                    int wavid = BMConvert.FromBase36(MatchWavXX.Groups[1].Captures[0].Value);
-                                    WavDefinitionList.Add(wavid, val);
-                                }
-                                else if (MatchBMPXX.Success)
-                                {
-                                    // #BMPxx にマッチ
-                                    int wavid = BMConvert.FromBase36(MatchBMPXX.Groups[1].Captures[0].Value);
-                                    BitmapDefinitionList.Add(wavid, val);
-                                }
-                                else
-                                {
-                                    switch (header.ToUpper())
-                                    {
-                                        case "TITLE": Title = val; break;
-                                        case "SUBTITLE": Subtitle = val; break;
-                                        case "ARTIST": Artist = val; break;
-                                        case "SUBARTIST": Subartist = val; break;
-                                        case "GENRE": Genre = val; break;
-                                        case "STAGEFILE": Stagefile = val; break;
-                                        case "BACKBMP": BackBMP = val; break;
-                                        case "BPM":
-                                            BPM = Convert.ToDouble(val);
-                                            break;
-                                        case "PLAYER":
-                                            Player = Convert.ToInt32(val);
-                                            if (Player < 1 || Player > 4) throw new FormatException("#PLAYERの指定が不正です");
-                                            break;
-                                        case "PLAYLEVEL":
-                                            Playlevel = Convert.ToInt32(val);
-                                            if (Playlevel < 0) throw new FormatException("#PLAYLEVELの指定が不正です");
-                                            break;
-                                        case "RANK":
-                                            Rank = Convert.ToInt32(val);
-                                            if (Rank < 0 || Player > 4) throw new FormatException("#RANKの指定が不正です");
-                                            break;
-                                        case "DIFFICULTY":
-                                            Difficulty = Convert.ToInt32(val);
-                                            if (Difficulty < 1 || Difficulty > 5) throw new FormatException("#DIFFICULTYの指定が不正です");
-                                            break;
-                                        case "TOTAL":
-                                            Total = Convert.ToDouble(val);
-                                            if (Total < 0) throw new FormatException("#TOTALの指定が不正です");
-                                            break;
-                                        case "LNTYPE":
-                                            LNType = Convert.ToInt32(val);
-                                            if (LNType < 1 || LNType > 2) throw new FormatException("#LNTYPEの指定が不正です");
-                                            break;
-                                        case "LNOBJ":
-                                            LNObj = BMConvert.FromBase36(val);
-                                            if (LNObj < 1 || LNObj > 36 * 36 - 1) throw new FormatException("#LNOBJの指定が不正です");
-                                            break;
-
-                                        default:
-                                            BMSHeader.Add(header.ToUpper(), val);
-                                            break;
-                                    }
-                                }
-                                #endregion
+                                // objは終点
+                                obj.IsLongNoteTerminal = true;
+                                longbegin.IsLongNoteTerminal = false;
+                                longbegin.Terminal = obj;
+                                prevobj.Remove(keyid);
                             }
                             else
                             {
-                                // ヘッダ行でもデータ行でもない（これはキャッチされることを想定している、多分）
-                                throw new FormatException("BMSから不適切な行が検出されました。BMSの読み込みを中断します。 行：" + linenumber + ", \"" + line + "\"");
+                                // objは始点
+                                prevobj[keyid] = obj;
                             }
                         }
+                        else
+                        {
+                            // objは始点
+                            prevobj[keyid] = obj;
+                        }
+                    }
+                    else
+                    {
+                        // 通常オブジェの場合
+                        BMObject longbegin;
+                        if (prevobj.TryGetValue(keyid, out longbegin))
+                        {
+                            if (longbegin.IsChannel5X6X())
+                            {
+                                throw new FormatException("ロングノートの終点が見つかりません。BMSファイルが誤っている可能性があります。");
+                            }
+                        }
+                        prevobj[keyid] = obj;
                     }
                 }
             }
-            
-            // 調整処理
-            AllBMObjects.Sort();
+            foreach (var kvpair in prevobj)
+            {
+                if (kvpair.Value.IsChannel5X6X())
+                {
+                    throw new FormatException("ロングノートの終点が見つかりません。BMSファイルが誤っている可能性があります。");
+                }
+            }
+            #endregion
 
-
+            #region オブジェの振り分け・トランスポートへの割り振り
             // AllBMObjectsの分類
             foreach (var obj in AllBMObjects)
             {
-                obj.IsLongNoteTerminal = (obj.Wavid == LNObj);
-
-                if (obj.IsPlayable()) PlayableBMObjects.Add(obj);
+                if(obj.IsPlayable() && !obj.IsLongNoteTerminal) {
+                    PlayableBMObjects.Add(obj);
+                }
 
                 if (obj.IsSound())
                 {
@@ -242,8 +332,9 @@ namespace HatoBMSLib
                     }
                 }
             }
+            #endregion
 
-            // BMSエディタによる読み込みではなく、BMSプレイヤーによる読み込みだった場合の項目調整
+            #region BMSエディタによる読み込みではなく、BMSプレイヤーによる読み込みだった場合の項目調整
             if (true)
             {
                 // デフォルトテンポの設定
@@ -299,16 +390,13 @@ namespace HatoBMSLib
                 // BeatToTempoChangeの準備
                 transp.ArrangeTransport();
 
-
                 foreach (var x in SoundBMObjects.Concat(GraphicBMObjects).Concat(OtherBMObjects))
                 {
                     x.Beat = transp.MeasureToBeat(x.Measure);
                     x.Seconds = transp.BeatToSeconds(x.Beat);
                 }
-
             }
-            
-            r.Close();
+            #endregion
         }
 
         // 秒数を横軸に取った時のテンポの中央値

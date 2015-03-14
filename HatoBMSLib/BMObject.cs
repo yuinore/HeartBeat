@@ -86,7 +86,9 @@ namespace HatoBMSLib
         public Judgement Judge;
         public double BrokeAt;  // 破壊された時刻（秒）
 
-        // これは、IsSoundがTrueである（または将来そうなるべきである）場合にのみ、意味のある値となります。
+        public BMObject Terminal;
+
+        // IsPlayable()がfalseのとき、この値はfalseとなることが望まれる。
         public bool IsLongNoteTerminal
         {
             get;
@@ -101,6 +103,11 @@ namespace HatoBMSLib
             }
         }*/
 
+        internal bool IsChannel5X6X()
+        {
+            int hc = BMSChannel / 36;
+            return (5 <= hc && hc <= 6);
+        }
         public bool IsSound()
         {
             // 注：LNObjに関しては、WavidがWAVファイルを指していないのでfalse
@@ -113,13 +120,14 @@ namespace HatoBMSLib
         public bool IsPlayable()
         {
             // 注：LNObjに関しては
-            //   ・trueを返す (エディタモードの場合)
+            //   ・trueを返す (エディタモードの場合？多分)
             //   ・そもそもそのようなBMObjectは存在しない（プレイモードの場合）
+            // また、Invisibleではfalseを返します。
 
             // TODO:
             int hc = BMSChannel / 36;
             int lc = BMSChannel % 36;
-            return (1 <= hc && hc <= 6) || (0xD <= hc && hc <= 0xE);
+            return (1 <= hc && hc <= 2) || (5 <= hc && hc <= 6) || (0xD <= hc && hc <= 0xE);
         }
 
         public bool IsInvisible()
