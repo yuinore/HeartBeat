@@ -16,6 +16,7 @@ namespace HatoBMSLib
         private SortedDictionary<double, double> secondsToTempoChange;  // 拍数 → テンポ; 同時刻に複数のテンポチェンジは入らない
         internal SortedDictionary<Rational, double> measureToTempoChange;  // 小節番号 → テンポ; 同時刻に複数のテンポチェンジは入らない
         internal SortedDictionary<int, double> measureToSignature;  // 小節番号 → 拍数
+        private SortedDictionary<Rational, double> measureToStop;
 
         private bool arranged;
 
@@ -42,6 +43,7 @@ namespace HatoBMSLib
         {
             measureToTempoChange = new SortedDictionary<Rational, double>();
             measureToSignature = new SortedDictionary<int, double>();
+            measureToStop = new SortedDictionary<Rational, double>();
         }
 
         public void AddTempoChange(Rational measure, double tempo)
@@ -56,6 +58,13 @@ namespace HatoBMSLib
             if (arranged) throw new InvalidOperationException("既にTransportの値が固定されています。新たにデータを追加する場合は、Arrangedをfalseに設定して下さい。");
 
             measureToSignature.Add(measure, measurelength);
+        }
+
+        public void AddStopSequence(Rational measure, double stopbeats)
+        {
+            if (arranged) throw new InvalidOperationException("既にTransportの値が固定されています。新たにデータを追加する場合は、Arrangedをfalseに設定して下さい。");
+
+            measureToStop.Add(measure, stopbeats);
         }
 
         public void ArrangeTransport()
@@ -85,6 +94,9 @@ namespace HatoBMSLib
             var finalmeasure = measureToSignature.LastOrDefault().Key;  // えっ・・・これO(1)で取得出来るんですかね・・・
             // 見つからない場合は0となる。
 
+            // 停止によって遅れた時間の長さ(拍)
+            double stopbeats = measureToStop.Where(x => x.Key < measure).Select(x => x.Value).Sum();
+
             for (int m = 0; m <= finalmeasure + 1; m++ )
             {
                 double x_Value;
@@ -98,7 +110,7 @@ namespace HatoBMSLib
 
                 if ((double)measure <= m)
                 {
-                    return ((double)measure - lastmeasure) * 4 * (double)lastsig + beatelapsed;
+                    return ((double)measure - lastmeasure) * 4 * (double)lastsig + beatelapsed + stopbeats;
                 }
 
                 beatelapsed += 4 * (double)lastsig;
@@ -106,7 +118,7 @@ namespace HatoBMSLib
                 lastsig = x_Value;
             }
 
-            return ((double)measure - lastmeasure) * 4 + beatelapsed;
+            return ((double)measure - lastmeasure) * 4 + beatelapsed + stopbeats;
         }
 
         public double BeatToSeconds(double beat)

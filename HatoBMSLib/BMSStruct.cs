@@ -316,15 +316,39 @@ namespace HatoBMSLib
                 }
                 else
                 {
+                    // TODO: 例外処理
+
                     // 制御オブジェ・LN終端・地雷等
                     if (obj.BMSChannel == 3)
                     {
+                        // BPM定義
                         transp.AddTempoChange(obj.Measure, BMConvert.FromBase16(BMConvert.ToBase36(obj.Wavid)));
                     }
                     else if (obj.BMSChannel == 8)
                     {
-                        var tempo = Convert.ToDouble(BMSHeader["BPM" + BMConvert.ToBase36(obj.Wavid)]);
-                        transp.AddTempoChange(obj.Measure, tempo);
+                        // 拡張BPM定義
+                        try
+                        {
+                            var tempo = Convert.ToDouble(BMSHeader["BPM" + BMConvert.ToBase36(obj.Wavid)]);
+                            transp.AddTempoChange(obj.Measure, tempo);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new FormatException("#BPM" + BMConvert.ToBase36(obj.Wavid) + "が定義されていないか、正しくありません。\n\n" + ex.ToString());
+                        }
+                    }
+                    else if (obj.BMSChannel == 9)
+                    {
+                        // ストップシーケンス
+                        try
+                        {
+                            var stop = Convert.ToDouble(BMSHeader["STOP" + BMConvert.ToBase36(obj.Wavid)]);
+                            transp.AddStopSequence(obj.Measure, stop / 48.0);
+                        }
+                        catch(Exception ex)
+                        {
+                            throw new FormatException("#STOP" + BMConvert.ToBase36(obj.Wavid) + "が定義されていないか、正しくありません。\n\n" + ex.ToString());
+                        }
                     }
                     else
                     {
