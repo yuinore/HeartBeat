@@ -103,7 +103,8 @@ namespace HeartBeatCore
                    if (s != null && s.ElapsedMilliseconds != 0)
                    {
                        countdraw++;
-                       LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 100 / s.ElapsedMilliseconds) / 100.0 + "fps\n";
+                       LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 10 / s.ElapsedMilliseconds) / 10.0 + "fps " +
+                           "t=" + Math.Floor(CurrentSongPosition() * 10) / 10 + "s\n";
                    }
 
                    rt.ClearBlack();
@@ -240,9 +241,13 @@ namespace HeartBeatCore
 
             int PreLoadingTimeoutMilliSeconds = 20000;
 
-            DelayingTimeBeforePlay = autoplay ? 1.0 :
-                (b.SoundBMObjects.Where(x => x.IsPlayable()).Count() >= 1 ?
-                Math.Max(1.0, 3.0 - (b.SoundBMObjects.Where(x => x.IsPlayable()).First().Seconds - PlayFrom)) : 1.0);
+            Func<double, double> PosOrZero = (x) => (x < 0) ? 0 : x;
+
+            DelayingTimeBeforePlay = autoplay 
+                ? 1.0  // オートプレイなら1秒後に開始
+                : (b.SoundBMObjects.Where(x => x.IsPlayable()).Count() >= 1  // 演奏可能オブジェがある前提で、
+                    ? Math.Max(1.0, 3.0 - PosOrZero(b.SoundBMObjects.Where(x => x.IsPlayable()).First().Seconds - PlayFrom))
+                    : 1.0);
             // (1本wavかつwav形式だと1秒では読み込めないことがあるかも)
 
             if (hplayer == null)
