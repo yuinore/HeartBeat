@@ -194,7 +194,8 @@ namespace HatoBMSLib
                 lasttempo = x.Value;
             }
 
-            return (beat - lastbeat) * (double)lasttempo + timeelapsed;
+            // beatToSpeedRateは必ずしも要素を含んでいる必要は無いからね、仕方ないね
+            return (beat - lastbeat) * (lasttempo ?? 1.0) + timeelapsed;
         }
 
         public double SecondsToBeat(double seconds)

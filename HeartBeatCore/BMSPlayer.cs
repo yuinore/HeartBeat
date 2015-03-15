@@ -245,8 +245,8 @@ namespace HeartBeatCore
 
             DelayingTimeBeforePlay = autoplay 
                 ? 1.0  // オートプレイなら1秒後に開始
-                : (b.SoundBMObjects.Where(x => x.IsPlayable()).Count() >= 1  // 演奏可能オブジェがある前提で、
-                    ? Math.Max(1.0, 3.0 - PosOrZero(b.SoundBMObjects.Where(x => x.IsPlayable()).First().Seconds - PlayFrom))
+                : (b.PlayableBMObjects.Count >= 1  // 演奏可能オブジェがある前提で、
+                    ? Math.Max(1.0, 3.0 - PosOrZero(b.PlayableBMObjects[0].Seconds - PlayFrom))
                     : 1.0);
             // (1本wavかつwav形式だと1秒では読み込めないことがあるかも)
 

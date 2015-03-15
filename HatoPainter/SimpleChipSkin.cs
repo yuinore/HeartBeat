@@ -207,7 +207,7 @@ namespace HatoPainter
                     if (displacement > 0)
                     {
                         //opac = 0.5f;
-                        if (ps.Current.Seconds - x.Seconds > 0.3) opac = 0.5f;
+                        if (ps.Current.Seconds - x.Seconds > 0.1) opac = 0.5f;
                         displacement = 0;
                         length = (float)(x.Terminal.Disp - ps.Current.Disp) * HiSpeed;  // >0?
                         //if (length < 0) length = 0;
