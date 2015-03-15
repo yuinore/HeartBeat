@@ -43,6 +43,7 @@
     <Compile Include="HatoPainterDevice.cs" />
     <Compile Include="NullSkin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimpleChipSkin.cs" />
     <Compile Include="SimpleRingSkin.cs" />
     <Compile Include="Skin.cs" />
   </ItemGroup>

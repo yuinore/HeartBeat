@@ -23,7 +23,7 @@ namespace HeartBeatCore
         public GameRegulation regulation = new HeartBeatRegulation();
 
         // TODO: これ↓の初期化処理
-        public Skin skin = new SimpleRingSkin();
+        public Skin skin = new SimpleChipSkin();
 
         PlayingState ps = new PlayingState();
 
@@ -48,6 +48,7 @@ namespace HeartBeatCore
         HatoPlayerDevice hplayer;
 
         string ConsoleMessage = "Waiting...\n";
+        string LineMessage = "\n";
 
         private void TraceMessage(string text)
         {
@@ -61,6 +62,8 @@ namespace HeartBeatCore
         }
 
         Form form;
+
+        int countdraw = 0;
 
         /// <summary>
         /// 同期的にフォームを開きます。
@@ -97,6 +100,12 @@ namespace HeartBeatCore
                },
                (rt) =>
                {
+                   if (s != null && s.ElapsedMilliseconds != 0)
+                   {
+                       countdraw++;
+                       LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 100 / s.ElapsedMilliseconds) / 100.0 + "fps\n";
+                   }
+
                    rt.ClearBlack();
 
                    if (onPaint != null)
@@ -104,7 +113,7 @@ namespace HeartBeatCore
                        onPaint(rt);
                    }
 
-                   rt.DrawText(font, ConsoleMessage, 4, 4);
+                   rt.DrawText(font, LineMessage + ConsoleMessage, 4, 4);
                });
         }
 
