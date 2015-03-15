@@ -319,11 +319,11 @@ namespace HeartBeatCore
                    {
                        BMTime current = new BMTime
                        {
-                           Disp = b.transp.SecondsToBeat(CurrentSongPosition()),
-                           Beat = b.transp.SecondsToBeat(CurrentSongPosition()),
                            Seconds = CurrentSongPosition(),
                            Measure = 0
                        };
+                       current.Beat = b.transp.SecondsToBeat(current.Seconds);
+                       current.Disp = b.transp.BeatToDisplacement(current.Beat);
 
                        // PlayingStateの設定
                        ps.Current = current;
@@ -345,12 +345,12 @@ namespace HeartBeatCore
                        for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[left];
-                           if (x.Beat >= current.Disp) break;
+                           if (x.Disp >= current.Disp) break;
                        }
                        for (; right < b.PlayableBMObjects.Count; right++)  // 視界に出現する箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[right];
-                           if (x.Beat >= AppearDisplacement) break;
+                           if (x.Disp >= AppearDisplacement) break;
                        }
                        for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 判定ゾーンから消える箇所、left <= right
                        {
@@ -428,6 +428,7 @@ namespace HeartBeatCore
                        #endregion
 
                        #region Skinクラスを使用した描画
+                       // 背景・初期化処理
                        skin.DrawBack(rt, b, ps);
 
                        // キーフラッシュ
@@ -444,12 +445,13 @@ namespace HeartBeatCore
                        for (int i = bombzoneLeft; i < right; i++)
                        {
                            var x = b.PlayableBMObjects[i];
-                           if (x.Beat >= PlayFrom)
+                           if (x.Seconds >= PlayFrom)
                            {
                                skin.DrawNote(rt, b, ps, x);
                            }
                        }
 
+                       // 前景・終了処理
                        skin.DrawFront(rt, b, ps);
                        #endregion
                    };

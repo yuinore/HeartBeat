@@ -136,8 +136,8 @@ namespace HatoPainter
         {
             float HiSpeed = 0.8f;
 
-            float displacement = (float)((ps.Current.Disp - x.Beat) * HiSpeed);  // >= 0
-            //int idx = (int)Math.Floor((b.transp.BeatToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
+            float displacement = (float)((ps.Current.Disp - x.Disp) * HiSpeed);  // >= 0
+            //int idx = (int)Math.Floor((b.transp.DispToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
             int idx = 0;
             var xpos = 40f + ObjectPosX[(x.BMSChannel + (false ? 0 : 1) * 36) % 72] * ttt * 0.8f;
             var xpos2 = 40f + 180 * ttt * 0.8f;
@@ -203,13 +203,13 @@ namespace HatoPainter
                     if (displacement > 0) displacement *= 0.25f;
 
                     float opac = 1.0f;
-                    float length = (float)(x.Terminal.Beat - x.Beat) * HiSpeed;  // >0
+                    float length = (float)(x.Terminal.Disp - x.Disp) * HiSpeed;  // >0
                     if (displacement > 0)
                     {
                         //opac = 0.5f;
                         if (ps.Current.Seconds - x.Seconds > 0.3) opac = 0.5f;
                         displacement = 0;
-                        length = (float)(x.Terminal.Beat - ps.Current.Beat) * HiSpeed;  // >0?
+                        length = (float)(x.Terminal.Disp - ps.Current.Disp) * HiSpeed;  // >0?
                         //if (length < 0) length = 0;
                         // FIXME: lengthの修正
                     }
@@ -238,7 +238,7 @@ namespace HatoPainter
                 {
                     float opac = 1.0f - 0.1f * (float)Math.Sin(2 * 3.14 * 10 * ps.Current.Seconds);
                     displacement = 0;
-                    float length = (float)(x.Terminal.Beat - ps.Current.Beat) * HiSpeed;  // >0?
+                    float length = (float)(x.Terminal.Disp - ps.Current.Disp) * HiSpeed;  // >0?
                     if (length >= 0)
                     {
                         rt.DrawBitmapSrc(chip,

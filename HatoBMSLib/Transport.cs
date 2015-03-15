@@ -14,9 +14,12 @@ namespace HatoBMSLib
 
         private SortedDictionary<double, double> beatToTempoChange;  // 拍数 → テンポ; 同時刻に複数のテンポチェンジは入らない
         private SortedDictionary<double, double> secondsToTempoChange;  // 拍数 → テンポ; 同時刻に複数のテンポチェンジは入らない
+        // ↓キーが0の要素を必ず持つ
+        // そんなことより、これがprivateじゃないのはダメだと思うんですが・・・
         internal SortedDictionary<Rational, double> measureToTempoChange;  // 小節番号 → テンポ; 同時刻に複数のテンポチェンジは入らない
-        internal SortedDictionary<int, double> measureToSignature;  // 小節番号 → 拍数
+        private SortedDictionary<int, double> measureToSignature;  // 小節番号 → 拍数
         private SortedDictionary<Rational, double> measureToStop;
+        private SortedDictionary<double, double> beatToSpeedRate;
 
         private bool arranged;
 
@@ -53,6 +56,18 @@ namespace HatoBMSLib
             measureToTempoChange.Add(measure, tempo);
         }
 
+        public void AddDefaultTempo(double tempo)
+        {
+            if (!measureToTempoChange.ContainsKey(0))
+            {
+                AddTempoChange(0, tempo);
+            }
+            else if (Math.Abs(measureToTempoChange[0] - tempo) >= 0.0001)
+            {
+                // エラー
+            }
+        }
+
         public void AddSignature(int measure, double measurelength)
         {
             if (arranged) throw new InvalidOperationException("既にTransportの値が固定されています。新たにデータを追加する場合は、Arrangedをfalseに設定して下さい。");
@@ -72,8 +87,14 @@ namespace HatoBMSLib
             // スレッドセーフではない
             arranged = true;
 
+            if (!measureToTempoChange.ContainsKey(0))
+            {
+                throw new InvalidOperationException("Transportにテンポの初期値が設定されていません。");
+            }
+
             beatToTempoChange = new SortedDictionary<double, double>();
             secondsToTempoChange = new SortedDictionary<double, double>();
+            beatToSpeedRate = new SortedDictionary<double, double>();
 
             foreach (var x in measureToTempoChange)
             {
@@ -82,6 +103,11 @@ namespace HatoBMSLib
             foreach (var x in beatToTempoChange)
             {
                 secondsToTempoChange.Add(BeatToSeconds(x.Key), x.Value);
+            }
+            foreach (var x in measureToStop)
+            {
+                beatToSpeedRate.Add(MeasureToBeat(x.Key), 0.0);
+                beatToSpeedRate.Add(MeasureToBeat(x.Key) + x.Value, 1.0);  // ここに1.0ではない値が入る可能性もある
             }
         }
 
@@ -144,6 +170,31 @@ namespace HatoBMSLib
             }
 
             return (beat - lastbeat) * 60.0 / (double)lasttempo + timeelapsed;
+        }
+
+        public double BeatToDisplacement(double beat)
+        {
+            if (!arranged) throw new InvalidOperationException("先にArrangeTransport関数を呼び出して下さい。");
+
+            double lastbeat = 0;
+            double? lasttempo = null;
+            double timeelapsed = 0;
+
+            foreach (var x in beatToSpeedRate)
+            {
+                lasttempo = lasttempo ?? 1.0;
+
+                if (beat <= x.Key)
+                {
+                    return (beat - lastbeat) * (double)lasttempo + timeelapsed;
+                }
+
+                timeelapsed += (x.Key - lastbeat) * (double)lasttempo;
+                lastbeat = x.Key;
+                lasttempo = x.Value;
+            }
+
+            return (beat - lastbeat) * (double)lasttempo + timeelapsed;
         }
 
         public double SecondsToBeat(double seconds)

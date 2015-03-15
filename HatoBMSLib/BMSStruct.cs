@@ -362,11 +362,7 @@ namespace HatoBMSLib
             if (true)
             {
                 // デフォルトテンポの設定
-                double initialTempo;
-                if (!transp.measureToTempoChange.TryGetValue(0, out initialTempo))
-                {
-                    transp.AddTempoChange(0, BPM);
-                }
+                transp.AddDefaultTempo(BPM);
 
                 // 暗黙の副題
                 if(Title!=null && Subtitle == null){
@@ -374,7 +370,7 @@ namespace HatoBMSLib
                     var ImplicitSubtitleMatch = Regex.Match(Title, @"(.*)\s*(\-.+\-|～.+～|\(.+\)|\[.+\]|\<.+\>|" + "\"" + ".+" + "\"" + ")", RegexOptions.Compiled);
                     // Subtitleが空文字で定義されていた場合はどうするべきか？
 
-                    if ( ImplicitSubtitleMatch.Success)
+                    if (ImplicitSubtitleMatch.Success)
                     {
                         Subtitle = ImplicitSubtitleMatch.Groups[2].Captures[0].Value;
                         Title = ImplicitSubtitleMatch.Groups[1].Captures[0].Value;
@@ -418,6 +414,7 @@ namespace HatoBMSLib
                 {
                     x.Beat = transp.MeasureToBeat(x.Measure);
                     x.Seconds = transp.BeatToSeconds(x.Beat);
+                    x.Disp = transp.BeatToDisplacement(x.Beat);
                 }
             }
             #endregion
