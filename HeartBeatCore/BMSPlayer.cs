@@ -362,6 +362,9 @@ namespace HeartBeatCore
                                if (x.Broken == false)
                                {
                                    x.Broken = true; // これは消してもいいはず
+                                   x.Judge = Judgement.None;
+                                   x.BrokeAt = CurrentSongPosition();
+
                                    ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
                                    ps.CurrentMaximumAcceptance += 1;
                                }
@@ -372,10 +375,11 @@ namespace HeartBeatCore
                            var x = b.PlayableBMObjects[hitzoneRight];
                            if (x.Seconds - regulation.JudgementWindowSize >= current.Seconds) break;
                        }
+                       // TODO: もし曲の最初から最後までの長さがあるLNがあった場合は？？
                        for (; bombzoneLeft < b.PlayableBMObjects.Count; bombzoneLeft++)  // ボム・キーフラッシュが消える箇所
                        {
                            var x = b.PlayableBMObjects[bombzoneLeft];
-                           if (x.Seconds + (regulation.JudgementWindowSize + skin.BombDuration) >= current.Seconds) break;
+                           if ((x.Terminal ?? x).Seconds + (regulation.JudgementWindowSize + skin.BombDuration) >= current.Seconds) break;
                        }
                        #endregion
 

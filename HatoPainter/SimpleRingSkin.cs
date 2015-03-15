@@ -164,30 +164,32 @@ namespace HatoPainter
             }
             else if (idx < 32)
             {
-                // キー押し下しがあった場合の処理
+                if (x.Judge >= Judgement.Bad)
+                {
+                    // キー押し下しがあった場合の処理
 
-                //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
-                rt.DrawBitmapSrc(bomb,
-                    xpos - 32f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f,
-                    idx % 8 * 64, idx / 8 * 64,
-                    64, 64,
-                    1.0f);
-                rt.DrawBitmapSrc(bar,
-                    xpos2 - 256f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 16f,
-                    0, idx / 2 * 32,
-                    512, 32,
-                    0.1f);
+                    //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
+                    rt.DrawBitmapSrc(bomb,
+                        xpos - 32f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f,
+                        idx % 8 * 64, idx / 8 * 64,
+                        64, 64,
+                        1.0f);
+                    rt.DrawBitmapSrc(bar,
+                        xpos2 - 256f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 16f,
+                        0, idx / 2 * 32,
+                        512, 32,
+                        0.1f);
 
-                // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
-                int score = (int)x.Judge - 1;  // 0,1,2,3. 3:pg;
-                if (score < 0) score = 0;
+                    // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
+                    int score = (int)x.Judge - 1;  // 0,1,2,3. 3:pg;
+                    if (score < 0) score = 0;
 
-                rt.DrawBitmapSrc(judgement,
-                    xpos - 64f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f + 39f,
-                    idx / 2 % 2 * 128, (3 - score) * 64,
-                    128, 64,
-                    1.0f, 1.0f);
-
+                    rt.DrawBitmapSrc(judgement,
+                        xpos - 64f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f + 39f,
+                        idx / 2 % 2 * 128, (3 - score) * 64,
+                        128, 64,
+                        1.0f, 1.0f);
+                }
             }
         }
 

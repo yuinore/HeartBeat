@@ -54,7 +54,7 @@ namespace HatoBMSLib
         public List<BMObject> AllBMObjects = new List<BMObject>();
 
         // SoundBMObjects と GraphicBMObjects と OtherBMObjects は、
-        // 積集合が空集合で、和集合がAllBMObjectsに等しい。
+        // 積集合が空集合で、和集合がAllBMObjectsから####LN終端を除いたもの####に等しい。
         public List<BMObject> SoundBMObjects = new List<BMObject>();  // IsSound => true
         public List<BMObject> GraphicBMObjects = new List<BMObject>();  // IsGraphic => true
         public List<BMObject> OtherBMObjects = new List<BMObject>();
@@ -414,7 +414,7 @@ namespace HatoBMSLib
                 // BeatToTempoChangeの準備
                 transp.ArrangeTransport();
 
-                foreach (var x in SoundBMObjects.Concat(GraphicBMObjects).Concat(OtherBMObjects))
+                foreach (var x in AllBMObjects)
                 {
                     x.Beat = transp.MeasureToBeat(x.Measure);
                     x.Seconds = transp.BeatToSeconds(x.Beat);

@@ -34,6 +34,8 @@ namespace HatoPainter
 	        0,0,0,0,0,0,
         };
 
+        Dictionary<int, BMObject> keyidToLastJudge;
+
         public override double BombDuration
         {
             get { return 2.0; }
@@ -63,6 +65,8 @@ namespace HatoPainter
 
         public override void DrawBack(RenderTarget rt, BMSStruct b, PlayingState ps)
         {
+            keyidToLastJudge = new Dictionary<int, BMObject>();
+
             if (stagefile != null)
             {
                 rt.DrawBitmap(stagefile, 0f, 0f, 0.10f, 480f / stagefile.Height);
@@ -144,52 +148,116 @@ namespace HatoPainter
                 idx = (int)Math.Floor((ps.Current.Seconds - x.BrokeAt) * 60) + 1;
             }
 
-            if (!x.Broken)
+            var col = ((x.BMSChannel % 36 == 0x06) ? 2 : x.BMSChannel % 2);
+
+            if (x.Terminal == null)
             {
-                // キー押し下しがなかった場合の処理
-
-                var col = ((x.BMSChannel % 36 == 0x06) ? 2 : x.BMSChannel % 2);
-
-                if (displacement > 0) displacement *= 0.25f;
-
-                rt.DrawBitmapSrc(chip,
-                    xpos - 32f + 16f, displacement * 360 + 420f - 32f,
-                    col * 64, 0,
-                    64, 64);
-            }
-            else if (idx < 32)
-            {
-                /*
-                // キー押し下しがあった場合の処理
-
-                //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
-                rt.DrawBitmapSrc(chip,
-                    xpos - 32f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 32f,
-                    idx % 8 * 64, idx / 8 * 64,
-                    64, 64,
-                    1.0f);
-                rt.DrawBitmapSrc(bar,
-                    xpos2 - 256f + 16f, -((float)x.Measure + 1) % RingShowingPeriodByMeasure / RingShowingPeriodByMeasure * 360 + 420f - 16f,
-                    0, idx / 2 * 32,
-                    512, 32,
-                    0.1f);
-                */
-                // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
-                int score = (int)x.Judge - 1;  // 0,1,2,3. 3:pg;
-                if (score < 0) score = 0;
-
-                rt.DrawBitmapSrc(judgement,
-                    xpos - 64f + 16f, -128 + 420f - 32f + 39f,
-                    idx / 2 % 2 * 128, (3 - score) * 64,
-                    128, 64,
-                    1.0f, 1.0f);
-                if (idx < 16)
+                if (!x.Broken)
                 {
-                    rt.DrawBitmapSrc(bomb,
-                        xpos - 64f + 16f - 64, +420f - 104f + 39f - 64,
-                        idx % 4 * 128, idx / 4 * 128,
-                        128, 128,
-                        1.0f, 2.0f);
+                    // キー押し下しがなかった場合の処理
+
+                    if (displacement > 0) displacement *= 0.25f;
+
+                    rt.DrawBitmapSrc(chip,
+                        xpos - 32f + 16f, displacement * 360 + 420f - 32f,
+                        col * 64, 0,
+                        64, 64);
+                }
+                else
+                {
+                    if (idx < 32)
+                    {
+                        // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
+                        int score = (int)x.Judge - 1;  // 0,1,2,3. 3:pg;
+                        if (score < 0) score = 0;
+                        
+                        if (x.Judge >= Judgement.Bad)
+                        {
+                            /*
+                            // 判定文字描画
+                            rt.DrawBitmapSrc(judgement,
+                                xpos - 64f + 16f, -128 + 420f - 32f + 39f,
+                                idx / 2 % 2 * 128, (3 - score) * 64,
+                                128, 64,
+                                1.0f, 1.0f);
+                             */
+                            keyidToLastJudge[(x.BMSChannel - 36) % 72] = x;
+                        }
+                        if (idx < 16 && x.Judge >= Judgement.Good)
+                        {
+                            // ボム描画
+                            rt.DrawBitmapSrc(bomb,
+                                xpos - 64f + 16f - 64, +420f - 104f + 39f - 64,
+                                idx % 4 * 128, idx / 4 * 128,
+                                128, 128,
+                                1.0f, 2.0f);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (!x.Broken || x.Judge <= Judgement.Bad)
+                {
+                    // キー押し下しがなかった場合の処理
+                    if (displacement > 0) displacement *= 0.25f;
+
+                    float opac = 1.0f;
+                    float length = (float)(x.Terminal.Beat - x.Beat) * HiSpeed;  // >0
+                    if (displacement > 0)
+                    {
+                        //opac = 0.5f;
+                        if (ps.Current.Seconds - x.Seconds > 0.3) opac = 0.5f;
+                        displacement = 0;
+                        length = (float)(x.Terminal.Beat - ps.Current.Beat) * HiSpeed;  // >0?
+                        //if (length < 0) length = 0;
+                        // FIXME: lengthの修正
+                    }
+
+                    if (length >= 0)
+                    {
+                        rt.DrawBitmapSrc(chip,
+                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f - 5,
+                            col * 64, 64,
+                            64, 37,
+                            opac);
+                        rt.DrawBitmapRect(chip,
+                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f + 32,
+                            64, length * 360,
+                            col * 64, 101,
+                            64, 54,
+                            opac);
+                        rt.DrawBitmapSrc(chip,
+                            xpos - 32f + 16f, displacement * 360 + 420f - 32f + 32,
+                            col * 64, 155,
+                            64, 37,
+                            opac);
+                    }
+                }
+                else
+                {
+                    float opac = 1.0f - 0.1f * (float)Math.Sin(2 * 3.14 * 10 * ps.Current.Seconds);
+                    displacement = 0;
+                    float length = (float)(x.Terminal.Beat - ps.Current.Beat) * HiSpeed;  // >0?
+                    if (length >= 0)
+                    {
+                        rt.DrawBitmapSrc(chip,
+                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f - 5,
+                            col * 64, 64,
+                            64, 37,
+                            opac);
+                        rt.DrawBitmapRect(chip,
+                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f + 32,
+                            64, length * 360,
+                            col * 64, 101,
+                            64, 54,
+                            opac);
+                        rt.DrawBitmapSrc(chip,
+                            xpos - 32f + 16f, displacement * 360 + 420f - 32f + 32,
+                            col * 64, 155,
+                            64, 37,
+                            opac);
+                    }
                 }
             }
         }
@@ -201,36 +269,21 @@ namespace HatoPainter
 
         public override void DrawFront(RenderTarget rt, BMSStruct b, PlayingState ps)
         {
-            /*
-            #region キー入力時間を示す白いバー（多分）
-            while (ps.LastKeyEvent != null)
+            foreach (var kvpair in keyidToLastJudge)
             {
-                var xpos = 40f + ObjectPosX[(ps.LastKeyEvent.keyid + 36 + (false ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
-                var xpos2 = 40f + 180 * ttt * 0.8f;
-                var displacement = ps.Current.Seconds - ps.LastKeyEvent.seconds;  // >= 0
-
-                if (((int)(displacement * 30)) < 16)
-                {
-                    rt.DrawBitmapSrc(bar_white,
-                        xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(ps.LastKeyEvent.seconds) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
-                        //0, 0 + 12, 
-                        0, ((int)(displacement * 30)) * 16,
-                        512, 16,
-                        0.5f);
-                }
-                if (((int)(displacement * 30)) < 16)
-                {
-                    rt.DrawBitmapSrc(bar_white,
-                        xpos2 - 256f + 16f, -(((float)b.transp.SecondsToBeat(ps.LastKeyEvent.seconds) / 4 + 0.3f) % RingShowingPeriodByMeasure - 0.3f + RingShowingPeriodByMeasure) / RingShowingPeriodByMeasure * 360 + 420f - 8f,
-                        //0, 0 + 12,
-                        0, ((int)(displacement * 30)) * 16,
-                        512, 16,
-                        0.5f);
-                }
-                break;
+                var x = kvpair.Value;
+                var xpos = 40f + ObjectPosX[(x.BMSChannel + (false ? 0 : 1) * 36) % 72] * ttt * 0.8f;
+                int idx = (int)Math.Floor((ps.Current.Seconds - x.BrokeAt) * 60) + 1;
+                int score = (int)x.Judge - 1;  // 0,1,2,3. 3:pg;
+                if (score < 0) score = 0;
+                
+                rt.DrawBitmapSrc(judgement,
+                    xpos - 64f + 16f, -128 + 420f - 32f + 39f,
+                    idx / 2 % 2 * 128, (3 - score) * 64,
+                    128, 64,
+                    1.0f, 1.0f);
             }
-            #endregion
-             */
+            keyidToLastJudge = null;
         }
     }
 }

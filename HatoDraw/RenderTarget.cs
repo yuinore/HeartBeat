@@ -56,6 +56,22 @@ namespace HatoDraw
                 new RectangleF(srcX, srcY, width, height));
         }
 
+        public void DrawBitmapRect(BitmapData bitmap,
+            float dstX, float dstY, float dstW, float dstH,
+            float srcX, float srcY, float srcW, float srcH,
+            float opacity = 1.0f, bool nearest = true)
+        {
+            //bool nearest = (scale == 1.0f || scale >= 2.0f); // スケールが1.0のとき、Linearだと綺麗に表示されないからクソ
+
+            //d2dRenderTarget.DrawBitmap(bitmap.d2dBitmap, new RectangleF(posX, posY, 100, 100), 1.0f, D2D.BitmapInterpolationMode.Linear);
+            d2dRenderTarget.DrawBitmap(
+                bitmap.d2dBitmap,
+                new RectangleF(dstX * sr, dstY * sr, dstW * sr, dstH * sr),
+                opacity,
+                nearest ? D2D.BitmapInterpolationMode.NearestNeighbor : D2D.BitmapInterpolationMode.Linear,
+                new RectangleF(srcX, srcY, srcW, srcH));
+        }
+
         public void FillRectangle(float posX, float posY, float width, float height, ColorBrush brush)
         {
             d2dRenderTarget.FillRectangle(new RectangleF(posX * sr, posY * sr, width * sr, height * sr), brush.d2dBrush);
