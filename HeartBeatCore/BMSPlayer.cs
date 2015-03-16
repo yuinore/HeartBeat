@@ -96,17 +96,17 @@ namespace HeartBeatCore
 
         Stopwatch s = new Stopwatch();
 
-        string ConsoleMessage = "Waiting...\n";
+        StringBuilder ConsoleMessage = new StringBuilder("Waiting...\n");
         string LineMessage = "\n";
 
         private void TraceMessage(string text)
         {
-            ConsoleMessage = text + "\n" + ConsoleMessage;  // StringBuilder使えない
+            ConsoleMessage.Insert(0, text + "\n");
             Console.WriteLine(text);
         }
         private void TraceWarning(string text)
         {
-            ConsoleMessage = text + "\n" + ConsoleMessage;  // StringBuilder使えない
+            ConsoleMessage.Insert(0, text + "\n");
             Console.WriteLine(text);
         }
 
@@ -159,7 +159,13 @@ namespace HeartBeatCore
                        onPaint(rt);
                    }
 
-                   rt.DrawText(font, LineMessage + ConsoleMessage, 4, 4);
+                   try
+                   {
+                       rt.DrawText(font, LineMessage + ConsoleMessage.ToString(), 4, 4);  // tostringいらない！？
+                   }
+                   catch
+                   {
+                   }
                });
         }
 
@@ -389,17 +395,6 @@ namespace HeartBeatCore
 
                        double AppearDisplacement = current.Disp + 4.0;
 
-                       #region BGA表示
-                       if (bga_back != null)
-                       {
-                           rt.DrawBitmap(bga_back, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_back.Height);
-                       }
-                       if (bga_front != null)
-                       {
-                           rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
-                       }
-                       #endregion
-
                        #region オブジェ範囲の更新
                        for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
                        {
@@ -513,12 +508,23 @@ namespace HeartBeatCore
                        // 前景・終了処理
                        skin.DrawFront(rt, b, ps);
                        #endregion
+
+                       #region BGA表示
+                       if (bga_back != null)
+                       {
+                           rt.DrawBitmap(bga_back, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_back.Height);
+                       }
+                       if (bga_front != null)
+                       {
+                           rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
+                       }
+                       #endregion
                    };
             }
             #endregion
 
             #region wav/bmpの読み込み・再生
-            //await Task.Run(() => 
+            //await Task.Run(() => // それぞれのラムダ式の中のTask.Delayにawaitが付いていることで、非同期に実行できる。
             Parallel.Invoke(
                 async () =>  // wavの読み込み
                 {
@@ -531,7 +537,10 @@ namespace HeartBeatCore
 
                         if (x.Seconds >= PlayFrom)
                         {
+                            // awaitしない！！ するな！！
+                            // って思ったけど、awaitしなきゃいけない程重要な処理じゃないんですよね・・・
                             await Task.Run(() => hplayer.PrepareSound(x.Wavid));
+                            // Parallel.Invoke(async () => await Task.Run(() => hplayer.PrepareSound(x.Wavid)));
                         }
                     }
                 },
@@ -558,18 +567,32 @@ namespace HeartBeatCore
                                 {
                                     dictbmp[x.Wavid] = null;  // 同じ音の多重読み込みを防止
                                 }
-
+                                
+                                //Parallel.Invoke(async () => await Task.Run(() =>
                                 await Task.Run(() =>
                                 {
                                     try
                                     {
-                                        sbuf = new BitmapData(hdraw.HatoRenderTarget, b.ToFullPath(fn));
+                                        string[] staticimageExt = { ".bmp", ".png", ".gif", ".tiff", ".jpg" };  // 動画ファイルが除外できれば何でもいい
 
-                                        lock (dictbmp)
+                                        string ext = Path.GetExtension(fn);
+
+                                        if (staticimageExt.Contains(ext))
                                         {
-                                            dictbmp[x.Wavid] = sbuf;
-                                            //TraceMessage("    " + b.WavDefinitionList[x.Wavid] + " Load Completed (" + dict.Count + "/" + b.WavDefinitionList.Count + ")");
+                                            sbuf = new BitmapData(hdraw.HatoRenderTarget, b.ToFullPath(fn));
+
+                                            lock (dictbmp)
+                                            {
+                                                dictbmp[x.Wavid] = sbuf;
+                                                //TraceMessage("    " + b.WavDefinitionList[x.Wavid] + " Load Completed (" + dict.Count + "/" + b.WavDefinitionList.Count + ")");
+                                            }
                                         }
+                                        else
+                                        {
+                                            // 動画ファイルの可能性が大きい
+                                            TraceWarning("  Unknown File Format: " + fn);
+                                        }
+
                                     }
                                     catch (Exception e)
                                     {

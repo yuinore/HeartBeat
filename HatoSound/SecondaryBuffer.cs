@@ -53,6 +53,7 @@ namespace HatoSound
 
                 CreateBuffer(hsound);
                 WriteSamples(fbuf);
+                fbuf = null;  // ガベージコレクタに回収させる（超重要）
             }
             catch
             {
