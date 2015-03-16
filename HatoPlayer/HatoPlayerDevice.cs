@@ -85,15 +85,20 @@ namespace HatoPlayer
             }
             else
             {
-                if (!WavidToBuffer.TryGetValue(wavid, out sbuf))
-                {
-                    // まだ読み込みを開始していなかった場合
+                bool letsread = false;
 
-                    lock (WavidToBuffer)
+                lock (WavidToBuffer)
+                {
+                    if (!WavidToBuffer.TryGetValue(wavid, out sbuf))
                     {
+                        // まだ読み込みを開始していなかった場合
+                        letsread = true;
                         WavidToBuffer[wavid] = null;  // 同じ音の多重読み込みを防止
                     }
+                }
 
+                if (letsread)
+                {
                     //await Task.Run(() =>
                     {
                         // TODO:ファイルが壊れていた場合やファイルが未対応形式だった場合になんとかする処理

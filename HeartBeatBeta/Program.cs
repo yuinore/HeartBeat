@@ -50,6 +50,22 @@ namespace HeartBeatBeta
                 }
             }
         }
+        static bool fast_ = false;  // 初期設定値
+        static bool fast
+        {
+            get
+            {
+                return fast_;
+            }
+            set
+            {
+                fast_ = value;
+                if (player != null)
+                {
+                    player.Fast = value;
+                }
+            }
+        }
         static float RingShowingPeriodByMeasure_ = 2.0f;  // 初期設定値
         static float RingShowingPeriodByMeasure
         {
@@ -134,6 +150,7 @@ namespace HeartBeatBeta
                 if ((Control.ModifierKeys & Keys.Shift) != 0) player.autoplay = false;  // 2曲目移行でShiftが押されていなければ、現在のモードのまま
                 player.Playside2P = playside2p;
                 player.autoplay = autoplay;
+                player.Fast = fast;
                 player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;
                 player.LoadAndPlay(filename, startmeasure);
             }
@@ -147,6 +164,10 @@ namespace HeartBeatBeta
                 if (e.KeyCode == Keys.A && e.Control)
                 {
                     autoplay = !autoplay;
+                }
+                if (e.KeyCode == Keys.F && e.Control)
+                {
+                    fast = !fast;
                 }
                 if (e.KeyCode == Keys.R && e.Control)
                 {
@@ -214,6 +235,7 @@ namespace HeartBeatBeta
 
                 startmeasure = 0;
                 player.autoplay = ((Control.ModifierKeys & Keys.Shift) == 0);
+                player.Fast = fast;
                 player.Playside2P = playside2p;
                 player.autoplay = autoplay;
                 player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;

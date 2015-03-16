@@ -39,9 +39,14 @@ namespace HeartBeatCore
         double PlayFrom = 0.0;
 
         /// <summary>
-        /// 楽曲の開始前にファイル読み込みを行うファイルサイズ
+        /// 楽曲の開始前にファイル読み込みを行うwavファイルサイズ
         /// </summary>
-        long PreLoadingFileSize = 524288;
+        long PreLoadingWaveFileSize = 524288;
+
+        /// <summary>
+        /// 楽曲の開始前にファイル読み込みを行うoggファイルサイズ
+        /// </summary>
+        long PreLoadingOggFileSize = 100000;
 
         /// <summary>
         /// 楽曲の開始前にファイル読み込みを行うフェーズのタイムアウト時間。
@@ -65,6 +70,36 @@ namespace HeartBeatCore
             set
             {
                 skin.RingShowingPeriodByMeasure = value;
+            }
+        }
+
+        double tempRHS = 1.0;
+
+        bool fast;  // fast再生だとさすがに間に合わなかったり。
+        public bool Fast
+        {
+            get
+            {
+                return fast;
+            }
+            set
+            {
+                if (fast != value)
+                {
+                    if (value)
+                    {
+                        CurrentSongPosition();
+                        tempRHS *= 5.0;
+                        WavFileLoadingDelayTime *= 5.0;
+                    }
+                    else
+                    {
+                        CurrentSongPosition();
+                        tempRHS /= 5.0;
+                        WavFileLoadingDelayTime /= 5.0;
+                    }
+                    fast = value;
+                }
             }
         }
 
@@ -99,15 +134,23 @@ namespace HeartBeatCore
         StringBuilder ConsoleMessage = new StringBuilder("Waiting...\n");
         string LineMessage = "\n";
 
-        private void TraceMessage(string text)
+        private void TraceMessage(string text, bool cons = true)
         {
             ConsoleMessage.Insert(0, text + "\n");
-            Console.WriteLine(text);
+
+            if (cons)
+            {
+                Console.WriteLine(text);
+            }
         }
-        private void TraceWarning(string text)
+        private void TraceWarning(string text, bool cons = true)
         {
             ConsoleMessage.Insert(0, text + "\n");
-            Console.WriteLine(text);
+
+            if (cons)
+            {
+                Console.WriteLine(text);
+            }
         }
 
         /// <summary>
@@ -169,9 +212,21 @@ namespace HeartBeatCore
                });
         }
 
+        double lastelapsed = 0;
+        double sumelapsed = 0;
+        List<int> songposLock = new List<int>();
         double CurrentSongPosition()
         {
-            return s.ElapsedMilliseconds / 1000.0 + PlayFrom - DelayingTimeBeforePlay;
+            double ret;
+            lock (songposLock)  // ←超超超超超重要（というかそんなにみんなCurrentSongPosition()呼んでるんですか？？）
+            {
+                double ms = s.ElapsedMilliseconds;
+                sumelapsed += (ms - lastelapsed) * tempRHS / 1000.0;
+                lastelapsed = ms;
+                ret = sumelapsed;
+            }
+            return ret + PlayFrom - DelayingTimeBeforePlay;
+
         }
 
         /// <summary>
@@ -253,7 +308,7 @@ namespace HeartBeatCore
             };
 
             b = new BMSStruct(path);
-            TraceWarning(b.Message);
+            TraceWarning(b.Message, false);
 
             ps.MaximumAcceptance = b.PlayableBMObjects.Count();
             ps.MaximumExScore = ps.MaximumAcceptance * regulation.MaxScorePerObject;
@@ -333,9 +388,16 @@ namespace HeartBeatCore
                         {
                             hplayer.PrepareSound(sb.Wavid);
                         }
-                        else if (hplayer.AudioFileSize(sb.Wavid) >= PreLoadingFileSize)  // 512kB以上なら先読み
+                        else
                         {
-                            hplayer.PrepareSound(sb.Wavid);
+                            var fn = AudioFileReader.FileName(b.ToFullPath(b.WavDefinitionList[sb.Wavid]));
+                            
+                            if (fn != null &&
+                                ((Path.GetExtension(fn) == ".wav" && (new FileInfo(fn)).Length >= PreLoadingWaveFileSize) ||
+                                (Path.GetExtension(fn) == ".ogg" && (new FileInfo(fn)).Length >= PreLoadingOggFileSize)))  // 512kB以上なら先読み
+                            {
+                                hplayer.PrepareSound(sb.Wavid);
+                            }
                         }
 
                         // TraceMessage("    Preload " + sb.Wavid);
