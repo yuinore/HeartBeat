@@ -56,7 +56,7 @@ namespace HatoPlayer
             }
             else
             {
-                return (new FileInfo(AudioFileReader.FileName(fn))).Length;
+                return (new FileInfo(AudioFileReader.FileName(b.ToFullPath(fn)))).Length;
             }
         }
 
