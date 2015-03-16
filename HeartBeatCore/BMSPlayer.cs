@@ -17,15 +17,39 @@ namespace HeartBeatCore
 {
     public class BMSPlayer
     {
-        public BMSStruct b;  // ガベージコレクタに回収されてはならないんだぞ
+        //******************************************//
+        // BMS読み込みオプション
 
-        // TODO: これ↓の初期化処理
-        public GameRegulation regulation = new HeartBeatRegulation();
+        /// <summary>
+        /// 先読みする時間差。曲の開始前に読み込む時間もここで定まる。
+        /// キー音の演奏可能時刻からの差分ではなく適正演奏時間からの差分であるため、注意が必要。
+        /// 1.0くらいで読み込みミスが発生しないくらいがちょうどいいと思う。
+        /// (TODO:曲開始前のキー音割り当て)
+        /// </summary>
+        double WavFileLoadingDelayTime = 10.0;
 
-        // TODO: これ↓の初期化処理
-        public Skin skin = new SimpleChipSkin();
+        /// <summary>
+        /// 読み込み完了から曲が再生されるまでの時間
+        /// </summary>
+        double DelayingTimeBeforePlay = 1.0;
 
-        PlayingState ps = new PlayingState();
+        /// <summary>
+        /// 曲の再生を開始する地点（秒）
+        /// </summary>
+        double PlayFrom = 0.0;
+
+        /// <summary>
+        /// 楽曲の開始前にファイル読み込みを行うファイルサイズ
+        /// </summary>
+        long PreLoadingFileSize = 524288;
+
+        /// <summary>
+        /// 楽曲の開始前にファイル読み込みを行うフェーズのタイムアウト時間。
+        /// </summary>
+        int PreLoadingTimeoutMilliSeconds = 20000;
+
+        //******************************************//
+        // 設定可能なプロパティ
 
         public bool Playside2P = false;
 
@@ -44,8 +68,33 @@ namespace HeartBeatCore
             }
         }
 
+        //******************************************//
+
+        private BMSStruct b;  // ガベージコレクタに回収されてはならないんだぞ（←は？）
+
+        // TODO: これ↓の初期化処理
+        private GameRegulation regulation = new HeartBeatRegulation();
+
+        // TODO: これ↓の初期化処理
+        private Skin skin = new SimpleChipSkin();
+
+        PlayingState ps = new PlayingState();
+
         HatoDrawDevice hdraw;
         HatoPlayerDevice hplayer;
+
+        Form form;
+
+        int countdraw = 0;
+
+        BitmapData font = null;
+        Action<RenderTarget> onPaint;
+
+        BitmapData bga_front = null;
+        BitmapData bga_back = null;
+        BitmapData bga_poor = null;
+
+        Stopwatch s = new Stopwatch();
 
         string ConsoleMessage = "Waiting...\n";
         string LineMessage = "\n";
@@ -60,10 +109,6 @@ namespace HeartBeatCore
             ConsoleMessage = text + "\n" + ConsoleMessage;  // StringBuilder使えない
             Console.WriteLine(text);
         }
-
-        Form form;
-
-        int countdraw = 0;
 
         /// <summary>
         /// 同期的にフォームを開きます。
@@ -117,19 +162,6 @@ namespace HeartBeatCore
                    rt.DrawText(font, LineMessage + ConsoleMessage, 4, 4);
                });
         }
-
-        BitmapData font = null;
-        Action<RenderTarget> onPaint;
-
-        BitmapData bga_front = null;
-        BitmapData bga_back = null;
-        BitmapData bga_poor = null;
-
-        Stopwatch s = new Stopwatch();
-
-        double WavFileLoadingDelayTime = 10.0;  // 先読み対象とする時間量
-        double DelayingTimeBeforePlay = 1.0;  // 読み込み完了から曲が再生されるまでの時間
-        double PlayFrom = 0.0;  // 曲の再生を開始する地点（秒）
 
         double CurrentSongPosition()
         {
@@ -198,13 +230,24 @@ namespace HeartBeatCore
 
                     if (keysound.TryGetValue(36 + (int)keyid, out wavid))
                     {
-                        hplayer.PlaySound(wavid, true);
+                        if (!hplayer.PlaySound(wavid, false))
+                        {
+                            if (b.WavDefinitionList.ContainsKey(wavid))
+                            {
+                                TraceWarning("  Warning : Audio \"" + b.WavDefinitionList.GetValueOrDefault(wavid) + "\" (invoked by key input) is not loaded yet...");
+                            }
+                            else
+                            {
+                                // WAVが定義されていない場合。
+                                // （空文字定義の場合は除く）
+                            }
+                        }
                     }
                 }
             };
 
-            b = new BMSStruct(new FileStream(path, FileMode.Open, FileAccess.Read));
-            b.DirectoryName = Path.GetDirectoryName(path);
+            b = new BMSStruct(path);
+            TraceWarning(b.Message);
 
             ps.MaximumAcceptance = b.PlayableBMObjects.Count();
             ps.MaximumExScore = ps.MaximumAcceptance * regulation.MaxScorePerObject;
@@ -221,7 +264,7 @@ namespace HeartBeatCore
                 TraceMessage("2/3 BPM: " + b.CalcTempoMedian(0.67));
                 TraceMessage("PLAYLEVEL: " + b.Playlevel);
                 TraceMessage("DIFFICULTY: " + b.Difficulty);
-                TraceMessage("NOTES COUNT: " + b.AllBMObjects.Where(x => x.IsSound() && x.IsPlayable()).Count());
+                TraceMessage("NOTES COUNT: " + b.PlayableBMObjects.Where(x => x.IsPlayable() && !x.IsLongNoteTerminal && !x.IsLandmine()).Count());
                 TraceMessage("TOTAL: " + b.Total);
             }
 
@@ -237,9 +280,7 @@ namespace HeartBeatCore
             TraceMessage("Timer Started.");
 
             double tempomedian = b.CalcTempoMedian(0.667);  // 3分の2くらいが低速だったらそっちに合わせようかな、という気持ち
-            double HiSpeed = 0.6 * (150.0 / tempomedian);
-
-            int PreLoadingTimeoutMilliSeconds = 20000;
+            skin.HiSpeed = (150.0 / tempomedian);
 
             Func<double, double> PosOrZero = (x) => (x < 0) ? 0 : x;
 
@@ -271,7 +312,7 @@ namespace HeartBeatCore
                         {
                             hplayer.PrepareSound(sb.Wavid);
                         }
-                        else if (hplayer.AudioFileSize(sb.Wavid) >= 524288)  // 512kB以上なら先読み
+                        else if (hplayer.AudioFileSize(sb.Wavid) >= PreLoadingFileSize)  // 512kB以上なら先読み
                         {
                             hplayer.PrepareSound(sb.Wavid);
                         }
@@ -536,16 +577,14 @@ namespace HeartBeatCore
                             await Task.Delay(50);
                         }
 
-                        if (x.Seconds >= PlayFrom && x.IsPlayable())  // autoplayかどうかによらない、また、非表示でもOK
+                        if (x.Seconds >= PlayFrom && (x.IsPlayable() || x.IsInvisible()))  // autoplayかどうかによらない、また、非表示でもOK
                         {
                             keysound[(x.BMSChannel - 36) % 72 + 36] = x.Wavid;
-
-                            //    TraceWarning("  Warning : \"" + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + "\" (key sound) is not loaded yet...");
                         }
 
                     }
                 },
-                async () =>  // wavの再生
+                async () =>  // wavの再生（含オートプレイ）
                 {
                     foreach (var x in b.SoundBMObjects)
                     {
@@ -557,9 +596,20 @@ namespace HeartBeatCore
 
                         if (x.Seconds >= PlayFrom)
                         {
-                            if ((autoplay || !x.IsPlayable()) && !x.IsInvisible())
+                            if (autoplay ? !x.IsInvisible() : x.IsBackSound())
                             {
-                                hplayer.PlaySound(x.Wavid, false);
+                                if (!hplayer.PlaySound(x.Wavid, false))
+                                {
+                                    if (b.WavDefinitionList.ContainsKey(x.Wavid))
+                                    {
+                                        TraceWarning("  Warning : Audio \"" + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + "\" is not loaded yet...");
+                                    }
+                                    else
+                                    {
+                                        // WAVが定義されていない場合。
+                                        // （空文字定義の場合は除く）
+                                    }
+                                }
                             }
                         }
                     }
@@ -602,7 +652,7 @@ namespace HeartBeatCore
                             }
                             else
                             {
-                                TraceWarning("  Warning : " + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
+                                TraceWarning("  Warning : Graphic " + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
                             }
                         }
                     }
@@ -616,7 +666,7 @@ namespace HeartBeatCore
                             await Task.Delay(5);
                         }
 
-                        if (x.Seconds >= PlayFrom && autoplay)
+                        if (x.Seconds >= PlayFrom && autoplay && !x.IsLandmine())
                         {
                             int keyid = (x.BMSChannel - 36) % 72;
                             double CSP = CurrentSongPosition();

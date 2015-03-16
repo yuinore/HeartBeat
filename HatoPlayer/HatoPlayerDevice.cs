@@ -96,7 +96,7 @@ namespace HatoPlayer
 
                     //await Task.Run(() =>
                     {
-                        // TODO:ファイルが壊れていた場合になんとかする処理
+                        // TODO:ファイルが壊れていた場合やファイルが未対応形式だった場合になんとかする処理
                         try
                         {
                             sbuf = new SecondaryBuffer(hsound, b.ToFullPath(fn));
@@ -123,16 +123,18 @@ namespace HatoPlayer
         /// </summary>
         /// <param name="wavid">BMSで定義されたwavid</param>
         /// <param name="isKeysound">ユーザーの操作により再生された音であればtrue</param>
-        public void PlaySound(int wavid, bool isKeysound)
+        public bool PlaySound(int wavid, bool isKeysound)
         {
             SecondaryBuffer sbuf = null;
 
             if (WavidToBuffer.TryGetValue(wavid, out sbuf) && sbuf != null)
             {
                 sbuf.StopAndPlay(isKeysound ? -6.0 : -10.0);
+                return true;
             }
             else
             {
+                return false;
                 //TraceWarning("  Warning : " + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
             }
         }

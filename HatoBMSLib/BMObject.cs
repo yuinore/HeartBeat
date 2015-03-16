@@ -85,7 +85,7 @@ namespace HatoBMSLib
         public bool IsLongNoteTerminal
         {
             get;
-            internal set;
+            internal set;  // privateにしたい・・・
         }
 
         /*public BMObjectType Type
@@ -101,6 +101,23 @@ namespace HatoBMSLib
             int hc = BMSChannel / 36;
             return (5 <= hc && hc <= 6);
         }
+
+        internal bool IsNotChannel1X2X()
+        {
+            int hc = BMSChannel / 36;
+            return (hc < 1 || 2 < hc);
+        }
+
+        /// <summary>
+        /// 音声を持つオブジェクトであるかどうかを調べます。
+        /// BMSの音声再生のために用います。
+        /// ・BGM(#mmm01:)に対してはtrueを返します。
+        /// ・LNObjでない通常オブジェと、ロングノートの始点に対しては、trueを返します。
+        /// ・LNObj等のロングノートの終点に対しては、falseを返します。
+        /// ・不可視オブジェに対してはtrueを返します。
+        /// ・地雷に対してはfalseを返します。
+        /// ・BGA/Layer/Poorに対してはfalseを返します。
+        /// </summary>
         public bool IsSound()
         {
             // 注：LNObjに関しては、WavidがWAVファイルを指していないのでfalse
@@ -110,8 +127,23 @@ namespace HatoBMSLib
             return ((1 <= hc && hc <= 6) || BMSChannel == 1) && !IsLongNoteTerminal;
         }
 
+        /// <summary>
+        /// 画面描画するオブジェクトかどうかを調べます。
+        /// この意味に関しては、何度か意味が変化してきました。
+        /// ・BGM(#mmm01:)に対してはfalseを返します。
+        /// ・LNObjでない通常オブジェと、ロングノートの始点に対しては、trueを返します。
+        /// ・LNObj等のロングノートの終点に対しては、trueを返しますが、
+        ///   EditModeがfalseの場合は、そのようなBMObjectはPlayableBMObjectの中にはありません。
+        /// ・不可視オブジェに対してはfalseを返します。これを含める必要がある場合は、 IsPlayable() || IsInvisible() としてください。
+        /// ・地雷に対してはtrueを返します。
+        /// ・BGA/Layer/Poorに対してはfalseを返します。
+        /// 
+        /// また、IsSound() && IsPlayable() は、LNObjでない通常オブジェとロングノートの始点に対してtrueを返します。
+        /// </summary>
         public bool IsPlayable()
         {
+            // 画面描画するオブジェクトかどうかを調べます。
+
             // 注：LNObjに関しては
             //   ・trueを返す (エディタモードの場合？多分)
             //   ・そもそもそのようなBMObjectは存在しない（プレイモードの場合）
@@ -123,6 +155,20 @@ namespace HatoBMSLib
             return (1 <= hc && hc <= 2) || (5 <= hc && hc <= 6) || (0xD <= hc && hc <= 0xE);
         }
 
+        public bool IsLandmine()
+        {
+            int hc = BMSChannel / 36;
+            return (0xD <= hc && hc <= 0xE);
+        }
+
+        public bool IsBackSound()
+        {
+            return BMSChannel == 1 && !IsLongNoteTerminal;
+        }
+
+        /// <summary>
+        /// 不可視オブジェに対してのみtrueを返します。
+        /// </summary>
         public bool IsInvisible()
         {
             int hc = BMSChannel / 36;

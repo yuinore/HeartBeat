@@ -13,6 +13,8 @@ namespace HatoPainter
         // TODO:このメンバをどうにかする
         public float RingShowingPeriodByMeasure = 2.0f;
 
+        public double HiSpeed = 1.0;
+
         /// <summary>
         /// キー入力からボム表示終了までの最大時間
         /// </summary>

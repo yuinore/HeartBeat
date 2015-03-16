@@ -16,11 +16,7 @@ namespace HatoBMSLib
     {
         public string DirectoryName;
 
-        public string ToFullPath(string filename)
-        {
-            if (DirectoryName == null) throw new Exception("Directoryメンバが設定されていません。");
-            return Path.Combine(DirectoryName, filename);
-        }
+        public readonly bool EditorMode = false;  // BMSの読み込み前に設定されなければならないので、コンストラクタから設定しなければなりません。
 
         //******************************************//
         // BMS Fields (未指定の場合は空文字ではなくnullが入る)
@@ -29,9 +25,11 @@ namespace HatoBMSLib
         public string Artist;
         public string Subartist;
         public string Genre;
+        public string Comment;
 
         public string Stagefile;
         public string BackBMP;
+        public string Banner;
 
         // TODO: 初期値を定義しなかった場合に警告を出す
         public int Player = 1;
@@ -42,14 +40,14 @@ namespace HatoBMSLib
         public int LNType = 1;
         public int? LNObj;
 
-        public double BPM;
+        public double BPM = 0;
         //******************************************//
         // BMS Objects and Definition
 
         // #mmm02:の行が無い場合でも、デフォルトテンポの指定が入るため、空にはなりません。
-        public Transport transp = new Transport();
+        public Transport transp;
 
-        public Dictionary<string, string> BMSHeader = new Dictionary<string, string>();
+        public List<KeyValuePair<string, string>> BMSHeader = new List<KeyValuePair<string, string>>();
 
         public List<BMObject> AllBMObjects = new List<BMObject>();
 
@@ -63,154 +61,256 @@ namespace HatoBMSLib
 
         public Dictionary<int, string> WavDefinitionList = new Dictionary<int, string>();
         public Dictionary<int, string> BitmapDefinitionList = new Dictionary<int, string>();
+        public Dictionary<int, double> BPMDefinitionList = new Dictionary<int, double>();
+        public Dictionary<int, double> StopDefinitionList = new Dictionary<int, double>();
+
+        //******************************************//
+        // その他内部用フィールド
+
+        BMSExceptionHandler ExceptionHandler = new BMSExceptionHandler();
 
         //******************************************//
 
-        public BMSStruct(Stream str)
+        public string Message
         {
-            // TODO: Convertクラスでの例外の対応
+            get
+            {
+                return ExceptionHandler.Meesage;
+            }
+        }
+
+        public string ToFullPath(string filename)
+        {
+            if (DirectoryName == null) throw new Exception("Directoryメンバが設定されていません。");
+            return Path.Combine(DirectoryName, filename);
+        }
+
+        delegate bool TryParse<T>(string text, out T val) where T : IComparable;
+
+        /// <summary>
+        /// フィールドに値を設定します。正しく設定できた場合はtrueを返します。
+        /// minInclusive &lt;= defaultValue &lt;= maxInclusive を満たす必要はありません。
+        /// </summary>
+        /// <param name="name">フィールド名。先頭にシャープを含むべきです。</param>
+        /// <param name="text">変換対象の文字列</param>
+        /// <param name="val">変換先のフィールド</param>
+        /// <param name="defaultValue">変換できなかった場合に指定される値</param>
+        /// <param name="minInclusive">許容される最小値</param>
+        /// <param name="maxInclusive">許容される最大値</param>
+        /// <returns></returns>
+        private bool SetField<T>(string name, string text, out T val, T defaultValue, T minInclusive, T maxInclusive, TryParse<T> tryparse) where T : IComparable
+        {
+            if (tryparse(text, out val))
+            {
+                if (val.CompareTo(minInclusive) < 0 || val.CompareTo(maxInclusive) > 0)
+                {
+                    ExceptionHandler.ThrowFormatWarning(name + "の値が範囲外です。");
+                    val = defaultValue;
+                    return false;
+                }
+            }
+            else
+            {
+                ExceptionHandler.ThrowFormatWarning(name + "を数値に変換できません。");
+                val = defaultValue;
+                return false;
+            }
+            return true;
+        }
+
+        private bool SetNullableField<T>(string name, string text, out Nullable<T> val, Nullable<T> defaultValue, T minInclusive, T maxInclusive, TryParse<T> tryparse) where T : struct, IComparable
+        {
+            T outval;
+
+            if (tryparse(text, out outval))
+            {
+                if (outval.CompareTo(minInclusive) < 0 || outval.CompareTo(maxInclusive) > 0)
+                {
+                    ExceptionHandler.ThrowFormatWarning(name + "の値が範囲外です。");
+                    val = defaultValue;
+                    return false;
+                }
+                val = outval;
+            }
+            else
+            {
+                ExceptionHandler.ThrowFormatWarning(name + "を数値に変換できません。");
+                val = defaultValue;
+                return false;
+            }
+            return true;
+        }
+
+        private bool SetField(string name, string text, out int val, int defaultValue, int minInclusive, int maxInclusive)
+        {
+            return SetField(name, text, out val, defaultValue, minInclusive, maxInclusive, Int32.TryParse);
+        }
+
+        private bool SetField(string name, string text, out double val, double defaultValue, double minInclusive, double maxInclusive)
+        {
+            return SetField(name, text, out val, defaultValue, minInclusive, maxInclusive, Double.TryParse);
+        }
+
+        // このメソッドでは例外を出すべきではない。
+        public BMSStruct(string path)
+        {
+            DirectoryName = Path.GetDirectoryName(path);
+            transp = new Transport(ExceptionHandler);
 
             #region BMSファイルのパース
-            var r = new StreamReader(str, Encoding.GetEncoding("Shift_JIS"));
-            var linenumber = 0;
-
-            while (!r.EndOfStream)
+            using (var r = new RandomBMSReader(
+                new FileStream(path, FileMode.Open, FileAccess.Read),
+                Encoding.GetEncoding("Shift_JIS"), EditorMode, ExceptionHandler))
             {
-                var line = r.ReadLine();
-                linenumber++;
+                var linenumber = 0;
 
-                // TODO: 行頭の空白文字の許容
-                if (line.Length >= 1 && line[0] == '#')
+                while (!r.EndOfStream)
                 {
-                    // コメントでない行
-                    Match match;
-
-                    // 小節長指定行にマッチ
-                    var MatchMeasureLengthLine = new LazyMatch(line,
-                        @"^#(\d\d\d)02:([0-9\.]+)$");
-
-                    // オブジェ行
-                    var MatchDataLine = new LazyMatch(line,
-                        @"^#(\d\d\d)([0-9A-Za-z][0-9A-Za-z]):((?:[0-9A-Za-z][0-9A-Za-z])+)$");
-
-                    // ヘッダ行
-                    var MatchHeaderLine = new LazyMatch(line,
-                        @"^#([^\d\s]\S*)\s*(.*)$");
-
-                    if (MatchMeasureLengthLine.Evaluate(out match))
+                    var line = r.ReadLine();
+                    linenumber++;
+                    
+                    if (Regex.IsMatch(line, @"^\s*#.+$", RegexOptions.Compiled))
                     {
-                        #region 小節長指定行にマッチ
-                        int measure = Convert.ToInt32(match.Groups[1].Captures[0].Value);
-                        var contents = Convert.ToDouble(match.Groups[2].Captures[0].Value);
+                        // コメントでない行
+                        Match match;
 
-                        transp.AddSignature(measure, contents);
-                        #endregion
-                    }
-                    else if (MatchDataLine.Evaluate(out match))
-                    {
-                        #region データ行にマッチ
-                        int measure = Convert.ToInt32(match.Groups[1].Captures[0].Value);
-                        int bmsch = BMConvert.FromBase36(match.Groups[2].Captures[0].Value);
-                        var contents = match.Groups[3].Captures[0].Value;
+                        // 小節長指定行にマッチ
+                        var MatchMeasureLengthLine = new LazyMatch(line,
+                            @"^\s*#(\d\d\d)02:([0-9\.]+)$", RegexOptions.Compiled);
 
-                        Rational measureTime;
-                        int partitions = contents.Length / 2;
-                        for (int i = 0; i < partitions; i++)
+                        // オブジェ行
+                        var MatchDataLine = new LazyMatch(line,
+                            @"^\s*#(\d\d\d)([0-9A-Za-z][0-9A-Za-z]):((?:[0-9A-Za-z][0-9A-Za-z])+)$", RegexOptions.Compiled);
+
+                        // ヘッダ行
+                        var MatchHeaderLine = new LazyMatch(line,
+                            @"^\s*#([^\d\s]\S*)\s*(.*)$", RegexOptions.Compiled);
+
+                        if (MatchMeasureLengthLine.Evaluate(out match))
                         {
-                            int wavid = BMConvert.FromBase36(contents.Substring(i * 2, 2));
-                            if (wavid != 0)
+                            #region 小節長指定行にマッチ
+                            int measure = Convert.ToInt32(match.Groups[1].Captures[0].Value);
+                            var contents = Convert.ToDouble(match.Groups[2].Captures[0].Value);
+
+                            transp.AddSignature(measure, contents);
+                            #endregion
+                        }
+                        else if (MatchDataLine.Evaluate(out match))
+                        {
+                            #region データ行にマッチ
+                            int measure = Convert.ToInt32(match.Groups[1].Captures[0].Value);
+                            int bmsch = BMConvert.FromBase36(match.Groups[2].Captures[0].Value);
+                            var contents = match.Groups[3].Captures[0].Value;
+
+                            Rational measureTime;
+                            int partitions = contents.Length / 2;
+                            for (int i = 0; i < partitions; i++)
                             {
-                                measureTime = measure + new Rational(i, partitions);
+                                int wavid = BMConvert.FromBase36(contents.Substring(i * 2, 2));
+                                if (wavid != 0)
+                                {
+                                    measureTime = measure + new Rational(i, partitions);
 
-                                AllBMObjects.Add(new BMObject(bmsch, wavid, measureTime));
+                                    AllBMObjects.Add(new BMObject(bmsch, wavid, measureTime));
+                                }
                             }
+                            #endregion
                         }
-                        #endregion
-                    }
 
-                    else if (MatchHeaderLine.Evaluate(out match))
-                    {
-                        #region ヘッダ行にマッチ（内容があるかどうかは問わない）
-                        var header = match.Groups[1].Captures[0].Value;
-                        var val = match.Groups[2].Captures[0].Value;
-
-                        var MatchWavXX = new LazyMatch(header, @"^WAV([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                        var MatchBMPXX = new LazyMatch(header, @"^BMP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-                        if (MatchWavXX.Evaluate(out match))
+                        else if (MatchHeaderLine.Evaluate(out match))
                         {
-                            // #WAVxx にマッチ
-                            int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
-                            WavDefinitionList.Add(wavid, val);
-                        }
-                        else if (MatchBMPXX.Evaluate(out match))
-                        {
-                            // #BMPxx にマッチ
-                            int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
-                            BitmapDefinitionList.Add(wavid, val);
+                            #region ヘッダ行にマッチ（内容があるかどうかは問わない）
+                            var header = match.Groups[1].Captures[0].Value;
+                            var val = match.Groups[2].Captures[0].Value;
+
+                            var MatchWavXX = new LazyMatch(header, @"^WAV([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                            var MatchBMPXX = new LazyMatch(header, @"^BMP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                            var MatchBPMXX = new LazyMatch(header, @"^BPM([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                            var MatchSTOPXX = new LazyMatch(header, @"^STOP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                            if (MatchWavXX.Evaluate(out match))
+                            {
+                                // #WAVxx にマッチ
+                                int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);  // ここでは例外チェックの必要は無いはず
+                                WavDefinitionList.Add(wavid, val);
+                            }
+                            else if (MatchBMPXX.Evaluate(out match))
+                            {
+                                int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
+                                BitmapDefinitionList.Add(wavid, val);
+                            }
+                            else if (MatchBPMXX.Evaluate(out match))
+                            {
+                                int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
+                                double vald;
+                                SetField("#" + header, val, out vald, 120, Double.Epsilon, Double.MaxValue);
+                                BPMDefinitionList.Add(wavid, vald);
+                            }
+                            else if (MatchSTOPXX.Evaluate(out match))
+                            {
+                                int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
+                                double vald;
+                                SetField("#" + header, val, out vald, 192, 0, Double.MaxValue);
+                                StopDefinitionList.Add(wavid, vald);
+                            }
+                            else
+                            {
+                                switch (header.ToUpper())
+                                {
+                                    case "TITLE": Title = val; break;
+                                    case "SUBTITLE": Subtitle = val; break;
+                                    case "ARTIST": Artist = val; break;
+                                    case "SUBARTIST": Subartist = val; break;
+                                    case "GENRE": Genre = val; break;
+                                    case "COMMENT": Comment = val; break;
+                                    case "STAGEFILE": Stagefile = val; break;
+                                    case "BACKBMP": BackBMP = val; break;
+                                    case "BANNER": Banner = val; break;
+                                    case "BPM":
+                                        SetField("#" + header, val, out BPM, 0, Double.Epsilon, Double.MaxValue, Double.TryParse);
+                                        break;
+                                    case "PLAYER":
+                                        SetField("#" + header, val, out Player, 1, 1, 4);
+                                        break;
+                                    case "PLAYLEVEL":
+                                        SetField("#" + header, val, out Playlevel, 0, 0, Int32.MaxValue);
+                                        break;
+                                    case "RANK":
+                                        SetField("#" + header, val, out Rank, 0, 0, 4);
+                                        break;
+                                    case "DIFFICULTY":
+                                        SetField("#" + header, val, out Difficulty, 1, 1, 5);
+                                        break;
+                                    case "TOTAL":
+                                        SetNullableField("#" + header, val, out Total, 0, 0, Double.MaxValue, Double.TryParse);
+                                        break;
+                                    case "LNTYPE":
+                                        SetField("#" + header, val, out LNType, 1, 1, 1);  // LNTYPE 2 には非対応
+                                        break;
+                                    case "LNOBJ":
+                                        SetNullableField("#" + header, val, out LNObj, 0, 1, 36 * 36 - 1, BMConvert.TryParseFromBase36);
+                                        break;
+                                    default:
+                                        ExceptionHandler.ThrowFormatWarning("未知のヘッダ文" + header + "を検出しました。");
+                                        BMSHeader.Add(new KeyValuePair<string, string>(header.ToUpper(), val));
+                                        break;
+                                }
+                            }
+
+                            #endregion
                         }
                         else
                         {
-                            switch (header.ToUpper())
-                            {
-                                case "TITLE": Title = val; break;
-                                case "SUBTITLE": Subtitle = val; break;
-                                case "ARTIST": Artist = val; break;
-                                case "SUBARTIST": Subartist = val; break;
-                                case "GENRE": Genre = val; break;
-                                case "STAGEFILE": Stagefile = val; break;
-                                case "BACKBMP": BackBMP = val; break;
-                                case "BPM":
-                                    BPM = Convert.ToDouble(val);
-                                    break;
-                                case "PLAYER":
-                                    Player = Convert.ToInt32(val);
-                                    if (Player < 1 || Player > 4) throw new FormatException("#PLAYERの指定が不正です");
-                                    break;
-                                case "PLAYLEVEL":
-                                    Playlevel = Convert.ToInt32(val);
-                                    if (Playlevel < 0) throw new FormatException("#PLAYLEVELの指定が不正です");
-                                    break;
-                                case "RANK":
-                                    Rank = Convert.ToInt32(val);
-                                    if (Rank < 0 || Player > 4) throw new FormatException("#RANKの指定が不正です");
-                                    break;
-                                case "DIFFICULTY":
-                                    Difficulty = Convert.ToInt32(val);
-                                    if (Difficulty < 1 || Difficulty > 5) throw new FormatException("#DIFFICULTYの指定が不正です");
-                                    break;
-                                case "TOTAL":
-                                    Total = Convert.ToDouble(val);
-                                    if (Total < 0) throw new FormatException("#TOTALの指定が不正です");
-                                    break;
-                                case "LNTYPE":
-                                    LNType = Convert.ToInt32(val);
-                                    if (LNType < 1 || LNType > 2) throw new FormatException("#LNTYPEの指定が不正です");
-                                    break;
-                                case "LNOBJ":
-                                    LNObj = BMConvert.FromBase36(val);
-                                    if (LNObj < 1 || LNObj > 36 * 36 - 1) throw new FormatException("#LNOBJの指定が不正です");
-                                    break;
-
-                                default:
-                                    BMSHeader.Add(header.ToUpper(), val);
-                                    break;
-                            }
+                            // ヘッダ行でもデータ行でもない（これはキャッチされることを想定している、多分）
+                            // たとえば、 #01:12345 （内容が奇数文字数）とか、 #7KEYS （頭が[0-9]のヘッダ文）とか。
+                            ExceptionHandler.ThrowFormatWarning("BMSから不適切な行が検出されました。BMSの読み込みを中断します。 行：" + linenumber + ", \"" + line + "\"");
                         }
 
-                        #endregion
                     }
-                    else
-                    {
-                        // ヘッダ行でもデータ行でもない（これはキャッチされることを想定している、多分）
-                        // たとえば、 #01:12345 とか、 #7KEYS とか。
-                        throw new FormatException("BMSから不適切な行が検出されました。BMSの読み込みを中断します。 行：" + linenumber + ", \"" + line + "\"");
-                    }
-
                 }
-            }
 
-            r.Close();
+                r.Close();
+            }
             #endregion
 
             AllBMObjects.Sort();
@@ -223,7 +323,7 @@ namespace HatoBMSLib
                 // 暫定設定
                 obj.IsLongNoteTerminal = false;
 
-                if (obj.IsPlayable())
+                if (obj.IsPlayable() || obj.IsInvisible())
                 {
                     // 暫定設定
                     obj.IsLongNoteTerminal = (obj.Wavid == LNObj);
@@ -236,16 +336,16 @@ namespace HatoBMSLib
                         if (prevobj.TryGetValue(keyid, out longbegin))
                         {
                             // ロングノートの始点が見つかった場合
-                            if (longbegin.Wavid == LNObj || longbegin.IsChannel5X6X())
+                            if (longbegin.Wavid == LNObj || longbegin.IsNotChannel1X2X())
                             {
-                                throw new FormatException("LNOBJの始点が通常オブジェではありません。BMSファイルが誤っている可能性があります。");
+                                ExceptionHandler.ThrowFormatError("LNOBJの始点が通常オブジェではありません。BMSファイルが誤っている可能性があります。");
                             }
                             longbegin.Terminal = obj;
                             prevobj.Remove(keyid);
                         }
                         else
                         {
-                            throw new FormatException("LNOBJの始点が見つかりません。BMSファイルが誤っている可能性があります。");
+                            ExceptionHandler.ThrowFormatError("LNOBJの始点が見つかりません。BMSファイルが誤っている可能性があります。");
                         }
                     }
                     else if (obj.IsChannel5X6X())
@@ -264,7 +364,6 @@ namespace HatoBMSLib
                             }
                             else
                             {
-                                // objは始点
                                 prevobj[keyid] = obj;
                             }
                         }
@@ -282,10 +381,17 @@ namespace HatoBMSLib
                         {
                             if (longbegin.IsChannel5X6X())
                             {
-                                throw new FormatException("ロングノートの終点が見つかりません。BMSファイルが誤っている可能性があります。");
+                                ExceptionHandler.ThrowFormatError("ロングノートの終点が見つかりません。BMSファイルが誤っている可能性があります。たとえば、LN終端と不可視オブジェが重なっていませんか？");
+                            }
+                            else
+                            {
+                                prevobj[keyid] = obj;
                             }
                         }
-                        prevobj[keyid] = obj;
+                        else
+                        {
+                            prevobj[keyid] = obj;
+                        }
                     }
                 }
             }
@@ -293,7 +399,7 @@ namespace HatoBMSLib
             {
                 if (kvpair.Value.IsChannel5X6X())
                 {
-                    throw new FormatException("ロングノートの終点が見つかりません。BMSファイルが誤っている可能性があります。");
+                    ExceptionHandler.ThrowFormatError("ロングノートの終点が見つかりません。BMSファイルが誤っている可能性があります。");
                 }
             }
             #endregion
@@ -329,12 +435,12 @@ namespace HatoBMSLib
                         // 拡張BPM定義
                         try
                         {
-                            var tempo = Convert.ToDouble(BMSHeader["BPM" + BMConvert.ToBase36(obj.Wavid)]);
+                            var tempo = Convert.ToDouble(BPMDefinitionList[obj.Wavid]);
                             transp.AddTempoChange(obj.Measure, tempo);
                         }
                         catch (Exception ex)
                         {
-                            throw new FormatException("#BPM" + BMConvert.ToBase36(obj.Wavid) + "が定義されていないか、正しくありません。\n\n" + ex.ToString());
+                            ExceptionHandler.ThrowFormatError("#BPM" + BMConvert.ToBase36(obj.Wavid) + "が定義されていないか、正しくありません。\n\n" + ex.ToString());
                         }
                     }
                     else if (obj.BMSChannel == 9)
@@ -342,12 +448,12 @@ namespace HatoBMSLib
                         // ストップシーケンス
                         try
                         {
-                            var stop = Convert.ToDouble(BMSHeader["STOP" + BMConvert.ToBase36(obj.Wavid)]);
+                            var stop = Convert.ToDouble(StopDefinitionList[obj.Wavid]);
                             transp.AddStopSequence(obj.Measure, stop / 48.0);
                         }
                         catch(Exception ex)
                         {
-                            throw new FormatException("#STOP" + BMConvert.ToBase36(obj.Wavid) + "が定義されていないか、正しくありません。\n\n" + ex.ToString());
+                            ExceptionHandler.ThrowFormatError("#STOP" + BMConvert.ToBase36(obj.Wavid) + "が定義されていないか、正しくありません。\n\n" + ex.ToString());
                         }
                     }
                     else
@@ -359,7 +465,7 @@ namespace HatoBMSLib
             #endregion
 
             #region BMSエディタによる読み込みではなく、BMSプレイヤーによる読み込みだった場合の項目調整
-            if (true)
+            if (!EditorMode)
             {
                 // デフォルトテンポの設定
                 transp.AddDefaultTempo(BPM);
@@ -388,22 +494,19 @@ namespace HatoBMSLib
 
                 if (BPM <= 0)
                 {
-                    Console.WriteLine("【警告】BPM値が正しく指定されていません。");
-
+                    ExceptionHandler.ThrowFormatError("BPM値が正しく指定されていません。");
                     BPM = 120;
                 }
 
                 // TOTAL値調整
                 if (Total == null)
                 {
-                    Console.WriteLine("【警告】Total値が指定されていません。");
-
+                    ExceptionHandler.ThrowFormatWarning("Total値が指定されていません。");
                     Total = 260;
                 }
                 else if (Total < 80)
                 {
-                    Console.WriteLine("【警告】Total値が不適切な値です。");
-
+                    ExceptionHandler.ThrowFormatWarning("Total値が不適切な値です。");
                     Total = 80;
                 }
 

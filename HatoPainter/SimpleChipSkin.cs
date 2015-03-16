@@ -134,8 +134,6 @@ namespace HatoPainter
 
         public override void DrawNote(RenderTarget rt, BMSStruct b, PlayingState ps, BMObject x)
         {
-            float HiSpeed = 0.8f;
-
             float displacement = (float)((ps.Current.Disp - x.Disp) * HiSpeed);  // >= 0
             //int idx = (int)Math.Floor((b.transp.DispToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
             int idx = 0;
@@ -160,7 +158,7 @@ namespace HatoPainter
 
                     rt.DrawBitmapSrc(chip,
                         xpos - 32f + 16f, displacement * 360 + 420f - 32f,
-                        col * 64, 0,
+                        col * 64, x.IsLandmine() ? 192 : 0,
                         64, 64);
                 }
                 else
@@ -203,13 +201,13 @@ namespace HatoPainter
                     if (displacement > 0) displacement *= 0.25f;
 
                     float opac = 1.0f;
-                    float length = (float)(x.Terminal.Disp - x.Disp) * HiSpeed;  // >0
+                    float length = (float)((x.Terminal.Disp - x.Disp) * HiSpeed);  // >0
                     if (displacement > 0)
                     {
                         //opac = 0.5f;
                         if (ps.Current.Seconds - x.Seconds > 0.1) opac = 0.5f;
                         displacement = 0;
-                        length = (float)(x.Terminal.Disp - ps.Current.Disp) * HiSpeed;  // >0?
+                        length = (float)((x.Terminal.Disp - ps.Current.Disp) * HiSpeed);  // >0?
                         //if (length < 0) length = 0;
                         // FIXME: lengthの修正
                     }
@@ -238,7 +236,7 @@ namespace HatoPainter
                 {
                     float opac = 1.0f - 0.1f * (float)Math.Sin(2 * 3.14 * 10 * ps.Current.Seconds);
                     displacement = 0;
-                    float length = (float)(x.Terminal.Disp - ps.Current.Disp) * HiSpeed;  // >0?
+                    float length = (float)((x.Terminal.Disp - ps.Current.Disp) * HiSpeed);  // >0?
                     if (length >= 0)
                     {
                         rt.DrawBitmapSrc(chip,

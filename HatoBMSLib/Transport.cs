@@ -23,6 +23,8 @@ namespace HatoBMSLib
 
         private bool arranged;
 
+        private BMSExceptionHandler ExceptionHandler;
+
         /// <summary>
         /// BeatToSeconds等の関数呼び出しが準備できていることを表します。
         /// </summary>
@@ -42,8 +44,10 @@ namespace HatoBMSLib
             }
         }
 
-        public Transport()
+        public Transport(BMSExceptionHandler ExceptionHandler)
         {
+            this.ExceptionHandler = ExceptionHandler;
+
             measureToTempoChange = new SortedDictionary<Rational, double>();
             measureToSignature = new SortedDictionary<int, double>();
             measureToStop = new SortedDictionary<Rational, double>();
@@ -72,14 +76,22 @@ namespace HatoBMSLib
         {
             if (arranged) throw new InvalidOperationException("既にTransportの値が固定されています。新たにデータを追加する場合は、Arrangedをfalseに設定して下さい。");
 
-            measureToSignature.Add(measure, measurelength);
+            if (measureToSignature.ContainsKey(measure))
+            {
+                ExceptionHandler.ThrowFormatWarning("小節長が複数回定義されています。");
+            }
+            measureToSignature[measure] = measurelength;
         }
 
         public void AddStopSequence(Rational measure, double stopbeats)
         {
             if (arranged) throw new InvalidOperationException("既にTransportの値が固定されています。新たにデータを追加する場合は、Arrangedをfalseに設定して下さい。");
 
-            measureToStop.Add(measure, stopbeats);
+            if (measureToStop.ContainsKey(measure))
+            {
+                ExceptionHandler.ThrowFormatWarning("ストップシーケンスが複数回定義されています。");
+            }
+            measureToStop[measure] = stopbeats;
         }
 
         public void ArrangeTransport()

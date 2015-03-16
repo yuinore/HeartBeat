@@ -27,7 +27,7 @@ namespace HatoBMSLib
             return s2;
         }
 
-        public static int FromBase36(String s)
+        public static bool TryParseFromBase36(String s, out int val)
         {
             // 昔の私の興味はコードを短くすること、今の私の興味は処理を速くすること、もしかしたらそうなのかもしれない
             int i, n = 0, x;
@@ -35,10 +35,25 @@ namespace HatoBMSLib
             for (i = 0; i < s.Length; i++)
             {
                 x = num36.IndexOf(s[i]);
-                if (x < 0) throw new Exception("36進数に用いられない文字が含まれています＠BMSParser.IntFromHex36(String s)");
+                if (x < 0)
+                {
+                    val = default(int);
+                    return false;
+                }
                 n = x % 36 + n * 36;
             }
-            return n;
+            val = n;
+            return true;
+        }
+
+        public static int FromBase36(String s)
+        {
+            int val;
+            if (!TryParseFromBase36(s, out val))
+            {
+                throw new Exception("36進数に用いられない文字が含まれています＠BMSParser.FromBase36(String s)");
+            }
+            return val;
         }
 
         public static int FromBase16(String s)
@@ -49,7 +64,7 @@ namespace HatoBMSLib
             for (i = 0; i < s.Length; i++)
             {
                 x = num16.IndexOf(s[i]);
-                if (x < 0) throw new Exception("16進数に用いられない文字が含まれています＠BMSParser.IntFromHex36(String s)");
+                if (x < 0) throw new Exception("16進数に用いられない文字が含まれています＠BMSParser.FromBase16(String s)");
                 n = x % 16 + n * 16;
             }
             return n;

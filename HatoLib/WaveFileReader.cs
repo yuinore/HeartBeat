@@ -146,7 +146,7 @@ namespace HatoLib
                     BitDepth = r.ReadInt16();  // ビット深度(16or32)
                     if (BitDepth != 8 && BitDepth != 16 && BitDepth != 24 && BitDepth != 32)
                     {
-                        throw new Exception("8bitと16bitと24bitと32bit以外のwavには対応しておりません");
+                        throw new Exception("8bitと16bitと24bitと32bit以外のwavには対応しておりません。（例：ADPCM）");
                     }
 
                     if (chunksize != 16)
