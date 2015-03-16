@@ -18,22 +18,55 @@ namespace HatoLib
             throw new NotImplementedException();
         }
 
-        public static float[][] ReadAllSamples(Stream strm)
+        public static float[][] ReadAllSamples(string filename)
         {
-            float[] buf; 
+            float[] buf;
+            byte[] bbuf; 
             int ch;
+            int bitdepth;
+
+            // TODO: ファイルを２回読み込むのをやめる
+            long totalsamples = GetTotalSamples(filename);
+
 
             try
             {
-                using (var vreader = new NVorbis.VorbisReader(strm, true))
+                using (var vreader = new Tsukikage.Audio.OggDecodeStream(new FileStream(filename, FileMode.Open, FileAccess.Read)))
                 {
                     ch = vreader.Channels;
-                    buf = new float[vreader.TotalSamples * ch];
-                    vreader.ReadSamples(buf, 0, (int)(vreader.TotalSamples * ch));
+                    buf = new float[totalsamples * ch];
+                    bbuf = new byte[vreader.Length];
+                    bitdepth = vreader.BitsPerSample;
 
+                    if (vreader.Length > Int32.MaxValue)
+                    {
+                        throw new Exception("ogg重すぎるよ・・・");
+                    }
+                    vreader.Read(bbuf, 0, (int)vreader.Length);
+                }
+                // ↓謎の変換作業 1↓
+
+                for (int n = 0; n < buf.Length; n++)
+                {
+                    switch (bitdepth)
+                    {
+                        case 16:
+                            buf[n] = BitConverter.ToInt16(bbuf, n * bitdepth / 8) / 65536.0f;
+                            //buf[n] = BitConverter.ToInt16(new byte[] { bbuf[n * 2 + 1], bbuf[n * 2] }, 0) / 65536.0f;
+                            break;
+                        case 24:
+                            throw new Exception("未　実　装");
+                            //buf[n] = Convert.ToInt32(new byte[] { bbuf[n * 2], bbuf[n * 2 + 1] });
+                            //break;
+                        case 32:
+                            buf[n] = BitConverter.ToSingle(bbuf, n * bitdepth / 8);
+                            break;
+                        default:
+                            throw new Exception("あー16bitでも24bitでも32bitでもないoggを読み込もうとしちゃったんだねー");
+                    }
                 }
 
-                // ↓謎の変換作業↓
+                // ↓謎の変換作業 2↓
 
                 float[][] buf2 = new float[ch][];
 
@@ -61,6 +94,7 @@ namespace HatoLib
         public static long GetTotalSamples(String filename)
         {
             byte[] buf;
+            // TODO: 引数にStreamを渡せるようにする
             buf = System.IO.File.ReadAllBytes(filename);  // 例外が起きるかもしれないね
             // なんかもうめんどくさいから全部読み込んでいいよね(クズ
             int i = 0;  // reading point(byte)

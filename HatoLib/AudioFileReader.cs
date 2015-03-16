@@ -54,13 +54,12 @@ namespace HatoLib
 
         private static float[][] ReadAllSamplesVorbis(string filename)
         {
-            return VorbisFileReader.ReadAllSamples(new FileStream(filename, FileMode.Open, FileAccess.Read));
+            return VorbisFileReader.ReadAllSamples(filename);
         }
 
 
         public static void ReadAttribute(string filename, out int SamplingRate, out int ChannelsCount, out int BufSamplesCount)
         {
-
             if (Path.GetExtension(filename) == ".wav")
             {
                 if (File.Exists(filename)) { ReadAttributeWav(filename, out  SamplingRate, out  ChannelsCount, out  BufSamplesCount); return; }
@@ -92,10 +91,10 @@ namespace HatoLib
 
         private static void ReadAttributeVorbis(string filename, out int SamplingRate, out int ChannelsCount, out int BufSamplesCount)
         {
-            using (var wreader = new NVorbis.VorbisReader(new FileStream(filename, FileMode.Open, FileAccess.Read), true))
+            using (var wreader = new Tsukikage.Audio.OggDecodeStream(new FileStream(filename, FileMode.Open, FileAccess.Read)))
             {
-                SamplingRate = wreader.SampleRate;
-                BufSamplesCount = (int)wreader.TotalSamples;
+                SamplingRate = wreader.SamplesPerSecond;
+                BufSamplesCount = (int)(wreader.Length * 8L / wreader.BitsPerSample);
                 ChannelsCount = wreader.Channels;
             }
         }
