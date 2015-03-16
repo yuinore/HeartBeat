@@ -412,7 +412,11 @@ namespace HatoBMSLib
                     PlayableBMObjects.Add(obj);
                 }
 
-                if (obj.IsSound())
+                if (obj.IsLongNoteTerminal)
+                {
+                    // ignore
+                }
+                else if (obj.IsSound())
                 {
                     SoundBMObjects.Add(obj);
                 }
@@ -458,6 +462,10 @@ namespace HatoBMSLib
                     }
                     else
                     {
+                        if (!obj.IsLandmine())
+                        {
+                            ExceptionHandler.ThrowFormatWarning("不明なオブジェを検出しました。BMSChannel = " + obj.BMSChannel);
+                        }
                         OtherBMObjects.Add(obj);
                     }
                 }

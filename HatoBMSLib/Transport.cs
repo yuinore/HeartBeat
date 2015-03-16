@@ -125,7 +125,7 @@ namespace HatoBMSLib
 
         public double MeasureToBeat(Rational measure)
         {
-            int lastmeasure = 0;
+            int lastmeasure = -1;
             double? lastsig = null;
             double beatelapsed = 0;
 
@@ -135,16 +135,16 @@ namespace HatoBMSLib
             // 停止によって遅れた時間の長さ(拍)
             double stopbeats = measureToStop.Where(x => x.Key < measure).Select(x => x.Value).Sum();
 
-            for (int m = 0; m <= finalmeasure + 1; m++ )
+            for (int m = 0; m <= finalmeasure + 1; m++)
             {
-                double x_Value;
+                double measureLen;
 
-                if (!measureToSignature.TryGetValue(m, out x_Value))
+                if (!measureToSignature.TryGetValue(m, out measureLen))
                 {
-                    x_Value = 1.0;
+                    measureLen = 1.0;
                 }
 
-                lastsig = lastsig ?? x_Value;
+                lastsig = lastsig ?? 0;  // -1小節目の小節長は0
 
                 if ((double)measure <= m)
                 {
@@ -153,7 +153,7 @@ namespace HatoBMSLib
 
                 beatelapsed += 4 * (double)lastsig;
                 lastmeasure = m;
-                lastsig = x_Value;
+                lastsig = measureLen;
             }
 
             return ((double)measure - lastmeasure) * 4 + beatelapsed + stopbeats;

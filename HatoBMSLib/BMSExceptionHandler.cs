@@ -16,7 +16,7 @@ namespace HatoBMSLib
     /// </summary>
     public class BMSExceptionHandler
     {
-        public bool AbortByError = true;
+        public bool AbortByError = false;
         public bool AbortByWarning = false;
 
         StringBuilder MessageBuilder = new StringBuilder();

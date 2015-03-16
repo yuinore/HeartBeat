@@ -268,13 +268,6 @@ namespace HeartBeatCore
                 TraceMessage("TOTAL: " + b.Total);
             }
 
-            PlayFrom = b.transp.BeatToSeconds(b.transp.MeasureToBeat(new Rational(startmeasure)));
-            {
-                var b1 = b.SoundBMObjects.FirstOrDefault();
-                if (b1 != null) PlayFrom = Math.Max(b1.Seconds, PlayFrom);
-                // あんまり変なことすると例えばBGAがあった時とかどうするのよ
-            }
-
             var dictbmp = new Dictionary<int, BitmapData>();
 
             TraceMessage("Timer Started.");
@@ -284,19 +277,41 @@ namespace HeartBeatCore
 
             Func<double, double> PosOrZero = (x) => (x < 0) ? 0 : x;
 
-            DelayingTimeBeforePlay = autoplay 
-                ? 1.0  // オートプレイなら1秒後に開始
-                : (b.PlayableBMObjects.Count >= 1  // 演奏可能オブジェがある前提で、
-                    ? Math.Max(1.0, 3.0 - PosOrZero(b.PlayableBMObjects[0].Seconds - PlayFrom))
-                    : 1.0);
-            // (1本wavかつwav形式だと1秒では読み込めないことがあるかも)
+            #region PlayFromとDelayingTimeBeforePlayの調整
+            PlayFrom = b.transp.BeatToSeconds(b.transp.MeasureToBeat(new Rational(startmeasure)));
+
+            // ↓謎のコードその1 (演奏開始時刻を早めるタイプの最適化)
+            {
+                var b1 = b.SoundBMObjects.FirstOrDefault();
+                var b2 = b.GraphicBMObjects.FirstOrDefault();
+                if (b1 != null || b2 != null)
+                {
+                    PlayFrom = Math.Max(
+                        Math.Min(
+                            b1 == null ? 99 : b1.Seconds,
+                            b2 == null ? 99 : b2.Seconds),
+                        PlayFrom);
+                }
+                // あんまり変なことすると例えばBGAがあった時とかどうするのよ
+                // 自然が一番なんじゃないの？？
+            }
+
+            // ↓謎のコードその2 (演奏開始時刻を遅くするタイプの最適化)
+            DelayingTimeBeforePlay = Math.Max(DelayingTimeBeforePlay, 
+                autoplay 
+                    ? 1.0  // オートプレイなら1秒後に開始
+                    : (b.PlayableBMObjects.Count >= 1  // 演奏可能オブジェがある前提で、
+                        ? Math.Max(1.0, 3.0 - PosOrZero(b.PlayableBMObjects[0].Seconds - PlayFrom))  // 最初の演奏可能ノーツが現れるまでに3秒掛かるようにする
+                        : 1.0));
+
+            TraceMessage("PlayFrom = " + Math.Round(PlayFrom * 1000) + "ms, Delay = " + Math.Round(DelayingTimeBeforePlay * 1000) + "ms");
+            #endregion
 
             if (hplayer == null)
             {
                 hplayer = new HatoPlayerDevice(form, b);  // thisでもいいのか？
             }
 
-            //s.Start();
             Stopwatch loadingTime = new Stopwatch();
             loadingTime.Start();
 
@@ -345,8 +360,6 @@ namespace HeartBeatCore
 
             var silence = hplayer.LoadAudioFileOrGoEasy(HatoPath.FromAppDir("silence20s.wav"));
             silence.StopAndPlay();  // 無音を再生させて、プライマリバッファが稼働していることを保証させる
-
-            s.Start();
 
             #region 描画処理（長い）
             {
@@ -505,7 +518,8 @@ namespace HeartBeatCore
             #endregion
 
             #region wav/bmpの読み込み・再生
-            await Task.Run(() => Parallel.Invoke(
+            //await Task.Run(() => 
+            Parallel.Invoke(
                 async () =>  // wavの読み込み
                 {
                     foreach (var x in b.SoundBMObjects)
@@ -652,7 +666,7 @@ namespace HeartBeatCore
                             }
                             else
                             {
-                                TraceWarning("  Warning : Graphic " + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
+                                TraceWarning("  Warning : Graphic " + b.BitmapDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
                             }
                         }
                     }
@@ -689,8 +703,11 @@ namespace HeartBeatCore
                             }*/
                         }
                     }
-                }));
+                });
+            //);
             #endregion
+
+            s.Start();
         }
 
         public void Stop()

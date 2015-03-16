@@ -161,7 +161,19 @@ namespace HatoPainter
                         col * 64, x.IsLandmine() ? 192 : 0,
                         64, 64);
                 }
-                else
+                else if (x.Judge <= Judgement.Bad)
+                {
+                    // BAD判定だった
+
+                    if (displacement > 0) displacement *= 0.25f;
+
+                    rt.DrawBitmapSrc(chip,
+                        xpos - 32f + 16f, displacement * 360 + 420f - 32f,
+                        col * 64, x.IsLandmine() ? 192 : 0,
+                        64, 64, 0.3f);
+                }
+                
+                if(x.Broken)
                 {
                     if (idx < 32)
                     {
@@ -205,7 +217,7 @@ namespace HatoPainter
                     if (displacement > 0)
                     {
                         //opac = 0.5f;
-                        if (ps.Current.Seconds - x.Seconds > 0.1) opac = 0.5f;
+                        if (ps.Current.Seconds - x.Seconds > 0.1) opac = 0.3f;
                         displacement = 0;
                         length = (float)((x.Terminal.Disp - ps.Current.Disp) * HiSpeed);  // >0?
                         //if (length < 0) length = 0;
