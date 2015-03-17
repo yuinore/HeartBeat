@@ -23,6 +23,8 @@ namespace HatoPainter
 
         float ttt = 1.125f;
 
+        double myHS;
+
         short[] ObjectPosX = {
             0,60,100,140,180,220,0,0,260,300,
 	        0,0,0,0,0,0,0,0,0,0,
@@ -36,19 +38,51 @@ namespace HatoPainter
 
         Dictionary<int, BMObject> keyidToLastJudge;
 
-        public override double BombDuration
-        {
-            get { return 2.0; }
-        }
-
         public SimpleChipSkin()
         {
             // 親クラスのフィールドの初期化
             RingShowingPeriodByMeasure = 2.0f;
         }
 
+        public override double BombDuration
+        {
+            get { return 2.0; }
+        }
+
+        public override double EyesightDisplacementBefore
+        {
+            get
+            {
+                if (myHS >= 0)
+                {
+                    return 4.0 / Math.Max(0.2, myHS);
+                }
+                else
+                {
+                    return 1.0 / Math.Max(0.2, -myHS);
+                }
+            }
+        }
+
+        public override double EyesightDisplacementAfter
+        {
+            get
+            {
+                if (myHS >= 0)
+                {
+                    return 1.0 / Math.Max(0.2, myHS);
+                }
+                else
+                {
+                    return 4.0 / Math.Max(0.2, -myHS);
+                }
+            }
+        }
+
         public override void Load(RenderTarget rt, BMSStruct b)
         {
+            myHS = HiSpeed;
+
             if (b.Stagefile != null && File.Exists(b.ToFullPath(b.Stagefile)))
             {
                 stagefile = new BitmapData(rt, b.ToFullPath(b.Stagefile));
@@ -65,6 +99,8 @@ namespace HatoPainter
 
         public override void DrawBack(RenderTarget rt, BMSStruct b, PlayingState ps)
         {
+            myHS += (HiSpeed - myHS) * 0.10;
+
             keyidToLastJudge = new Dictionary<int, BMObject>();
 
             if (stagefile != null)
@@ -134,7 +170,7 @@ namespace HatoPainter
 
         public override void DrawNote(RenderTarget rt, BMSStruct b, PlayingState ps, BMObject x)
         {
-            float displacement = (float)((ps.Current.Disp - x.Disp) * HiSpeed);  // >= 0
+            float displacement = (float)(ps.Current.Disp - x.Disp);  // >= 0
             //int idx = (int)Math.Floor((b.transp.DispToSeconds(JustDisplacement) - x.Seconds) * 30) + 1;
             int idx = 0;
             var xpos = 40f + ObjectPosX[(x.BMSChannel + (false ? 0 : 1) * 36) % 72] * ttt * 0.8f;
@@ -157,7 +193,7 @@ namespace HatoPainter
                     if (displacement > 0) displacement *= 0.25f;
 
                     rt.DrawBitmapSrc(chip,
-                        xpos - 32f + 16f, displacement * 360 + 420f - 32f,
+                        xpos - 32f + 16f, displacement * (float)myHS * 360 + 420f - 32f,
                         col * 64, x.IsLandmine() ? 192 : 0,
                         64, 64);
                 }
@@ -168,7 +204,7 @@ namespace HatoPainter
                     if (displacement > 0) displacement *= 0.25f;
 
                     rt.DrawBitmapSrc(chip,
-                        xpos - 32f + 16f, displacement * 360 + 420f - 32f,
+                        xpos - 32f + 16f, displacement * (float)myHS *  360 + 420f - 32f,
                         col * 64, x.IsLandmine() ? 192 : 0,
                         64, 64, 0.3f);
                 }
@@ -207,67 +243,57 @@ namespace HatoPainter
             }
             else
             {
+                float opac;
+                float length;
+
                 if (!x.Broken || x.Judge <= Judgement.Bad)
                 {
                     // キー押し下しがなかった場合の処理
                     if (displacement > 0) displacement *= 0.25f;
 
-                    float opac = 1.0f;
-                    float length = (float)((x.Terminal.Disp - x.Disp) * HiSpeed);  // >0
+                    opac = 1.0f;
+                    length = (float)(x.Terminal.Disp - x.Disp);  // >0
                     if (displacement > 0)
                     {
                         //opac = 0.5f;
                         if (ps.Current.Seconds - x.Seconds > 0.1) opac = 0.3f;
                         displacement = 0;
-                        length = (float)((x.Terminal.Disp - ps.Current.Disp) * HiSpeed);  // >0?
+                        length = (float)(x.Terminal.Disp - ps.Current.Disp);  // >0?
                         //if (length < 0) length = 0;
                         // FIXME: lengthの修正
-                    }
-
-                    if (length >= 0)
-                    {
-                        rt.DrawBitmapSrc(chip,
-                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f - 5,
-                            col * 64, 64,
-                            64, 37,
-                            opac);
-                        rt.DrawBitmapRect(chip,
-                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f + 32,
-                            64, length * 360,
-                            col * 64, 101,
-                            64, 54,
-                            opac);
-                        rt.DrawBitmapSrc(chip,
-                            xpos - 32f + 16f, displacement * 360 + 420f - 32f + 32,
-                            col * 64, 155,
-                            64, 37,
-                            opac);
                     }
                 }
                 else
                 {
-                    float opac = 1.0f - 0.1f * (float)Math.Sin(2 * 3.14 * 10 * ps.Current.Seconds);
+                    opac = 1.0f - 0.1f * (float)Math.Sin(2 * 3.14 * 10 * ps.Current.Seconds);
                     displacement = 0;
-                    float length = (float)((x.Terminal.Disp - ps.Current.Disp) * HiSpeed);  // >0?
-                    if (length >= 0)
-                    {
-                        rt.DrawBitmapSrc(chip,
-                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f - 5,
-                            col * 64, 64,
-                            64, 37,
-                            opac);
-                        rt.DrawBitmapRect(chip,
-                            xpos - 32f + 16f, (displacement - length) * 360 + 420f - 32f + 32,
-                            64, length * 360,
-                            col * 64, 101,
-                            64, 54,
-                            opac);
-                        rt.DrawBitmapSrc(chip,
-                            xpos - 32f + 16f, displacement * 360 + 420f - 32f + 32,
-                            col * 64, 155,
-                            64, 37,
-                            opac);
-                    }
+                    length = (float)(x.Terminal.Disp - ps.Current.Disp);  // >0?
+                }
+
+                float y_001 = (float)Math.Round((displacement - length) * myHS * 360 + 420f - 32f + 32);
+                float y_002 = (float)Math.Round(displacement * myHS * 360 + 420f - 32f + 32);
+
+                float yL = Math.Min(y_001, y_002);
+                float yH = Math.Max(y_001, y_002);
+
+                if (length >= 0)
+                {
+                    rt.DrawBitmapSrc(chip,
+                        xpos - 32f + 16f, yL - 37,
+                        col * 64, 64,
+                        64, 37,
+                        opac);
+                    rt.DrawBitmapRect(chip,
+                        xpos - 32f + 16f, yL,
+                        64, yH - yL,
+                        col * 64, 101,
+                        64, 54,
+                        opac);
+                    rt.DrawBitmapSrc(chip,
+                        xpos - 32f + 16f, yH,
+                        col * 64, 155,
+                        64, 37,
+                        opac);
                 }
             }
         }

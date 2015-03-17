@@ -169,6 +169,20 @@ namespace HeartBeatBeta
                 {
                     fast = !fast;
                 }
+                if (e.KeyCode == Keys.Oemplus && e.Control || e.KeyCode == Keys.Add)
+                {
+                    if (player != null)
+                    {
+                        player.UserHiSpeed += 0.1;
+                    }
+                }
+                if (e.KeyCode == Keys.OemMinus && e.Control || e.KeyCode == Keys.Subtract)
+                {
+                    if (player != null)
+                    {
+                        player.UserHiSpeed -= 0.1;
+                    }
+                }
                 if (e.KeyCode == Keys.R && e.Control)
                 {
                     if (RingShowingPeriodByMeasure == 2.0f)

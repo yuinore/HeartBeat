@@ -15,6 +15,16 @@ namespace HatoPainter
             get { return 2.0f; }
         }
 
+        public override double EyesightDisplacementBefore
+        {
+            get { return 0.1f; }
+        }
+
+        public override double EyesightDisplacementAfter
+        {
+            get { return 0.1f; }
+        }
+
         public override void Load(RenderTarget rt, BMSStruct b)
         {
         }

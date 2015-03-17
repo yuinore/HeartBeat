@@ -11,6 +11,7 @@ namespace HatoBMSLib
     {
         // こいつらへのアクセスは基本的には禁止したいです。
         // あっ、これをBMSStructの内部クラスにすればいいんじゃね！？！？！？
+        // sortedDictionaryのメモリ使用量ってどんなもんなんでしょうかね（実際List<T>で十分な気も）
 
         private SortedDictionary<double, double> beatToTempoChange;  // 拍数 → テンポ; 同時刻に複数のテンポチェンジは入らない
         private SortedDictionary<double, double> secondsToTempoChange;  // 拍数 → テンポ; 同時刻に複数のテンポチェンジは入らない
@@ -20,6 +21,7 @@ namespace HatoBMSLib
         private SortedDictionary<int, double> measureToSignature;  // 小節番号 → 拍数
         private SortedDictionary<Rational, double> measureToStop;
         private SortedDictionary<double, double> beatToSpeedRate;
+        private SortedDictionary<double, Rational> beatToMeasureVertices;
 
         private bool arranged;
 
@@ -107,20 +109,38 @@ namespace HatoBMSLib
             beatToTempoChange = new SortedDictionary<double, double>();
             secondsToTempoChange = new SortedDictionary<double, double>();
             beatToSpeedRate = new SortedDictionary<double, double>();
+            beatToMeasureVertices = new SortedDictionary<double, Rational>();
 
             foreach (var x in measureToTempoChange)
             {
                 beatToTempoChange.Add(MeasureToBeat(x.Key), x.Value);
             }
+
+            // 以降では BeatToSeconds(), MeasureToSeconds() が使用可能
+
             foreach (var x in beatToTempoChange)
             {
                 secondsToTempoChange.Add(BeatToSeconds(x.Key), x.Value);
             }
+
+            // 以降では SecondsToBeat() が使用可能
+
+            var finalmeasure = measureToSignature.LastOrDefault().Key;  // defaultで0
+            for (int m = 0; m <= finalmeasure + 2; m++)
+            {
+                beatToMeasureVertices[MeasureToBeat(m)] = m;
+            }
+
             foreach (var x in measureToStop)
             {
                 beatToSpeedRate.Add(MeasureToBeat(x.Key), 0.0);
                 beatToSpeedRate.Add(MeasureToBeat(x.Key) + x.Value, 1.0);  // ここに1.0ではない値が入る可能性もある
+
+                beatToMeasureVertices[MeasureToBeat(x.Key)] = x.Key;
+                beatToMeasureVertices[MeasureToBeat(x.Key) + x.Value] = x.Key;
             }
+
+            // 以降では BeatToDisplacement(), BeatToMeasure() が使用可能
         }
 
         public double MeasureToBeat(Rational measure)
@@ -144,7 +164,7 @@ namespace HatoBMSLib
                     measureLen = 1.0;
                 }
 
-                lastsig = lastsig ?? 0;  // -1小節目の小節長は0
+                lastsig = lastsig ?? 0;  // -1小節目の小節長は0（とするか、lastmeasureの初期値を -1、beatelapsedの初期値を -4 としてもよい。）
 
                 if ((double)measure <= m)
                 {
@@ -157,6 +177,35 @@ namespace HatoBMSLib
             }
 
             return ((double)measure - lastmeasure) * 4 + beatelapsed + stopbeats;
+        }
+
+        public Rational BeatToMeasure(double beat)
+        {
+            if (!arranged) throw new InvalidOperationException("先にArrangeTransport関数を呼び出して下さい。");
+
+            var y = default(KeyValuePair<double, Rational>);
+            var z = default(KeyValuePair<double, Rational>);
+            bool init = false;
+
+            foreach (var x in beatToMeasureVertices)
+            {
+                if (!init)
+                {
+                    init = true;  // ループの1回目はスキップ（lastbeatとlasttempoは設定する）
+                }
+                else
+                {
+                    if (beat <= x.Key)
+                    {
+                        return new Rational((beat - y.Key) / (x.Key - y.Key)) * (x.Value - y.Value) + y.Value;  // いつも使ってる線形補間の式だね！
+                    }
+                }
+
+                z = y;
+                y = x;
+            }
+
+            return new Rational((beat - z.Key) / (y.Key - z.Key)) * (y.Value - z.Value) + z.Value;
         }
 
         public double BeatToSeconds(double beat)

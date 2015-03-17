@@ -103,6 +103,18 @@ namespace HeartBeatCore
             }
         }
 
+        public double UserHiSpeed
+        {
+            get
+            {
+                return skin.UserHiSpeed;
+            }
+            set
+            {
+                skin.UserHiSpeed = value; ;
+            }
+        }
+
         //******************************************//
 
         private BMSStruct b;  // ガベージコレクタに回収されてはならないんだぞ（←は？）
@@ -111,7 +123,7 @@ namespace HeartBeatCore
         private GameRegulation regulation = new HeartBeatRegulation();
 
         // TODO: これ↓の初期化処理
-        private Skin skin = new SimpleChipSkin();
+        public Skin skin = new SimpleChipSkin();
 
         PlayingState ps = new PlayingState();
 
@@ -191,8 +203,11 @@ namespace HeartBeatCore
                    if (s != null && s.ElapsedMilliseconds != 0)
                    {
                        countdraw++;
-                       LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 10 / s.ElapsedMilliseconds) / 10.0 + "fps " +
-                           "t=" + Math.Floor(CurrentSongPosition() * 10) / 10 + "s\n";
+                       LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 10 / s.ElapsedMilliseconds) / 10.0 + "fps\n" +
+                           "m=" + Math.Floor((double)b.transp.BeatToMeasure(b.transp.SecondsToBeat(CurrentSongPosition())) * 10) / 10 + "s\n" +
+                           "b=" + Math.Floor(b.transp.SecondsToBeat(CurrentSongPosition()) * 10) / 10 + "s\n" +
+                           "t=" + Math.Floor(CurrentSongPosition() * 10) / 10 + "s\n" +
+                           "d=" + Math.Floor(b.transp.BeatToDisplacement(b.transp.SecondsToBeat(CurrentSongPosition()) * 10)) / 10 + "s\n";
                    }
 
                    rt.ClearBlack();
@@ -334,12 +349,12 @@ namespace HeartBeatCore
             TraceMessage("Timer Started.");
 
             double tempomedian = b.CalcTempoMedian(0.667);  // 3分の2くらいが低速だったらそっちに合わせようかな、という気持ち
-            skin.HiSpeed = (150.0 / tempomedian);
+            skin.BaseHiSpeed = (150.0 / tempomedian);
 
             Func<double, double> PosOrZero = (x) => (x < 0) ? 0 : x;
 
             #region PlayFromとDelayingTimeBeforePlayの調整
-            PlayFrom = b.transp.BeatToSeconds(b.transp.MeasureToBeat(new Rational(startmeasure)));
+            PlayFrom = b.transp.MeasureToSeconds(new Rational(startmeasure));
 
             // ↓謎のコードその1 (演奏開始時刻を早めるタイプの最適化)
             {
@@ -388,13 +403,13 @@ namespace HeartBeatCore
                         {
                             hplayer.PrepareSound(sb.Wavid);
                         }
-                        else
+                        else if (b.WavDefinitionList.ContainsKey(sb.Wavid))
                         {
                             var fn = AudioFileReader.FileName(b.ToFullPath(b.WavDefinitionList[sb.Wavid]));
                             
                             if (fn != null &&
-                                ((Path.GetExtension(fn) == ".wav" && (new FileInfo(fn)).Length >= PreLoadingWaveFileSize) ||
-                                (Path.GetExtension(fn) == ".ogg" && (new FileInfo(fn)).Length >= PreLoadingOggFileSize)))  // 512kB以上なら先読み
+                                ((Path.GetExtension(fn).ToLower() == ".wav" && (new FileInfo(fn)).Length >= PreLoadingWaveFileSize) ||
+                                (Path.GetExtension(fn).ToLower() == ".ogg" && (new FileInfo(fn)).Length >= PreLoadingOggFileSize)))  // 512kB以上なら先読み
                             {
                                 hplayer.PrepareSound(sb.Wavid);
                             }
@@ -461,12 +476,12 @@ namespace HeartBeatCore
                        for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[left];
-                           if (x.Disp >= current.Disp) break;
+                           if (x.Disp >= current.Disp - skin.EyesightDisplacementAfter) break;
                        }
                        for (; right < b.PlayableBMObjects.Count; right++)  // 視界に出現する箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[right];
-                           if (x.Disp >= AppearDisplacement) break;
+                           if (x.Disp >= current.Disp + skin.EyesightDisplacementBefore) break;
                        }
                        for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 判定ゾーンから消える箇所、left <= right
                        {
@@ -637,7 +652,7 @@ namespace HeartBeatCore
                                     {
                                         string[] staticimageExt = { ".bmp", ".png", ".gif", ".tiff", ".jpg" };  // 動画ファイルが除外できれば何でもいい
 
-                                        string ext = Path.GetExtension(fn);
+                                        string ext = Path.GetExtension(fn).ToLower();
 
                                         if (staticimageExt.Contains(ext))
                                         {
@@ -768,7 +783,8 @@ namespace HeartBeatCore
                         if (x.Seconds >= PlayFrom && autoplay && !x.IsLandmine())
                         {
                             int keyid = (x.BMSChannel - 36) % 72;
-                            double CSP = CurrentSongPosition();
+                            //double CSP = CurrentSongPosition();  // ベンチマーク？用
+                            double CSP = x.Seconds;  // 見栄え優先で行こう
 
                             ps.LastKeyEvent = new KeyEvent
                             {

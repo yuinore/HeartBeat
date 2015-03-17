@@ -98,6 +98,95 @@ namespace HatoLib
             }
         }
 
+        public Rational(double real_number)
+        {
+            // なぜRationalを使おうと思ってしまったのか
+
+            // 2^23 = 8388608 (単精度)なのでこれ以下にしたい感はある
+
+            // 15360 == 3 * 5 * 1024
+            // 10644480 == 27 * 5 * 7 * 11 * 1024
+            // 4838400 = 1024 * 27 * 25 * 7
+            if (real_number == Math.Round(real_number))
+            {
+                numerator = (int)real_number;
+                denominator = 1;
+            }
+            else
+            {
+                double seisuu_part = Math.Floor(real_number);
+                double shousuu_part = real_number - seisuu_part;
+
+                double gosa1 = 0, gosa2 = 0;
+                Rational fr1, fr2;
+
+                {
+                    fr1 = new Rational(
+                        (long)Math.Round(shousuu_part * 4838400),
+                        4838400);
+                    gosa1 = Math.Abs((double)fr1 - shousuu_part);
+                }
+                {
+                    fr2 = new Rational(
+                        (long)Math.Round(shousuu_part * 1000000),
+                        1000000);
+                    gosa2 = Math.Abs((double)fr2 - shousuu_part);
+                }
+                if (gosa1 <= gosa2)
+                {
+                    numerator = fr1.numerator;
+                    denominator = fr1.denominator;
+                }
+                else
+                {
+                    numerator = fr2.numerator;
+                    denominator = fr2.denominator;
+                }
+
+                // 正規化を行います。コピペです。
+                {
+                    long j;
+                    long n2 = numerator, d2 = denominator;
+
+                    if (numerator == 0)
+                    {
+                        denominator = 1;
+                        return;
+                    }
+                    if (numerator < 0)
+                    {
+                        n2 = -numerator;
+                    }
+                    if (denominator <= 0)
+                    {
+                        throw new Exception("分母が不正です at Frac(int nume, int deno)");
+                    }
+
+                    while ((d2 & 1) == 0 && (n2 & 1) == 0) { numerator >>= 1; denominator >>= 1; n2 >>= 1; d2 >>= 1; }
+                    while ((n2 & 1) == 0) { n2 >>= 1; }
+                    while ((d2 & 1) == 0) { d2 >>= 1; }
+
+                    j = 3;
+                    while ((d2 % j) == 0 && (n2 % j) == 0) { numerator /= j; denominator /= j; n2 /= j; d2 /= j; }
+                    while ((n2 % j) == 0) { n2 /= j; }
+                    while ((d2 % j) == 0) { d2 /= j; }
+
+                    j = 5;
+                    while ((d2 % j) == 0 && (n2 % j) == 0) { numerator /= j; denominator /= j; n2 /= j; d2 /= j; }
+                    while ((n2 % j) == 0) { n2 /= j; }
+                    while ((d2 % j) == 0) { d2 /= j; }
+
+                    for (j = d2; j >= 7; j--)
+                    {
+                        while ((d2 % j) == 0 && (n2 % j) == 0) { numerator /= j; denominator /= j; n2 /= j; d2 /= j; }
+                    }
+                }
+
+                // 整数部を足します。
+                numerator += ((long)seisuu_part) * denominator;
+            }
+        }
+
         public static implicit operator Rational(long n)
         {
             return new Rational(n);
@@ -125,6 +214,29 @@ namespace HatoLib
                     a.numerator * b.denominator + a.denominator * b.numerator,
                     a.denominator * b.denominator);
             }
+        }
+
+        public static Rational operator -(Rational a, Rational b)
+        {
+            // 加算する
+            if (a.denominator == b.denominator)
+            {
+                return new Rational(a.numerator - b.numerator, a.denominator);
+            }
+            else
+            {
+                return new Rational(
+                    a.numerator * b.denominator - a.denominator * b.numerator,
+                    a.denominator * b.denominator);
+            }
+        }
+
+        public static Rational operator *(Rational a, Rational b)
+        {
+            // 加算する
+            return new Rational(
+                a.numerator * b.numerator,
+                a.denominator * b.denominator);
         }
 
         /// <summary>
