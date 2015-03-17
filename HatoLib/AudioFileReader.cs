@@ -14,12 +14,12 @@ namespace HatoLib
         {
             buf = null;
 
-            if (Path.GetExtension(filename) == ".wav")
+            if (Path.GetExtension(filename).ToLower() == ".wav")
             {
                 if (File.Exists(filename)) { buf = ReadAllSamplesWav(filename); return true; }
                 else if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { buf = ReadAllSamplesVorbis(Path.ChangeExtension(filename, ".ogg")); return true; }
             }
-            else if (Path.GetExtension(filename) == ".ogg")
+            else if (Path.GetExtension(filename).ToLower() == ".ogg")
             {
                 if (File.Exists(filename)) { buf = ReadAllSamplesVorbis(filename); return true; }
                 else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { buf = ReadAllSamplesWav(Path.ChangeExtension(filename, ".wav")); return true; }
@@ -61,12 +61,12 @@ namespace HatoLib
         public static void ReadAttribute(string filename, out int SamplingRate, out int ChannelsCount, out int BufSamplesCount)
         {
 
-            if (Path.GetExtension(filename) == ".wav")
+            if (Path.GetExtension(filename).ToLower() == ".wav")
             {
                 if (File.Exists(filename)) { ReadAttributeWav(filename, out  SamplingRate, out  ChannelsCount, out  BufSamplesCount); return; }
                 else if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { ReadAttributeVorbis(Path.ChangeExtension(filename, ".ogg"), out  SamplingRate, out  ChannelsCount, out BufSamplesCount); return; }
             }
-            else if (Path.GetExtension(filename) == ".ogg")
+            else if (Path.GetExtension(filename).ToLower() == ".ogg")
             {
                 if (File.Exists(filename)) { ReadAttributeVorbis(filename, out  SamplingRate, out  ChannelsCount, out BufSamplesCount); return; }
                 else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { ReadAttributeWav(Path.ChangeExtension(filename, ".wav"), out  SamplingRate, out  ChannelsCount, out  BufSamplesCount); return; }
