@@ -6,9 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace HatoWinLib
+namespace HatoLib
 {
-
     // ＞ このサンプルは、別アプリケーション(ファイラ等)からのファイルドロップを受け付けるC#.NET版のサンプルです。
     // ＞ http://homepage2.nifty.com/nonnon/SoftSample/CS.NET/SampleFileDrop.html
     // 出来たぞ・・・まじでか・・・
@@ -16,11 +15,10 @@ namespace HatoWinLib
     // ただ、64bitモードだとダメっぽいですね()
     // → SharpDXのコード見ながら修正しました
     //
-    // あと関係ないけど、RenderFormを継承したら突然フォームデザイナが表示されるようになって草
+    // あと関係ないけど、RenderFormを継承したら突然Visual Studioでフォームデザイナが表示されるようになって草
 
     public class DragDropHandler
     {
-
         // デリゲートの定義
         private delegate int D_DropWndProc(int hWnd, int uMsg, int wParam, int lParam);
         //public delegate int D_DropWndProc(int hWnd, int uMsg, int wParam, int lParam);
@@ -79,7 +77,7 @@ namespace HatoWinLib
 
 
         // 別アプリケーション(ファイラ等)からのドロップ許可開始
-        public void DropStart(int hWnd)
+        private void DropStart(int hWnd)
         {
             if (hWnd != 0)
             {
@@ -102,7 +100,7 @@ namespace HatoWinLib
         }
 
         // 別アプリケーション(ファイラ等)からのドロップ許可終了
-        public void DropEnd()
+        private void DropEnd()
         {
             if (Hook_hWnd != 0 && Msg_Proc != IntPtr.Zero)
             {
@@ -129,15 +127,6 @@ namespace HatoWinLib
             }
             else
             {
-                // その他のメッセージ
-                if (uMsg >= 0x8000)
-                {
-                    //System.Diagnostics.Debugger.Launch();
-                    System.IO.File.AppendAllText("debug.txt",
-                        "time = " + DateTime.Now.ToString() +
-                        ", pid = " + System.Diagnostics.Process.GetCurrentProcess().Id +
-                        ", uMsg = " + uMsg + "\r\n");
-                }
                 return CallWindowProc(Msg_Proc, hWnd, uMsg, wParam, lParam);
             }
         }

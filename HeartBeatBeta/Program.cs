@@ -1,5 +1,5 @@
 ﻿using HatoDraw;
-using HatoWinLib;
+using HatoLib;
 using HeartBeatCore;
 using System;
 using System.Collections.Generic;
