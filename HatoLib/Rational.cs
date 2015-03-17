@@ -98,8 +98,10 @@ namespace HatoLib
             }
         }
 
-        public Rational(double real_number)
+        public static Rational FromDouble(double real_number)
         {
+            long numerator;
+            long denominator;
             // なぜRationalを使おうと思ってしまったのか
 
             // 2^23 = 8388608 (単精度)なのでこれ以下にしたい感はある
@@ -109,8 +111,7 @@ namespace HatoLib
             // 4838400 = 1024 * 27 * 25 * 7
             if (real_number == Math.Round(real_number))
             {
-                numerator = (int)real_number;
-                denominator = 1;
+                return new Rational((long)real_number);
             }
             else
             {
@@ -143,47 +144,9 @@ namespace HatoLib
                     denominator = fr2.denominator;
                 }
 
-                // 正規化を行います。コピペです。
-                {
-                    long j;
-                    long n2 = numerator, d2 = denominator;
-
-                    if (numerator == 0)
-                    {
-                        denominator = 1;
-                        return;
-                    }
-                    if (numerator < 0)
-                    {
-                        n2 = -numerator;
-                    }
-                    if (denominator <= 0)
-                    {
-                        throw new Exception("分母が不正です at Frac(int nume, int deno)");
-                    }
-
-                    while ((d2 & 1) == 0 && (n2 & 1) == 0) { numerator >>= 1; denominator >>= 1; n2 >>= 1; d2 >>= 1; }
-                    while ((n2 & 1) == 0) { n2 >>= 1; }
-                    while ((d2 & 1) == 0) { d2 >>= 1; }
-
-                    j = 3;
-                    while ((d2 % j) == 0 && (n2 % j) == 0) { numerator /= j; denominator /= j; n2 /= j; d2 /= j; }
-                    while ((n2 % j) == 0) { n2 /= j; }
-                    while ((d2 % j) == 0) { d2 /= j; }
-
-                    j = 5;
-                    while ((d2 % j) == 0 && (n2 % j) == 0) { numerator /= j; denominator /= j; n2 /= j; d2 /= j; }
-                    while ((n2 % j) == 0) { n2 /= j; }
-                    while ((d2 % j) == 0) { d2 /= j; }
-
-                    for (j = d2; j >= 7; j--)
-                    {
-                        while ((d2 % j) == 0 && (n2 % j) == 0) { numerator /= j; denominator /= j; n2 /= j; d2 /= j; }
-                    }
-                }
-
                 // 整数部を足します。
-                numerator += ((long)seisuu_part) * denominator;
+
+                return new Rational(numerator, denominator) + (long)seisuu_part;
             }
         }
 

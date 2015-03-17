@@ -13,6 +13,7 @@ namespace HatoSound
 {
     public class SecondaryBuffer
     {
+        static List<int> LockObject = new List<int>();
         public int SamplingRate;
         public int BufSamplesCount;
         public int ChannelsCount;
@@ -89,20 +90,23 @@ namespace HatoSound
         /// <param name="filename"></param>
         private void CreateBuffer(HatoSoundDevice hsound)
         {
-            var waveFormat = new SharpDX.Multimedia.WaveFormat(SamplingRate, 16, ChannelsCount);
-
-            dsSecondaryBuffer = new SecondarySoundBuffer(hsound.dsound, new SoundBufferDescription()
+            lock (LockObject)  // これでどう？？？？
             {
-                Flags =
-                    BufferFlags.GetCurrentPosition2 |
-                    BufferFlags.ControlPositionNotify |
-                    BufferFlags.GlobalFocus |
-                    BufferFlags.ControlVolume |
-                    BufferFlags.StickyFocus,
-                BufferBytes = (BufSamplesCount * 16 / 8) * ChannelsCount,
-                Format = waveFormat,
-                AlgorithmFor3D = Guid.Empty
-            });
+                var waveFormat = new SharpDX.Multimedia.WaveFormat(SamplingRate, 16, ChannelsCount);
+
+                dsSecondaryBuffer = new SecondarySoundBuffer(hsound.dsound, new SoundBufferDescription()
+                {
+                    Flags =
+                        BufferFlags.GetCurrentPosition2 |
+                        BufferFlags.ControlPositionNotify |
+                        BufferFlags.GlobalFocus |
+                        BufferFlags.ControlVolume |
+                        BufferFlags.StickyFocus,
+                    BufferBytes = (BufSamplesCount * 16 / 8) * ChannelsCount,
+                    Format = waveFormat,
+                    AlgorithmFor3D = Guid.Empty
+                });
+            }
         }
         
         /// <summary>

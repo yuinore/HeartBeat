@@ -197,7 +197,7 @@ namespace HatoBMSLib
                 {
                     if (beat <= x.Key)
                     {
-                        return new Rational((beat - y.Key) / (x.Key - y.Key)) * (x.Value - y.Value) + y.Value;  // いつも使ってる線形補間の式だね！
+                        return Rational.FromDouble((beat - y.Key) / (x.Key - y.Key)) * (x.Value - y.Value) + y.Value;  // いつも使ってる線形補間の式だね！
                     }
                 }
 
@@ -205,7 +205,7 @@ namespace HatoBMSLib
                 y = x;
             }
 
-            return new Rational((beat - z.Key) / (y.Key - z.Key)) * (y.Value - z.Value) + z.Value;
+            return Rational.FromDouble((beat - z.Key) / (y.Key - z.Key)) * (y.Value - z.Value) + z.Value;
         }
 
         public double BeatToSeconds(double beat)
