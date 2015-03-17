@@ -47,32 +47,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\HatoBMSLib\HatoBMSLib.csproj">
-      <Project>{d7648545-0d27-4f77-8584-ce3fe3b6f44a}</Project>
-      <Name>HatoBMSLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HatoDraw\HatoDraw.csproj">
-      <Project>{bfea1d98-a55a-4e09-a6dc-eaa0c41460e7}</Project>
-      <Name>HatoDraw</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HatoLib\HatoLib.csproj">
-      <Project>{9c573aae-1884-4de0-854f-bc31f1fd65e0}</Project>
-      <Name>HatoLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HatoPainter\HatoPainter.csproj">
-      <Project>{7346c91f-817d-47ab-b584-fb05a34390ff}</Project>
-      <Name>HatoPainter</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HatoPlayer\HatoPlayer.csproj">
-      <Project>{94b5907d-6278-4d22-b95c-5d58dd5bed4f}</Project>
-      <Name>HatoPlayer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HatoSound\HatoSound.csproj">
-      <Project>{4135359a-29a0-47b8-8fc8-9d0c8af8ecf1}</Project>
-      <Name>HatoSound</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="bar1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -97,6 +71,32 @@
     <Content Include="silence20s.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HatoBMSLib\HatoBMSLib.csproj">
+      <Project>{d7648545-0d27-4f77-8584-ce3fe3b6f44a}</Project>
+      <Name>HatoBMSLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HatoDraw\HatoDraw.csproj">
+      <Project>{bfea1d98-a55a-4e09-a6dc-eaa0c41460e7}</Project>
+      <Name>HatoDraw</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HatoLib\HatoLib.csproj">
+      <Project>{9c573aae-1884-4de0-854f-bc31f1fd65e0}</Project>
+      <Name>HatoLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HatoPainter\HatoPainter.csproj">
+      <Project>{7346c91f-817d-47ab-b584-fb05a34390ff}</Project>
+      <Name>HatoPainter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HatoPlayer\HatoPlayer.csproj">
+      <Project>{94b5907d-6278-4d22-b95c-5d58dd5bed4f}</Project>
+      <Name>HatoPlayer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HatoSound\HatoSound.csproj">
+      <Project>{4135359a-29a0-47b8-8fc8-9d0c8af8ecf1}</Project>
+      <Name>HatoSound</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
