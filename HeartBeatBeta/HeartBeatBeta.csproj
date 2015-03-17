@@ -61,10 +61,6 @@
       <Project>{4135359a-29a0-47b8-8fc8-9d0c8af8ecf1}</Project>
       <Name>HatoSound</Name>
     </ProjectReference>
-    <ProjectReference Include="..\HatoWinLib\HatoWinLib.csproj">
-      <Project>{9dc36fe6-8432-49bf-80f9-44d69a18cd3e}</Project>
-      <Name>HatoWinLib</Name>
-    </ProjectReference>
     <ProjectReference Include="..\HeartBeatCore\HeartBeatCore.csproj">
       <Project>{abda5d8f-19bd-4fa8-906b-59f6bddf1207}</Project>
       <Name>HeartBeatCore</Name>

@@ -21,6 +21,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>true</UseVSHostingProcess>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -49,6 +50,7 @@
     <Compile Include="AudioFileReader.cs" />
     <Compile Include="Complex.cs" />
     <Compile Include="DictionaryExtension.cs" />
+    <Compile Include="DragDropHandler.cs" />
     <Compile Include="HatoPath.cs" />
     <Compile Include="LazyMatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -39,9 +39,14 @@ namespace HeartBeatCore
         double PlayFrom = 0.0;
 
         /// <summary>
-        /// 楽曲の開始前にファイル読み込みを行うファイルサイズ
+        /// 楽曲の開始前にファイル読み込みを行うwavファイルサイズ
         /// </summary>
-        long PreLoadingFileSize = 524288;
+        long PreLoadingWaveFileSize = 524288;
+
+        /// <summary>
+        /// 楽曲の開始前にファイル読み込みを行うoggファイルサイズ
+        /// </summary>
+        long PreLoadingOggFileSize = 100000;
 
         /// <summary>
         /// 楽曲の開始前にファイル読み込みを行うフェーズのタイムアウト時間。
@@ -68,6 +73,48 @@ namespace HeartBeatCore
             }
         }
 
+        double tempRHS = 1.0;
+
+        bool fast;  // fast再生だとさすがに間に合わなかったり。
+        public bool Fast
+        {
+            get
+            {
+                return fast;
+            }
+            set
+            {
+                if (fast != value)
+                {
+                    if (value)
+                    {
+                        CurrentSongPosition();
+                        tempRHS *= 5.0;
+                        WavFileLoadingDelayTime *= 5.0;
+                    }
+                    else
+                    {
+                        CurrentSongPosition();
+                        tempRHS /= 5.0;
+                        WavFileLoadingDelayTime /= 5.0;
+                    }
+                    fast = value;
+                }
+            }
+        }
+
+        public double UserHiSpeed
+        {
+            get
+            {
+                return skin.UserHiSpeed;
+            }
+            set
+            {
+                skin.UserHiSpeed = value; ;
+            }
+        }
+
         //******************************************//
 
         private BMSStruct b;  // ガベージコレクタに回収されてはならないんだぞ（←は？）
@@ -76,7 +123,7 @@ namespace HeartBeatCore
         private GameRegulation regulation = new HeartBeatRegulation();
 
         // TODO: これ↓の初期化処理
-        private Skin skin = new SimpleChipSkin();
+        public Skin skin = new SimpleChipSkin();
 
         PlayingState ps = new PlayingState();
 
@@ -96,18 +143,26 @@ namespace HeartBeatCore
 
         Stopwatch s = new Stopwatch();
 
-        string ConsoleMessage = "Waiting...\n";
+        StringBuilder ConsoleMessage = new StringBuilder("Waiting...\n");
         string LineMessage = "\n";
 
-        private void TraceMessage(string text)
+        private void TraceMessage(string text, bool cons = true)
         {
-            ConsoleMessage = text + "\n" + ConsoleMessage;  // StringBuilder使えない
-            Console.WriteLine(text);
+            ConsoleMessage.Insert(0, text + "\n");
+
+            if (cons)
+            {
+                Console.WriteLine(text);
+            }
         }
-        private void TraceWarning(string text)
+        private void TraceWarning(string text, bool cons = true)
         {
-            ConsoleMessage = text + "\n" + ConsoleMessage;  // StringBuilder使えない
-            Console.WriteLine(text);
+            ConsoleMessage.Insert(0, text + "\n");
+
+            if (cons)
+            {
+                Console.WriteLine(text);
+            }
         }
 
         /// <summary>
@@ -148,8 +203,11 @@ namespace HeartBeatCore
                    if (s != null && s.ElapsedMilliseconds != 0)
                    {
                        countdraw++;
-                       LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 10 / s.ElapsedMilliseconds) / 10.0 + "fps " +
-                           "t=" + Math.Floor(CurrentSongPosition() * 10) / 10 + "s\n";
+                       LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 10 / s.ElapsedMilliseconds) / 10.0 + "fps\n" +
+                           "m=" + Math.Floor((double)b.transp.BeatToMeasure(b.transp.SecondsToBeat(CurrentSongPosition())) * 10) / 10 + "s\n" +
+                           "b=" + Math.Floor(b.transp.SecondsToBeat(CurrentSongPosition()) * 10) / 10 + "s\n" +
+                           "t=" + Math.Floor(CurrentSongPosition() * 10) / 10 + "s\n" +
+                           "d=" + Math.Floor(b.transp.BeatToDisplacement(b.transp.SecondsToBeat(CurrentSongPosition()) * 10)) / 10 + "s\n";
                    }
 
                    rt.ClearBlack();
@@ -159,13 +217,31 @@ namespace HeartBeatCore
                        onPaint(rt);
                    }
 
-                   rt.DrawText(font, LineMessage + ConsoleMessage, 4, 4);
+                   try
+                   {
+                       rt.DrawText(font, LineMessage + ConsoleMessage.ToString(), 4, 4);  // tostringいらない！？
+                   }
+                   catch
+                   {
+                   }
                });
         }
 
+        double lastelapsed = 0;
+        double sumelapsed = 0;
+        List<int> songposLock = new List<int>();
         double CurrentSongPosition()
         {
-            return s.ElapsedMilliseconds / 1000.0 + PlayFrom - DelayingTimeBeforePlay;
+            double ret;
+            lock (songposLock)  // ←超超超超超重要（というかそんなにみんなCurrentSongPosition()呼んでるんですか？？）
+            {
+                double ms = s.ElapsedMilliseconds;
+                sumelapsed += (ms - lastelapsed) * tempRHS / 1000.0;
+                lastelapsed = ms;
+                ret = sumelapsed;
+            }
+            return ret + PlayFrom - DelayingTimeBeforePlay;
+
         }
 
         /// <summary>
@@ -247,7 +323,7 @@ namespace HeartBeatCore
             };
 
             b = new BMSStruct(path);
-            TraceWarning(b.Message);
+            TraceWarning(b.Message, false);
 
             ps.MaximumAcceptance = b.PlayableBMObjects.Count();
             ps.MaximumExScore = ps.MaximumAcceptance * regulation.MaxScorePerObject;
@@ -273,12 +349,12 @@ namespace HeartBeatCore
             TraceMessage("Timer Started.");
 
             double tempomedian = b.CalcTempoMedian(0.667);  // 3分の2くらいが低速だったらそっちに合わせようかな、という気持ち
-            skin.HiSpeed = (150.0 / tempomedian);
+            skin.BaseHiSpeed = (150.0 / tempomedian);
 
             Func<double, double> PosOrZero = (x) => (x < 0) ? 0 : x;
 
             #region PlayFromとDelayingTimeBeforePlayの調整
-            PlayFrom = b.transp.BeatToSeconds(b.transp.MeasureToBeat(new Rational(startmeasure)));
+            PlayFrom = b.transp.MeasureToSeconds(new Rational(startmeasure));
 
             // ↓謎のコードその1 (演奏開始時刻を早めるタイプの最適化)
             {
@@ -327,9 +403,16 @@ namespace HeartBeatCore
                         {
                             hplayer.PrepareSound(sb.Wavid);
                         }
-                        else if (hplayer.AudioFileSize(sb.Wavid) >= PreLoadingFileSize)  // 512kB以上なら先読み
+                        else if (b.WavDefinitionList.ContainsKey(sb.Wavid))
                         {
-                            hplayer.PrepareSound(sb.Wavid);
+                            var fn = AudioFileReader.FileName(b.ToFullPath(b.WavDefinitionList[sb.Wavid]));
+                            
+                            if (fn != null &&
+                                ((Path.GetExtension(fn).ToLower() == ".wav" && (new FileInfo(fn)).Length >= PreLoadingWaveFileSize) ||
+                                (Path.GetExtension(fn).ToLower() == ".ogg" && (new FileInfo(fn)).Length >= PreLoadingOggFileSize)))  // 512kB以上なら先読み
+                            {
+                                hplayer.PrepareSound(sb.Wavid);
+                            }
                         }
 
                         // TraceMessage("    Preload " + sb.Wavid);
@@ -389,27 +472,16 @@ namespace HeartBeatCore
 
                        double AppearDisplacement = current.Disp + 4.0;
 
-                       #region BGA表示
-                       if (bga_back != null)
-                       {
-                           rt.DrawBitmap(bga_back, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_back.Height);
-                       }
-                       if (bga_front != null)
-                       {
-                           rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
-                       }
-                       #endregion
-
                        #region オブジェ範囲の更新
                        for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[left];
-                           if (x.Disp >= current.Disp) break;
+                           if (x.Disp >= current.Disp - skin.EyesightDisplacementAfter) break;
                        }
                        for (; right < b.PlayableBMObjects.Count; right++)  // 視界に出現する箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[right];
-                           if (x.Disp >= AppearDisplacement) break;
+                           if (x.Disp >= current.Disp + skin.EyesightDisplacementBefore) break;
                        }
                        for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 判定ゾーンから消える箇所、left <= right
                        {
@@ -513,12 +585,23 @@ namespace HeartBeatCore
                        // 前景・終了処理
                        skin.DrawFront(rt, b, ps);
                        #endregion
+
+                       #region BGA表示
+                       if (bga_back != null)
+                       {
+                           rt.DrawBitmap(bga_back, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_back.Height);
+                       }
+                       if (bga_front != null)
+                       {
+                           rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
+                       }
+                       #endregion
                    };
             }
             #endregion
 
             #region wav/bmpの読み込み・再生
-            //await Task.Run(() => 
+            //await Task.Run(() => // それぞれのラムダ式の中のTask.Delayにawaitが付いていることで、非同期に実行できる。
             Parallel.Invoke(
                 async () =>  // wavの読み込み
                 {
@@ -531,7 +614,10 @@ namespace HeartBeatCore
 
                         if (x.Seconds >= PlayFrom)
                         {
+                            // awaitしない！！ するな！！
+                            // って思ったけど、awaitしなきゃいけない程重要な処理じゃないんですよね・・・
                             await Task.Run(() => hplayer.PrepareSound(x.Wavid));
+                            // Parallel.Invoke(async () => await Task.Run(() => hplayer.PrepareSound(x.Wavid)));
                         }
                     }
                 },
@@ -558,18 +644,32 @@ namespace HeartBeatCore
                                 {
                                     dictbmp[x.Wavid] = null;  // 同じ音の多重読み込みを防止
                                 }
-
+                                
+                                //Parallel.Invoke(async () => await Task.Run(() =>
                                 await Task.Run(() =>
                                 {
                                     try
                                     {
-                                        sbuf = new BitmapData(hdraw.HatoRenderTarget, b.ToFullPath(fn));
+                                        string[] staticimageExt = { ".bmp", ".png", ".gif", ".tiff", ".jpg" };  // 動画ファイルが除外できれば何でもいい
 
-                                        lock (dictbmp)
+                                        string ext = Path.GetExtension(fn).ToLower();
+
+                                        if (staticimageExt.Contains(ext))
                                         {
-                                            dictbmp[x.Wavid] = sbuf;
-                                            //TraceMessage("    " + b.WavDefinitionList[x.Wavid] + " Load Completed (" + dict.Count + "/" + b.WavDefinitionList.Count + ")");
+                                            sbuf = new BitmapData(hdraw.HatoRenderTarget, b.ToFullPath(fn));
+
+                                            lock (dictbmp)
+                                            {
+                                                dictbmp[x.Wavid] = sbuf;
+                                                //TraceMessage("    " + b.WavDefinitionList[x.Wavid] + " Load Completed (" + dict.Count + "/" + b.WavDefinitionList.Count + ")");
+                                            }
                                         }
+                                        else
+                                        {
+                                            // 動画ファイルの可能性が大きい
+                                            TraceWarning("  Unknown File Format: " + fn);
+                                        }
+
                                     }
                                     catch (Exception e)
                                     {
@@ -683,7 +783,8 @@ namespace HeartBeatCore
                         if (x.Seconds >= PlayFrom && autoplay && !x.IsLandmine())
                         {
                             int keyid = (x.BMSChannel - 36) % 72;
-                            double CSP = CurrentSongPosition();
+                            //double CSP = CurrentSongPosition();  // ベンチマーク？用
+                            double CSP = x.Seconds;  // 見栄え優先で行こう
 
                             ps.LastKeyEvent = new KeyEvent
                             {

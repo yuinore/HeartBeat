@@ -88,10 +88,6 @@
       <Project>{9c573aae-1884-4de0-854f-bc31f1fd65e0}</Project>
       <Name>HatoLib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\HatoWinLib\HatoWinLib.csproj">
-      <Project>{9dc36fe6-8432-49bf-80f9-44d69a18cd3e}</Project>
-      <Name>HatoWinLib</Name>
-    </ProjectReference>
     <ProjectReference Include="..\HeartBeatCore\HeartBeatCore.csproj">
       <Project>{abda5d8f-19bd-4fa8-906b-59f6bddf1207}</Project>
       <Name>HeartBeatCore</Name>
