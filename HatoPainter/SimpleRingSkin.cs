@@ -17,6 +17,7 @@ namespace HatoPainter
         private BitmapData ring1;
         private BitmapData ring2;
         private BitmapData ring3;
+        private BitmapData ring4;
         private BitmapData bar;
         private BitmapData bar_white;
         private BitmapData judgement;
@@ -98,6 +99,7 @@ namespace HatoPainter
             ring1 = new BitmapData(rt, HatoPath.FromAppDir("ring1.png"));
             ring2 = new BitmapData(rt, HatoPath.FromAppDir("ring2.png"));
             ring3 = new BitmapData(rt, HatoPath.FromAppDir("ring3.png"));
+            ring4 = new BitmapData(rt, HatoPath.FromAppDir("ring4.png"));
             bar = new BitmapData(rt, HatoPath.FromAppDir("bar1.png"));
             bar_white = new BitmapData(rt, HatoPath.FromAppDir( "bar1_white.png"));
 
@@ -186,7 +188,7 @@ namespace HatoPainter
 
                 if (posdisp > 0) posdisp = 0;
 
-                var bmp = x.Terminal == null ? ring1 : ring3;
+                var bmp = x.Terminal == null ? (x.IsLandmine() ? ring4 : ring1) : ring3;
                 float srcpos = x.Terminal == null ? 0 : 512 - 64;  // ひどい・・・
 
                 //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
@@ -200,11 +202,14 @@ namespace HatoPainter
                     srcpos, srcpos,
                     64, 64,
                     (float)Math.Exp(+1.8 * posdisp) * 1.0f * opac);
-                rt.DrawBitmapSrc(bar,
-                    xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 16f,
-                    0, 0,
-                    512, 32,
-                    (float)Math.Exp(+1.8 * posdisp) * 0.5f * opac);
+                if (!x.IsLandmine())
+                {
+                    rt.DrawBitmapSrc(bar,
+                        xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 16f,
+                        0, 0,
+                        512, 32,
+                        (float)Math.Exp(+1.8 * posdisp) * 0.5f * opac);
+                }
             }
             else
             {
@@ -224,7 +229,7 @@ namespace HatoPainter
                     {
                         if (idx < 32)
                         {
-                            var bmp = x.Terminal == null ? ring1 : ring2;
+                            var bmp = x.Terminal == null ? ring1 : x.IsLandmine() ? ring4 : ring2;
 
                             //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
                             rt.DrawBitmapSrc(bmp,
