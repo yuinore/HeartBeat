@@ -28,11 +28,10 @@ namespace HatoLib
         /// <summary>1チャンネルあたりのサンプル数です。SamplesCount / (double)SamplingRate が再生時間(秒)です。</summary>
         public long SamplesCount { get; private set; }
 
-        private long headerPosition = 44;
+        private long headerPosition;
         private Stream strm;
 
         #region IDisposableっぽいもの
-
         private bool disposed = false;
 
         ~WaveFileReader()
@@ -95,7 +94,6 @@ namespace HatoLib
         {
             Dispose();
         }
-
         #endregion
 
         public WaveFileReader(String filename) :
@@ -225,6 +223,7 @@ namespace HatoLib
         {
             return ReadAllSamples(new FileStream(filename, FileMode.Open, FileAccess.Read));
         }
+
         public static float[][] ReadAllSamples(Stream strm)
         {
             WaveFileReader wr = new WaveFileReader(strm);

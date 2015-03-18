@@ -13,45 +13,57 @@ namespace HatoLib
     /// </summary>
     public class VorbisFileReader
     {
+        private static List<int> lockObject = new List<int>();
+
         public VorbisFileReader(Stream strm)
         {
             throw new NotImplementedException();
         }
 
+        public static float[][] ReadAllSamples(string filename)
+        {
+            lock (lockObject)
+            {
+                return VorbisFileReader.ReadAllSamples(new FileStream(filename, FileMode.Open, FileAccess.Read));
+            }
+        }
+
         public static float[][] ReadAllSamples(Stream strm)
         {
-            float[] buf; 
-            int ch;
-
-            try
+            lock (lockObject)
             {
-                using (var vreader = new NVorbis.VorbisReader(strm, true))
+                float[] buf;
+                int ch;
+
+                try
                 {
-                    ch = vreader.Channels;
-                    buf = new float[vreader.TotalSamples * ch];
-                    vreader.ReadSamples(buf, 0, (int)(vreader.TotalSamples * ch));
+                    using (var vreader = new NVorbis.VorbisReader(strm, true))
+                    {
+                        ch = vreader.Channels;
+                        buf = new float[vreader.TotalSamples * ch];
+                        vreader.ReadSamples(buf, 0, (int)(vreader.TotalSamples * ch));
+                    }
 
+                    // ↓謎の変換作業↓
+
+                    float[][] buf2 = new float[ch][];
+
+                    for (int i = 0; i < ch; i++)
+                    {
+                        buf2[i] = new float[buf.Length / ch];
+                    }
+
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        buf2[i % ch][i / ch] = buf[i];
+                    }
+
+                    return buf2;
                 }
-
-                // ↓謎の変換作業↓
-
-                float[][] buf2 = new float[ch][];
-
-                for (int i = 0; i < ch; i++)
+                catch
                 {
-                    buf2[i] = new float[buf.Length / ch];
+                    return new float[][] { new float[] { 0 } };  // ひどすぎる
                 }
-
-                for (int i = 0; i < buf.Length; i++)
-                {
-                    buf2[i % ch][i / ch] = buf[i];
-                }
-
-                return buf2;
-            }
-            catch
-            {
-                return new float[][] { new float[] { 0 } };  // ひどすぎる
             }
         }
 

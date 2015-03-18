@@ -204,10 +204,10 @@ namespace HeartBeatCore
                    {
                        countdraw++;
                        LineMessage = "Ave " + Math.Round(countdraw * 1000.0 * 10 / s.ElapsedMilliseconds) / 10.0 + "fps\n" +
-                           "m=" + Math.Floor((double)b.transp.BeatToMeasure(b.transp.SecondsToBeat(CurrentSongPosition())) * 10) / 10 + "s\n" +
-                           "b=" + Math.Floor(b.transp.SecondsToBeat(CurrentSongPosition()) * 10) / 10 + "s\n" +
-                           "t=" + Math.Floor(CurrentSongPosition() * 10) / 10 + "s\n" +
-                           "d=" + Math.Floor(b.transp.BeatToDisplacement(b.transp.SecondsToBeat(CurrentSongPosition()) * 10)) / 10 + "s\n";
+                           "m=" + String.Format("{0:0.00}", (double)b.transp.BeatToMeasure(b.transp.SecondsToBeat(CurrentSongPosition()))) +
+                           ", b=" + String.Format("{0:0.00}", b.transp.SecondsToBeat(CurrentSongPosition())) +
+                           ", t=" + String.Format("{0:0.00}", CurrentSongPosition()) +
+                           ", d=" + String.Format("{0:0.00}", b.transp.BeatToDisplacement(b.transp.SecondsToBeat(CurrentSongPosition()))) + "s\n";
                    }
 
                    rt.ClearBlack();
@@ -241,7 +241,6 @@ namespace HeartBeatCore
                 ret = sumelapsed;
             }
             return ret + PlayFrom - DelayingTimeBeforePlay;
-
         }
 
         /// <summary>
@@ -444,6 +443,7 @@ namespace HeartBeatCore
             var silence = hplayer.LoadAudioFileOrGoEasy(HatoPath.FromAppDir("silence20s.wav"));
             silence.StopAndPlay();  // 無音を再生させて、プライマリバッファが稼働していることを保証させる
 
+            // ↓約150行
             #region 描画処理（長い）
             {
                 int left = 0;
@@ -600,6 +600,7 @@ namespace HeartBeatCore
             }
             #endregion
 
+            // ↓約200行
             #region wav/bmpの読み込み・再生
             //await Task.Run(() => // それぞれのラムダ式の中のTask.Delayにawaitが付いていることで、非同期に実行できる。
             Parallel.Invoke(

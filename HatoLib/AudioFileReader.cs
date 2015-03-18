@@ -9,25 +9,24 @@ namespace HatoLib
 {
     public class AudioFileReader
     {
-
         public static bool TryToReadAllSamples(string filename, out float[][] buf)
         {
             buf = null;
 
             if (Path.GetExtension(filename).ToLower() == ".wav")
             {
-                if (File.Exists(filename)) { buf = ReadAllSamplesWav(filename); return true; }
-                else if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { buf = ReadAllSamplesVorbis(Path.ChangeExtension(filename, ".ogg")); return true; }
+                if (File.Exists(filename)) { buf = WaveFileReader.ReadAllSamples(filename); return true; }
+                else if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { buf = VorbisFileReader.ReadAllSamples(Path.ChangeExtension(filename, ".ogg")); return true; }
             }
             else if (Path.GetExtension(filename).ToLower() == ".ogg")
             {
-                if (File.Exists(filename)) { buf = ReadAllSamplesVorbis(filename); return true; }
-                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { buf = ReadAllSamplesWav(Path.ChangeExtension(filename, ".wav")); return true; }
+                if (File.Exists(filename)) { buf = VorbisFileReader.ReadAllSamples(filename); return true; }
+                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { buf = WaveFileReader.ReadAllSamples(Path.ChangeExtension(filename, ".wav")); return true; }
             }
             else
             {
-                if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { buf = ReadAllSamplesVorbis(Path.ChangeExtension(filename, ".ogg")); return true; }
-                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { buf = ReadAllSamplesWav(Path.ChangeExtension(filename, ".wav")); return true; }
+                if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { buf = VorbisFileReader.ReadAllSamples(Path.ChangeExtension(filename, ".ogg")); return true; }
+                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { buf = WaveFileReader.ReadAllSamples(Path.ChangeExtension(filename, ".wav")); return true; }
             }
 
             return false;
@@ -47,20 +46,8 @@ namespace HatoLib
             }
         }
 
-        private static float[][] ReadAllSamplesWav(string filename)
-        {
-            return WaveFileReader.ReadAllSamples(new FileStream(filename, FileMode.Open, FileAccess.Read));
-        }
-
-        private static float[][] ReadAllSamplesVorbis(string filename)
-        {
-            return VorbisFileReader.ReadAllSamples(new FileStream(filename, FileMode.Open, FileAccess.Read));
-        }
-
-
         public static void ReadAttribute(string filename, out int SamplingRate, out int ChannelsCount, out int BufSamplesCount)
         {
-
             if (Path.GetExtension(filename).ToLower() == ".wav")
             {
                 if (File.Exists(filename)) { ReadAttributeWav(filename, out  SamplingRate, out  ChannelsCount, out  BufSamplesCount); return; }
