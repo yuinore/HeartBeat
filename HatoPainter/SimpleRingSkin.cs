@@ -83,7 +83,7 @@ namespace HatoPainter
             int stepN = 4;
             float RSP = RingShowingPeriodByMeasure;  // 長すぎる変数名はダメ
             float step = ((float)Math.Floor((((float)m + 1025 + phase * RSP) % (RSP * stepN)) / RSP) - (stepN - 1.0f) / 2) / stepN;  // おおよそ -0.5～0.5
-            return (((float)m + 1025 + 0 * RSP) % RSP - 0 * RSP) / RSP + step * 0.125f;
+            return (((float)m + 1025 + 0 * RSP) % RSP - 0 * RSP) / RSP + step * 0.20f;
         }
 
         public override void Load(RenderTarget rt, BMSStruct b)
@@ -191,17 +191,17 @@ namespace HatoPainter
 
                 //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
                 rt.DrawBitmapSrc(bmp,
-                    xpos - 32f + 16f + (float)posdisp * 25f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 32f,
+                    xpos - 32f + 16f + (float)posdisp * 25f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f,
                     srcpos, srcpos,
                     64, 64,
                     (float)Math.Exp(+1.8 * posdisp) * 1.0f * opac);
                 rt.DrawBitmapSrc(bmp,
-                    xpos - 32f + 16f - (float)posdisp * 25f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 32f,
+                    xpos - 32f + 16f - (float)posdisp * 25f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f,
                     srcpos, srcpos,
                     64, 64,
                     (float)Math.Exp(+1.8 * posdisp) * 1.0f * opac);
                 rt.DrawBitmapSrc(bar,
-                    xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 16f,
+                    xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 16f,
                     0, 0,
                     512, 32,
                     (float)Math.Exp(+1.8 * posdisp) * 0.5f * opac);
@@ -228,12 +228,12 @@ namespace HatoPainter
 
                             //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
                             rt.DrawBitmapSrc(bmp,
-                                xpos - 32f + 16f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 32f,
+                                xpos - 32f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f,
                                 idx % 8 * 64, idx / 8 * 64,
                                 64, 64,
                                 1.0f);
                             rt.DrawBitmapSrc(bar,
-                                xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 16f,
+                                xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 16f,
                                 0, idx / 2 * 32,
                                 512, 32,
                                 0.1f);
@@ -243,7 +243,7 @@ namespace HatoPainter
                             if (score < 0) score = 0;
 
                             rt.DrawBitmapSrc(judgement,
-                                xpos - 64f + 16f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 32f + 39f,
+                                xpos - 64f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f + 39f,
                                 idx / 2 % 2 * 128, (3 - score) * 64,
                                 128, 64,
                                 1.0f, 1.0f);
@@ -255,24 +255,30 @@ namespace HatoPainter
                         float opac2 = 0.1f - 0.01f * (float)Math.Sin(2 * 3.14 * 10 * ps.Current.Seconds);
 
                         double start = Math.Min(x.BrokeAt, x.Seconds);
+
+                        if (x.Terminal.Beat - x.Beat < 2.0)
+                        {
+                            start = b.transp.BeatToSeconds(x.Terminal.Beat - 2);
+                        }
+
                         idx = (int)((ps.Current.Seconds - start) / (x.Terminal.Seconds - start) * 64.0);
                         if (idx < 0) idx = 0;
                         if (idx >= 64) idx = 63;  // いらない
 
                         //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
                         rt.DrawBitmapSrc(ring3,
-                            xpos - 32f + 16f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 32f,
+                            xpos - 32f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f,
                             512 -  64, 512 - 64,
                             64, 64,
                             1.0f);
                         rt.DrawBitmapSrc(ring3,
-                            xpos - 32f + 16f + ((1 - 1.4f) * 32), -MeasureToYPos(x.Measure, 0) * 360 + 420f - 32f + ((1 - 1.4f) * 32),
+                            xpos - 32f + 16f + ((1 - 1.4f) * 32), -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f + ((1 - 1.4f) * 32),
                             idx % 8 * 64, idx / 8 * 64,
                             64, 64,
                             1.0f,
                             1.4f);
                         rt.DrawBitmapSrc(bar,
-                            xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 360 + 420f - 16f,
+                            xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 16f,
                             0, 0,
                             512, 32,
                             opac2);
@@ -299,7 +305,7 @@ namespace HatoPainter
                 if (((int)(displacement * 30)) < 16)
                 {
                     rt.DrawBitmapSrc(bar_white,
-                        xpos2 - 256f + 16f, -(MeasureToYPos(m, +1) -1) * 360 + 420f - 8f,
+                        xpos2 - 256f + 16f, -(MeasureToYPos(m, +1) - 1) * 320 + 400f - 8f,
                         //0, 0 + 12, 
                         0, ((int)(displacement * 30)) * 16,
                         512, 16,
@@ -308,7 +314,7 @@ namespace HatoPainter
                 if (((int)(displacement * 30)) < 16)
                 {
                     rt.DrawBitmapSrc(bar_white,
-                        xpos2 - 256f + 16f, -MeasureToYPos(m, 0) * 360 + 420f - 8f,
+                        xpos2 - 256f + 16f, -MeasureToYPos(m, 0) * 320 + 400f - 8f,
                         //0, 0 + 12,
                         0, ((int)(displacement * 30)) * 16,
                         512, 16,
@@ -317,7 +323,7 @@ namespace HatoPainter
                 if (((int)(displacement * 30)) < 16)
                 {
                     rt.DrawBitmapSrc(bar_white,
-                        xpos2 - 256f + 16f, -(MeasureToYPos(m, -1) + 1) * 360 + 420f - 8f,
+                        xpos2 - 256f + 16f, -(MeasureToYPos(m, -1) + 1) * 320 + 400f - 8f,
                         //0, 0 + 12,
                         0, ((int)(displacement * 30)) * 16,
                         512, 16,
