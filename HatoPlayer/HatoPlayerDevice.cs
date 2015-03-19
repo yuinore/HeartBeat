@@ -13,6 +13,9 @@ namespace HatoPlayer
 {
     public class HatoPlayerDevice
     {
+        //************* 設定 *************
+        public bool DefaultKeySound = true;
+
         //************* デバイス *************
         BMSStruct b;
         HatoSoundDevice hsound;
@@ -20,10 +23,14 @@ namespace HatoPlayer
         //************* データとか *************
         Dictionary<int, SecondaryBuffer> WavidToBuffer = new Dictionary<int, SecondaryBuffer>();
 
+        SecondaryBuffer defkey;
+
         public HatoPlayerDevice(Form form, BMSStruct b)
         {
             this.b = b;
             hsound = new HatoSoundDevice(form);
+
+            defkey = new SecondaryBuffer(hsound, HatoPath.FromAppDir("key.ogg"));
         }
 
         /// <summary>
@@ -125,6 +132,7 @@ namespace HatoPlayer
 
         /// <summary>
         /// wavidに割り当てられた音を直ちに最初から再生します。
+        /// 音声を再生することが出来た場合、trueを返します。（暫定）
         /// </summary>
         /// <param name="wavid">BMSで定義されたwavid</param>
         /// <param name="isKeysound">ユーザーの操作により再生された音であればtrue</param>
@@ -139,8 +147,23 @@ namespace HatoPlayer
             }
             else
             {
-                return false;
-                //TraceWarning("  Warning : " + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + " is not loaded yet...");
+                string fn;
+                if (b.WavDefinitionList.TryGetValue(wavid, out fn))
+                {
+                    // WAV定義はされていたが、ファイルが存在しなかったりファイルの読み込みが終了していなかったりした場合
+                    // （ファイルが存在しなかった場合を含む）
+                    return false;
+                }
+                else
+                {
+                    // WAV定義がされていなかった場合
+                    if (isKeysound && DefaultKeySound)
+                    {
+                        defkey.StopAndPlay(-10.0);
+                        return true;  // 暫定
+                    }
+                    return false;  // 暫定
+                }
             }
         }
     }

@@ -305,7 +305,7 @@ namespace HeartBeatCore
 
                     if (keysound.TryGetValue(36 + (int)keyid, out wavid))
                     {
-                        if (!hplayer.PlaySound(wavid, false))
+                        if (!hplayer.PlaySound(wavid, true))
                         {
                             if (b.WavDefinitionList.ContainsKey(wavid))
                             {
