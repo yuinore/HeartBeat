@@ -50,6 +50,7 @@ namespace HeartBeatCore
 
         /// <summary>
         /// 楽曲の開始前にファイル読み込みを行うフェーズのタイムアウト時間。
+        /// HDDの速度が極端に遅かったりするとタイムアウトする。
         /// </summary>
         int PreLoadingTimeoutMilliSeconds = 20000;
 
@@ -63,14 +64,8 @@ namespace HeartBeatCore
         // TODO: Skinへの移行
         public float RingShowingPeriodByMeasure
         {
-            get
-            {
-                return skin.RingShowingPeriodByMeasure;
-            }
-            set
-            {
-                skin.RingShowingPeriodByMeasure = value;
-            }
+            get { return skin.RingShowingPeriodByMeasure; }
+            set { skin.RingShowingPeriodByMeasure = value; }
         }
 
         double tempRHS = 1.0;
@@ -78,23 +73,20 @@ namespace HeartBeatCore
         bool fast;  // fast再生だとさすがに間に合わなかったり。
         public bool Fast
         {
-            get
-            {
-                return fast;
-            }
+            get { return fast; }
             set
             {
                 if (fast != value)
                 {
                     if (value)
                     {
-                        CurrentSongPosition();
+                        CurrentSongPosition();  // 経過時間の更新
                         tempRHS *= 5.0;
                         WavFileLoadingDelayTime *= 5.0;
                     }
                     else
                     {
-                        CurrentSongPosition();
+                        CurrentSongPosition();  // 経過時間の更新
                         tempRHS /= 5.0;
                         WavFileLoadingDelayTime /= 5.0;
                     }
@@ -105,14 +97,8 @@ namespace HeartBeatCore
 
         public double UserHiSpeed
         {
-            get
-            {
-                return skin.UserHiSpeed;
-            }
-            set
-            {
-                skin.UserHiSpeed = value; ;
-            }
+            get { return skin.UserHiSpeed; }
+            set { skin.UserHiSpeed = value; }
         }
 
         //******************************************//
@@ -125,7 +111,7 @@ namespace HeartBeatCore
         // TODO: これ↓の初期化処理
         public Skin skin = new SimpleRingSkin();
 
-        PlayingState ps = new PlayingState();
+        PlayingState ps = new PlayingState();  // スキンにデータを受け渡すのに使う
 
         InputHandler ih;
 
@@ -261,13 +247,14 @@ namespace HeartBeatCore
 
             // キーに割り当てられているキー音のwavid
             Dictionary<int, int> keysound = new Dictionary<int, int>();
+            bool keysoundReady = false;
 
             ih = new InputHandler(this, form);
             ih.KeyDown += (o, keyid) =>
             {
                 int wavid;
 
-                if (keysound.TryGetValue(keyid, out wavid))
+                if (keysoundReady && keysound.TryGetValue(keyid, out wavid))
                 {
                     if (!hplayer.PlaySound(wavid, true))
                     {
@@ -293,6 +280,13 @@ namespace HeartBeatCore
 
             ps.MaximumAcceptance = b.PlayableBMObjects.Count();
             ps.MaximumExScore = ps.MaximumAcceptance * regulation.MaxScorePerObject;
+
+            foreach (var x in b.SoundBMObjects)
+            {
+                if(x.BMSChannel != 0x01 && !keysound.ContainsKey(x.Wavid)) {
+                    keysound[x.Keyid] = x.Wavid;
+                }
+            }
 
             {
                 string str;
@@ -362,6 +356,10 @@ namespace HeartBeatCore
                 // ああ、StartNewすればいいのか・・・
                 Task task = Task.Factory.StartNew(() =>
                 {
+                    Parallel.ForEach(keysound, (kvpair) =>
+                    {
+                        hplayer.PrepareSound(kvpair.Value);
+                    });
                     Parallel.ForEach(b.SoundBMObjects, (sb) =>
                     { 
                         // 等号が入るかどうかに注意な！
@@ -402,6 +400,8 @@ namespace HeartBeatCore
                 }
             }
             #endregion
+
+            keysoundReady = true;
 
             loadingTime.Stop();
 

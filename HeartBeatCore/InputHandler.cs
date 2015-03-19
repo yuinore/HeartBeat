@@ -14,14 +14,19 @@ namespace HeartBeatCore
         /// <summary>
         /// キーが押されたときに発生します。第２引数は対応するkeyidです。
         /// このイベントは、キーが押したままにされていても１度しか発生しません。
+        /// このイベントの中で、キー音の再生を行います。
         /// </summary>
         public EventHandler<int> KeyDown;  // キー音の再生等を行う
+
         /// <summary>
         /// キーが離されたときに発生します。第２引数は対応するkeyidです。
+        /// このイベントの中で、キー音の停止を行います。
         /// </summary>
         public EventHandler<int> KeyUp;
 
-        // 各キーidに対応する、最後に押したキーの時刻。キーフラッシュ用。
+        /// <summary>
+        /// 各キーidに対応する、最後に押したキーの時刻。キーフラッシュ用。
+        /// </summary>
         public Dictionary<int, double> LastKeyEventDict = new Dictionary<int, double>();
 
         // キー入力キューで、フレームごとに消化される。（描画に直接用いることはない）

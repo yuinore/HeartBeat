@@ -113,7 +113,8 @@ namespace HatoBMSLib
         /// BMSの音声再生のために用います。
         /// ・BGM(#mmm01:)に対してはtrueを返します。
         /// ・LNObjでない通常オブジェと、ロングノートの始点に対しては、trueを返します。
-        /// ・LNObj等のロングノートの終点に対しては、falseを返します。
+        /// ・LNObj等のロングノートの終点に対しては、falseを返しますが、
+        ///   EditModeがfalseの場合は、そのようなBMObjectはPlayableBMObjectの中にはありません。
         /// ・不可視オブジェに対してはtrueを返します。
         /// ・地雷に対してはfalseを返します。
         /// ・BGA/Layer/Poorに対してはfalseを返します。
@@ -178,6 +179,19 @@ namespace HatoBMSLib
         public bool IsGraphic()
         {
             return BMSChannel == 4 | BMSChannel == 6 | BMSChannel == 7;
+        }
+
+        /// <summary>
+        /// 演奏デバイスの各ボタンに対応するkeyidを返します。
+        /// あまりにもよく使うのでプロパティ化しました。
+        /// パフォーマンスに影響が出たりします？？
+        /// </summary>
+        public int Keyid  // メソッドにするべきか、それともプロパティにするべきか。それが問題だ。
+        {
+            get
+            {
+                return (BMSChannel + 36) % 72;
+            }
         }
 
         /*public override string ToString()

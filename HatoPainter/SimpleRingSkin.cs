@@ -83,7 +83,7 @@ namespace HatoPainter
         {
             int stepN = 4;
             float RSP = RingShowingPeriodByMeasure;  // 長すぎる変数名はダメ
-            float step = ((float)Math.Floor((((float)m + 1025 + phase * RSP) % (RSP * stepN)) / RSP) - (stepN - 1.0f) / 2) / stepN;  // おおよそ -0.5～0.5
+            float step = ((float)Math.Floor((((float)m + 1023 + phase * RSP) % (RSP * stepN)) / RSP) - (stepN - 1.0f) / 2) / stepN;  // おおよそ -0.5～0.5
             return (((float)m + 1025 + 0 * RSP) % RSP - 0 * RSP) / RSP + step * 0.20f;
         }
 
@@ -258,7 +258,6 @@ namespace HatoPainter
                                 512, 32,
                                 0.1f);
 
-                            // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
                             int score = (int)x.Judge - 1;  // 0,1,2,3. 3:pg;
                             if (score < 0) score = 0;
 
