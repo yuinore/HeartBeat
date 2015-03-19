@@ -204,8 +204,7 @@ namespace HatoDraw
             Dispose();
         }
 
-        //********* implementation of IDisposable *********//
-
+        #region implementation of IDisposable
         // Flag: Has Dispose already been called?
         bool disposed = false;
 
@@ -245,7 +244,11 @@ namespace HatoDraw
 
             disposed = true;
         }
-
-        //********* implementation of IDisposable *********//
+        
+        ~HatoDrawDevice()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

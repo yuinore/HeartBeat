@@ -84,7 +84,7 @@ namespace HatoLib
         /// Dispose
         /// 何度呼ばれても問題ない
         /// </summary>
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             //マネージリソースおよびアンマネージリソースの解放
             this.Dispose(true);
@@ -95,7 +95,7 @@ namespace HatoLib
 
         public void Close()
         {
-            Dispose();
+            ((IDisposable)this).Dispose();
         }
 
         public WaveFileWriter(String filename) :

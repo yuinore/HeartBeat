@@ -30,8 +30,7 @@ namespace HatoDraw
             d2dBrush = new D2D.SolidColorBrush(renderTarget.d2dRenderTarget, Color.FromBgra(colorRgb | ((uint)opacity2 << 24)));  // 0xAARRGGBB の順
         }
 
-        //********* implementation of IDisposable *********//
-
+        #region implementation of IDisposable
         // Flag: Has Dispose already been called?
         bool disposed = false;
 
@@ -71,6 +70,11 @@ namespace HatoDraw
             // Free any unmanaged objects here.
             disposed = true;
         }
-        //********* implementation of IDisposable *********//
+        
+        ~ColorBrush()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

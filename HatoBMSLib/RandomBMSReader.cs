@@ -103,8 +103,7 @@ namespace HatoBMSLib
             }
         }
 
-        //********* implementation of IDisposable *********//
-
+        #region implementation of IDisposable
         // Flag: Has Dispose already been called?
         bool disposed = false;
 
@@ -125,6 +124,7 @@ namespace HatoBMSLib
             {
                 // Free any other managed objects here.
                 r.Dispose();
+                r = null;
             }
             else
             {
@@ -140,6 +140,11 @@ namespace HatoBMSLib
             // Free any unmanaged objects here.
             disposed = true;
         }
-        //********* implementation of IDisposable *********//
+
+        ~RandomBMSReader()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

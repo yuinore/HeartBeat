@@ -40,7 +40,7 @@ namespace HatoLib
         }
 
         /// <summary>
-        /// なんでvirtualなんだろう・・・？
+        /// なんでprotected virtualなんだろう・・・？
         /// 
         /// Dispose(bool disposing) executes in two distinct scenarios.
         /// If disposing equals true, the method has been called directly
@@ -52,36 +52,32 @@ namespace HatoLib
         /// </summary>
         protected virtual void Dispose(bool disposing)
         {
-            lock (this)  // スレッドセーフ・・・？？？？
+            if (this.disposed) return;
+
+            this.disposed = true;
+
+            if (disposing)
             {
-                if (this.disposed) return;
-
-                this.disposed = true;
-
-                if (disposing)
+                r.Close();
+                r = null;
+            }
+            else
+            {
+                try
                 {
-                    r.Close();
-                    r.Dispose();
-                    r = null;
+                    // ユーザーコード内でDisposeされなかったら文句を言う（デバッグ時のみ）
+                    throw new Exception("激おこ @ WaveFileReader.Dispose(bool)");
                 }
-                else
+                catch
                 {
-                    try
-                    {
-                        // ユーザーコード内でDisposeされなかったら文句を言う（デバッグ時のみ）
-                        throw new Exception("激おこ @ WaveFileReader.Dispose(bool)");
-                    }
-                    catch
-                    {
-                    }
                 }
             }
         }
 
         /// <summary>
-        /// Dispose
+        /// 明示的にファイルリソースを解放します。
         /// </summary>
-        public void Dispose()
+        void IDisposable.Dispose()  // 明示的なインターフェイスの実装 https://msdn.microsoft.com/ja-jp/library/ms173157.aspx
         {
             //マネージリソースおよびアンマネージリソースの解放
             this.Dispose(true);
@@ -92,7 +88,7 @@ namespace HatoLib
 
         public void Close()
         {
-            Dispose();
+            ((IDisposable)this).Dispose();
         }
         #endregion
 
@@ -239,7 +235,7 @@ namespace HatoLib
             {
                 for (int ch = 0; ch < wr.ChannelsCount; ch++)
                 {
-                    if (ch != 0) wr.ReadSample(out indt);
+                    if (ch != 0) wr.ReadSample(out indt);  // TODO: パフォーマンスの改善
                     ret[ch][n] = indt;
                 }
                 n++;
