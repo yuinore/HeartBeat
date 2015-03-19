@@ -127,6 +127,8 @@ namespace HeartBeatCore
 
         PlayingState ps = new PlayingState();
 
+        InputHandler ih;
+
         HatoDrawDevice hdraw;
         HatoPlayerDevice hplayer;
 
@@ -230,7 +232,7 @@ namespace HeartBeatCore
         double lastelapsed = 0;
         double sumelapsed = 0;
         List<int> songposLock = new List<int>();
-        double CurrentSongPosition()
+        internal double CurrentSongPosition()
         {
             double ret;
             lock (songposLock)  // ←超超超超超重要（というかそんなにみんなCurrentSongPosition()呼んでるんですか？？）
@@ -255,71 +257,36 @@ namespace HeartBeatCore
                 thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
             }
 
-            Dictionary<int, int> keysound = new Dictionary<int, int>();
-
             s = new Stopwatch();
 
-            // 各キーidに対応する、最後に押したキーの時刻。キーフラッシュ用。
-            Dictionary<int, double> lastKeyEventDict = new Dictionary<int, double>();
+            // キーに割り当てられているキー音のwavid
+            Dictionary<int, int> keysound = new Dictionary<int, int>();
 
-            // キー入力キューで、フレームごとに消化される。（描画に直接用いることはない）
-            Queue<KeyEvent> keyEventList = new Queue<KeyEvent>();
-
-            // FIXME: LoadAndPlayが2回呼ばれると、イベントハンドラが重複登録される。
-            form.KeyDown += (o, ev) =>
+            ih = new InputHandler(this, form);
+            ih.KeyDown += (o, keyid) =>
             {
-                int? keyid = null;
+                int wavid;
 
-                if (ev.KeyCode == Keys.Z) { keyid = 1; }
-                if (ev.KeyCode == Keys.S) { keyid = 2; }
-                if (ev.KeyCode == Keys.X) { keyid = 3; }
-                if (ev.KeyCode == Keys.D) { keyid = 4; }
-                if (ev.KeyCode == Keys.C) { keyid = 5; }
-                if (ev.KeyCode == Keys.F) { keyid = 8; }
-                if (ev.KeyCode == Keys.V) { keyid = 9; }
-                if (!Playside2P)
+                if (keysound.TryGetValue(keyid, out wavid))
                 {
-                    if (ev.KeyCode == Keys.ShiftKey) { keyid = 6; }
-                }
-                else
-                {
-                    if (ev.KeyCode == Keys.B) { keyid = 6; }
-                }
-
-                if (keyid != null)
-                {
-                    int wavid;
-                    double CSP = CurrentSongPosition();
-
-                    ps.LastKeyEvent = new KeyEvent
+                    if (!hplayer.PlaySound(wavid, true))
                     {
-                        keyid = (int)keyid,
-                        seconds = CSP
-                    };
-                    lock (lastKeyEventDict)
-                    {
-                        lastKeyEventDict[(int)keyid] = CSP;
-                    }
-
-                    keyEventList.Enqueue(ps.LastKeyEvent);
-
-                    if (keysound.TryGetValue(36 + (int)keyid, out wavid))
-                    {
-                        if (!hplayer.PlaySound(wavid, true))
+                        if (b.WavDefinitionList.ContainsKey(wavid))
                         {
-                            if (b.WavDefinitionList.ContainsKey(wavid))
-                            {
-                                TraceWarning("  Warning : Audio \"" + b.WavDefinitionList.GetValueOrDefault(wavid) + "\" (invoked by key input) is not loaded yet...");
-                            }
-                            else
-                            {
-                                // WAVが定義されていない場合。
-                                // （空文字定義の場合は除く）
-                            }
+                            TraceWarning("  Warning : Audio \"" + b.WavDefinitionList.GetValueOrDefault(wavid) + "\" (invoked by key input) is not loaded yet...");
+                        }
+                        else
+                        {
+                            // WAVが定義されていない場合。
+                            // （空文字定義の場合は除く）
                         }
                     }
                 }
             };
+            ih.KeyUp += (o, keyid) =>
+            {
+            };
+            // TODO: LoadAndPlayが2回呼ばれると、イベントハンドラが重複登録されたりしないかどうかチェック
 
             b = new BMSStruct(path);
             TraceWarning(b.Message, false);
@@ -469,6 +436,7 @@ namespace HeartBeatCore
 
                        // PlayingStateの設定
                        ps.Current = current;
+                       ps.LastKeyEvent = ih.LastKeyEvent;
 
                        double AppearDisplacement = current.Disp + 4.0;
 
@@ -516,43 +484,46 @@ namespace HeartBeatCore
 
                        // キー入力キューの消化は描画処理じゃないと思うんですがそれは・・・
                        // 　→判定処理は、オブジェに時間幅があるので、ここで処理するのが良い。
-                       #region キー入力キューの消化試合
+                       #region キー入力キュー(ih.KeyEventList)の消化試合
                        // キー入力に最近のオブジェを探す
                        // 当たり判定があった場合はいろいろする
-                       while (keyEventList.Count != 0)
+                       lock (ih.KeyEventList)
                        {
-                           var kvpair = keyEventList.Dequeue();
-                           double min = double.MaxValue;  // 最短距離
-                           BMObject minAt = null;  // 最短距離にあるオブジェ
-
-                           for (int i = hitzoneLeft; i < hitzoneRight; i++)
+                           while (ih.KeyEventList.Count != 0)
                            {
-                               var obj = b.PlayableBMObjects[i];
-                               var dif = Math.Abs(obj.Seconds - kvpair.seconds);
-                               if (dif < min &&
-                                   obj.Broken == false &&
-                                   (obj.BMSChannel - 36) % 72 == kvpair.keyid)
+                               var kvpair = ih.KeyEventList.Dequeue();
+                               double min = double.MaxValue;  // 最短距離
+                               BMObject minAt = null;  // 最短距離にあるオブジェ
+
+                               for (int i = hitzoneLeft; i < hitzoneRight; i++)
                                {
-                                   min = dif;
-                                   minAt = b.PlayableBMObjects[i];
+                                   var obj = b.PlayableBMObjects[i];
+                                   var dif = Math.Abs(obj.Seconds - kvpair.seconds);
+                                   if (dif < min &&
+                                       obj.Broken == false &&
+                                       (obj.BMSChannel - 36) % 72 == kvpair.keyid)
+                                   {
+                                       min = dif;
+                                       minAt = b.PlayableBMObjects[i];
+                                   }
                                }
-                           }
 
-                           // オブジェの破壊が起きた
-                           if (minAt != null)
-                           {
-                               Judgement judge = regulation.SecondsToJudgement(min);
-                               if (judge != Judgement.None)  // 判定無しでなければ
+                               // オブジェの破壊が起きた
+                               if (minAt != null)
                                {
-                                   minAt.Broken = true;
-                                   minAt.Judge = regulation.SecondsToJudgement(min);
-                                   minAt.BrokeAt = kvpair.seconds;
+                                   Judgement judge = regulation.SecondsToJudgement(min);
+                                   if (judge != Judgement.None)  // 判定無しでなければ
+                                   {
+                                       minAt.Broken = true;
+                                       minAt.Judge = regulation.SecondsToJudgement(min);
+                                       minAt.BrokeAt = kvpair.seconds;
 
-                                   ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                   ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
+                                       ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                       ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
 
-                                   ps.CurrentMaximumAcceptance += 1;
-                                   ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
+                                       ps.CurrentMaximumAcceptance += 1;
+                                       ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
+                                   }
                                }
                            }
                        }
@@ -563,9 +534,9 @@ namespace HeartBeatCore
                        skin.DrawBack(rt, b, ps);
 
                        // キーフラッシュ
-                       lock (lastKeyEventDict)
+                       lock (ih.LastKeyEventDict)
                        {
-                           foreach (var x in lastKeyEventDict)  // 例外：コレクションが変更されました。列挙操作は実行されない可能性があります。
+                           foreach (var x in ih.LastKeyEventDict)  // 例外：コレクションが変更されました。列挙操作は実行されない可能性があります。
                            {
                                skin.DrawKeyFlash(rt, b, ps,
                                    new KeyEvent { keyid = x.Key, seconds = x.Value });
@@ -694,7 +665,7 @@ namespace HeartBeatCore
 
                         if (x.Seconds >= PlayFrom && (x.IsPlayable() || x.IsInvisible()))  // autoplayかどうかによらない、また、非表示でもOK
                         {
-                            keysound[(x.BMSChannel - 36) % 72 + 36] = x.Wavid;
+                            keysound[(x.BMSChannel - 36) % 72] = x.Wavid;
                         }
 
                     }
@@ -787,17 +758,20 @@ namespace HeartBeatCore
                             //double CSP = CurrentSongPosition();  // ベンチマーク？用
                             double CSP = x.Seconds;  // 見栄え優先で行こう
 
-                            ps.LastKeyEvent = new KeyEvent
+                            ih.LastKeyEvent = new KeyEvent
                             {
                                 keyid = keyid,
                                 seconds = CSP
                             };
-                            lock (lastKeyEventDict)
+                            lock (ih.LastKeyEventDict)
                             {
-                                lastKeyEventDict[keyid] = CSP;
+                                ih.LastKeyEventDict[keyid] = CSP;
                             }
 
-                            keyEventList.Enqueue(ps.LastKeyEvent);
+                            lock (ih.KeyEventList)
+                            {
+                                ih.KeyEventList.Enqueue(ih.LastKeyEvent);
+                            }
 
                             /*if (keysound.TryGetValue(36 + keyid, out wavid))
                             {

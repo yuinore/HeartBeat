@@ -44,6 +44,7 @@
     <Compile Include="BMSPlayer.cs" />
     <Compile Include="GameRegulation.cs" />
     <Compile Include="HeartBeatRegulation.cs" />
+    <Compile Include="InputHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
