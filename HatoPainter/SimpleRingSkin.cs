@@ -109,6 +109,12 @@ namespace HatoPainter
 
         public override void DrawBack(RenderTarget rt, BMSStruct b, PlayingState ps)
         {
+            // 適当ベンチマーク結果：
+            // ColorBrushの作成と解放に1us掛かる。（1秒間に1,000,000回ColorBrushを作成できる）
+            // FillRectangle(32*32)に1.4us掛かる。（1秒間に700,000回FillRectangleできる）
+            // DrawBitmapSrc(64*64)に1.9us掛かる。（1秒間に540,000回DrawBitmapSrcできる）
+            // DrawBitmapSrc(640*480)に1.6us掛かる。（1秒間に570,000～690,000回DrawBitmapSrcできる）
+
             myHS += (UserHiSpeed - myHS) * 0.10;
 
             if (stagefile != null)
@@ -124,7 +130,7 @@ namespace HatoPainter
                 rt.FillRectangle(
                                 xpos - 32f + 16f + 96f - 16f, 0,
                                 48, 480,
-                                new ColorBrush(rt, 0x888888, 0.12f));
+                                0x888888, 0.12f);
             }
             #endregion
 
@@ -136,9 +142,9 @@ namespace HatoPainter
                 float scorepixel = (480 - 276 - 20) * scorerate;
                 float maxpixel = (480 - 276 - 20) * maxrate;
 
-                rt.FillRectangle(780f - 40f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
-                rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, new ColorBrush(rt, 0x884444));
-                rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0xFF8888));
+                rt.FillRectangle(780f - 40f, 276f, 30f, 480 - 276 - 20, 0x666666);
+                rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, 0x884444);
+                rt.FillRectangle(780f - 40f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, 0xFF8888);
 
                 rt.DrawText(font, "Gauge:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 300, 1.0f);
             }
@@ -150,9 +156,9 @@ namespace HatoPainter
                 float scorepixel = (480 - 276 - 20) * scorerate;
                 float maxpixel = (480 - 276 - 20) * maxrate;
 
-                rt.FillRectangle(780f, 276f, 30f, 480 - 276 - 20, new ColorBrush(rt, 0x666666));
-                rt.FillRectangle(780f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, new ColorBrush(rt, 0x448844));
-                rt.FillRectangle(780f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, new ColorBrush(rt, 0x88FF88));
+                rt.FillRectangle(780f, 276f, 30f, 480 - 276 - 20, 0x666666);
+                rt.FillRectangle(780f, 276f + (480 - 276 - 20) - maxpixel, 30f, maxpixel, 0x448844);
+                rt.FillRectangle(780f, 276f + (480 - 276 - 20) - scorepixel, 30f, scorepixel, 0x88FF88);
 
                 rt.DrawText(font, "Rate:\n" + Math.Floor(scorerate * 1000.0) / 10 + "%", 650, 400f, 1.0f);
             }
@@ -167,7 +173,7 @@ namespace HatoPainter
             rt.FillRectangle(
                             xpos - 32f + 16f + 96f - 16f, 0,
                             48, 480,
-                            new ColorBrush(rt, 0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.20f));
+                            0x00AAFF, (float)Math.Exp(-6 * displacement) * 0.20f);
         }
 
         public override void DrawNote(RenderTarget rt, BMSStruct b, PlayingState ps, BMObject x)
@@ -237,6 +243,15 @@ namespace HatoPainter
                                 idx % 8 * 64, idx / 8 * 64,
                                 64, 64,
                                 1.0f);
+                            if (x.Terminal != null)
+                            {
+                                rt.DrawBitmapSrc(ring2,
+                                    xpos - 32f + 16f + ((1 - 1.4f) * 32), -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f + ((1 - 1.4f) * 32),
+                                    idx % 8 * 64, idx / 8 * 64,
+                                    64, 64,
+                                    1.0f,
+                                    1.4f);
+                            }
                             rt.DrawBitmapSrc(bar,
                                 xpos2 - 256f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 16f,
                                 0, idx / 2 * 32,

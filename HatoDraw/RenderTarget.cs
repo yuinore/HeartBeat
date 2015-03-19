@@ -77,6 +77,15 @@ namespace HatoDraw
             d2dRenderTarget.FillRectangle(new RectangleF(posX * sr, posY * sr, width * sr, height * sr), brush.d2dBrush);
         }
 
+        public void FillRectangle(float posX, float posY, float width, float height, uint colorRgb, float opacity = 1.0f)
+        {
+            // ColorBrushの解放が面倒な人向け
+            using (var b = new ColorBrush(this, colorRgb, opacity))
+            {
+                d2dRenderTarget.FillRectangle(new RectangleF(posX * sr, posY * sr, width * sr, height * sr), b.d2dBrush);
+            }
+        }
+
         public void DrawRectangle(float posX, float posY, float width, float height, ColorBrush brush, float strokewidth)
         {
             d2dRenderTarget.DrawRectangle(new RectangleF(posX * sr, posY * sr, width * sr, height * sr), brush.d2dBrush, strokewidth);
