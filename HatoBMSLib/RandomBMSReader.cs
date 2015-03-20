@@ -16,10 +16,11 @@ namespace HatoBMSLib
         bool EditorMode;
         BMSExceptionHandler handler;
 
-        //Random randomgen = new Random();
-        //Stack<int> randomstack = new Stack<int>();
-        //int skippinglevel = 0;
+        Random randomgen = new Random();
+        List<int> randomstack = new List<int>();
+        List<int> skipstack = new List<int>();
         bool skip = false;
+        bool SekaiNoHazama = false;
 
         internal RandomBMSReader(Stream strm, Encoding enc, bool editorMode, BMSExceptionHandler handler)
         {
@@ -57,27 +58,62 @@ namespace HatoBMSLib
             {
                 string line = r.ReadLine();
                 // 遅そう・・・
-                var matchRandom = new LazyMatch(line, @"^\s*#RANDOM\s+([0-9]+)\s*", RegexOptions.IgnoreCase);
-                var matchIf = new LazyMatch(line, @"^\s*#IF\s+([0-9]+)\s*", RegexOptions.IgnoreCase);
-                var matchEndif = new LazyMatch(line, @"^\s*#ENDIF\s*", RegexOptions.IgnoreCase);
-                var matchEndrandom = new LazyMatch(line, @"^\s*#ENDRANDOM\s*", RegexOptions.IgnoreCase);
+                var matchRandom = new LazyMatch(line, @"^\s*#RANDOM\s+([0-9]+)\s*$", RegexOptions.IgnoreCase);
+                var matchIf = new LazyMatch(line, @"^\s*#IF\s+([0-9]+)\s*$", RegexOptions.IgnoreCase);
+                var matchEndif = new LazyMatch(line, @"^\s*#ENDIF\s*$", RegexOptions.IgnoreCase);
+                var matchEndrandom = new LazyMatch(line, @"^\s*#ENDRANDOM\s*$", RegexOptions.IgnoreCase);
+                var matchComment = new LazyMatch(line, @"^\s*[^\s#].*$", RegexOptions.IgnoreCase);  // コメント行
+                var matchEmpty = new LazyMatch(line, @"^\s*$", RegexOptions.IgnoreCase);  // 空行
                 Match match;
 
                 if (matchRandom.Evaluate(out match))
                 {
+                    if (SekaiNoHazama)
+                    {
+                        if (randomstack.Count == 0) { throw new Exception("不適切な#RANDOMです。バグな気がします。"); }
+                        randomstack.RemoveAt(randomstack.Count - 1);
+                        SekaiNoHazama = false;
+                    }
+
                     int range = Convert.ToInt32(match.Groups[1].Captures[0].Value);
+                    int next = randomgen.Next(range) + 1;  // 1-origin
+
+                    randomstack.Add(next);
+                    SekaiNoHazama = true;
                 }
                 else if (matchIf.Evaluate(out match))
                 {
+                    if (!SekaiNoHazama) { handler.ThrowFormatError("不適切な#IFです。これを無視します。"); continue; }
                     int selected = Convert.ToInt32(match.Groups[1].Captures[0].Value);
-                    skip = selected != 1;
+                    skipstack.Add(selected != randomstack[randomstack.Count - 1] ? 1 : 0);
+                    skip = skipstack.Sum() > 0 ? true : false;
+                    SekaiNoHazama = false;
                 }
                 else if (matchEndif.Evaluate(out match))
                 {
-                    skip = false;
+                    if (SekaiNoHazama)
+                    {
+                        if (randomstack.Count == 0) { throw new Exception("不適切な#ENDIFです。バグな気がします。"); }
+                        randomstack.RemoveAt(randomstack.Count - 1);
+                        SekaiNoHazama = false;
+                    }
+                    if (skipstack.Count == 0) { handler.ThrowFormatError("不適切な#ENDIFです。これを無視します。"); continue; }
+                    skipstack.RemoveAt(skipstack.Count - 1);
+                    skip = skipstack.Sum() > 0 ? true : false;
+                    SekaiNoHazama = true;
+                }
+                else if (matchComment.Evaluate(out match) || matchEmpty.Evaluate(out match))
+                {
                 }
                 else
                 {
+                    if (SekaiNoHazama)
+                    {
+                        if (randomstack.Count == 0) { throw new Exception("不適切な文です。バグな気がします。：" + line); }
+                        randomstack.RemoveAt(randomstack.Count - 1);
+                        SekaiNoHazama = false;
+                    }
+
                     if (!skip)
                     {
                         nextline = line;
