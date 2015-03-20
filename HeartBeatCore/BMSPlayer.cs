@@ -247,6 +247,9 @@ namespace HeartBeatCore
 
             // キーに割り当てられているキー音のwavid
             Dictionary<int, int> keysound = new Dictionary<int, int>();
+
+            // ロングノート演奏中のオブジェ
+            Dictionary<int, BMObject> holdingObject = new Dictionary<int, BMObject>();
             bool keysoundReady = false;
 
             ih = new InputHandler(this, form);
@@ -432,7 +435,7 @@ namespace HeartBeatCore
 
                        // PlayingStateの設定
                        ps.Current = current;
-                       ps.LastKeyEvent = ih.LastKeyEvent;
+                       ps.LastKeyDownEvent = ih.LastKeyDownEvent;
 
                        double AppearDisplacement = current.Disp + 4.0;
 
@@ -442,11 +445,13 @@ namespace HeartBeatCore
                            var x = b.PlayableBMObjects[left];
                            if (x.Disp >= current.Disp - skin.EyesightDisplacementAfter) break;
                        }
+
                        for (; right < b.PlayableBMObjects.Count; right++)  // 視界に出現する箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[right];
                            if (x.Disp >= current.Disp + skin.EyesightDisplacementBefore) break;
                        }
+
                        for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 判定ゾーンから消える箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[hitzoneLeft];
@@ -462,19 +467,59 @@ namespace HeartBeatCore
 
                                    ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
                                    ps.CurrentMaximumAcceptance += 1;
+
+                                   if (x.Terminal != null)
+                                   {
+                                       if (x.Judge <= Judgement.Bad)
+                                       {
+                                           // LNつながりません
+                                           x.Terminal.Broken = true;
+                                           x.Terminal.Judge = Judgement.None;
+                                           x.Terminal.BrokeAt = CurrentSongPosition();
+                                       }
+                                   }
                                }
                            }
                        }
+
                        for (; hitzoneRight < b.PlayableBMObjects.Count; hitzoneRight++)  // 判定ゾーンに突入する箇所、left <= right
                        {
                            var x = b.PlayableBMObjects[hitzoneRight];
                            if (x.Seconds - regulation.JudgementWindowSize >= current.Seconds) break;
                        }
+
                        // TODO: もし曲の最初から最後までの長さがあるLNがあった場合は？？
                        for (; bombzoneLeft < b.PlayableBMObjects.Count; bombzoneLeft++)  // ボム・キーフラッシュが消える箇所
                        {
                            var x = b.PlayableBMObjects[bombzoneLeft];
                            if ((x.Terminal ?? x).Seconds + (regulation.JudgementWindowSize + skin.BombDuration) >= current.Seconds) break;
+                       }
+                       #endregion
+
+                       #region LN終端判定
+                       lock (holdingObject)
+                       {
+                           List<int> removeList = new List<int>();
+                           foreach (var x in holdingObject)
+                           {
+                               if (x.Value.Terminal.Seconds <= current.Seconds)
+                               {
+                                   if (x.Value.Terminal.Broken)
+                                   {
+                                       Console.WriteLine("おかしいぞ？");
+                                   }
+                                   x.Value.Terminal.Broken = true;
+                                   x.Value.Terminal.Judge = Judgement.Perfect;
+                                   x.Value.Terminal.BrokeAt = x.Value.Terminal.Seconds;
+
+                                   removeList.Add(x.Key);
+                               }
+                           }
+
+                           foreach (var x in removeList)
+                           {
+                               holdingObject.Remove(x);
+                           }
                        }
                        #endregion
 
@@ -491,34 +536,68 @@ namespace HeartBeatCore
                                double min = double.MaxValue;  // 最短距離
                                BMObject minAt = null;  // 最短距離にあるオブジェ
 
-                               for (int i = hitzoneLeft; i < hitzoneRight; i++)
+                               if (kvpair.IsKeyUp == false)
                                {
-                                   var obj = b.PlayableBMObjects[i];
-                                   var dif = Math.Abs(obj.Seconds - kvpair.seconds);
-                                   if (dif < min &&
-                                       obj.Broken == false &&
-                                       obj.Keyid == kvpair.keyid)
+                                   // キーダウン
+                                   for (int i = hitzoneLeft; i < hitzoneRight; i++)
                                    {
-                                       min = dif;
-                                       minAt = b.PlayableBMObjects[i];
+                                       var obj = b.PlayableBMObjects[i];
+                                       var dif = Math.Abs(obj.Seconds - kvpair.seconds);
+                                       if (dif < min &&
+                                           obj.Broken == false &&
+                                           obj.Keyid == kvpair.keyid)
+                                       {
+                                           min = dif;
+                                           minAt = b.PlayableBMObjects[i];
+                                       }
+                                   }
+
+                                   // オブジェの破壊が起きた
+                                   if (minAt != null)
+                                   {
+                                       Judgement judge = regulation.SecondsToJudgement(min);
+                                       if (judge != Judgement.None)  // 判定無しでなければ
+                                       {
+                                           minAt.Broken = true;
+                                           minAt.Judge = regulation.SecondsToJudgement(min);
+                                           minAt.BrokeAt = kvpair.seconds;
+
+                                           ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                           ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
+
+                                           ps.CurrentMaximumAcceptance += 1;
+                                           ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
+
+                                           if (minAt.Terminal != null)
+                                           {
+                                               if (minAt.Judge >= Judgement.Good)
+                                               {
+                                                   // LNが繋がりそう
+                                                   // 既にLN押してる状態だと例外が出そう
+                                                   holdingObject.Add(minAt.Keyid, minAt);
+                                               }
+                                               else
+                                               {
+                                                   // LNつながりません
+                                                   minAt.Terminal.Broken = true;
+                                                   minAt.Terminal.Judge = Judgement.None;
+                                                   minAt.Terminal.BrokeAt = kvpair.seconds;
+                                               }
+                                           }
+                                       }
                                    }
                                }
-
-                               // オブジェの破壊が起きた
-                               if (minAt != null)
+                               else
                                {
-                                   Judgement judge = regulation.SecondsToJudgement(min);
-                                   if (judge != Judgement.None)  // 判定無しでなければ
+                                   // キーアップ
+                                   if (holdingObject.ContainsKey(kvpair.keyid))
                                    {
-                                       minAt.Broken = true;
-                                       minAt.Judge = regulation.SecondsToJudgement(min);
-                                       minAt.BrokeAt = kvpair.seconds;
+                                       var term = holdingObject[kvpair.keyid].Terminal;
+                                       term.Broken = true;
+                                       term.Judge = Judgement.None;
+                                       term.BrokeAt = kvpair.seconds;
 
-                                       ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                       ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
-
-                                       ps.CurrentMaximumAcceptance += 1;
-                                       ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
+                                       holdingObject.Remove(kvpair.keyid);
                                    }
                                }
                            }
@@ -530,9 +609,9 @@ namespace HeartBeatCore
                        skin.DrawBack(rt, b, ps);
 
                        // キーフラッシュ
-                       lock (ih.LastKeyEventDict)
+                       lock (ih.LastKeyDownEventDict)
                        {
-                           foreach (var x in ih.LastKeyEventDict)  // 例外：コレクションが変更されました。列挙操作は実行されない可能性があります。
+                           foreach (var x in ih.LastKeyDownEventDict)  // 例外：コレクションが変更されました。列挙操作は実行されない可能性があります。
                            {
                                skin.DrawKeyFlash(rt, b, ps,
                                    new KeyEvent { keyid = x.Key, seconds = x.Value });
@@ -753,19 +832,19 @@ namespace HeartBeatCore
                             //double CSP = CurrentSongPosition();  // ベンチマーク？用
                             double CSP = x.Seconds;  // 見栄え優先で行こう
 
-                            ih.LastKeyEvent = new KeyEvent
+                            ih.LastKeyDownEvent = new KeyEvent
                             {
                                 keyid = x.Keyid,
                                 seconds = CSP
                             };
-                            lock (ih.LastKeyEventDict)
+                            lock (ih.LastKeyDownEventDict)
                             {
-                                ih.LastKeyEventDict[x.Keyid] = CSP;
+                                ih.LastKeyDownEventDict[x.Keyid] = CSP;
                             }
 
                             lock (ih.KeyEventList)
                             {
-                                ih.KeyEventList.Enqueue(ih.LastKeyEvent);
+                                ih.KeyEventList.Enqueue(ih.LastKeyDownEvent);
                             }
 
                             // ここではキー音の再生はしない

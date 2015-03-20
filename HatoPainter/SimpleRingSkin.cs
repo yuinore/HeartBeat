@@ -222,16 +222,38 @@ namespace HatoPainter
                 if (x.Judge >= Judgement.Bad)
                 {
                     // キー押し下しがあった場合（オブジェが通過した場合を***含まない****）の処理
+
                     if (x.Terminal == null)
                     {
                         idx = (int)Math.Floor((ps.Current.Seconds - x.BrokeAt) * 60) + 1;
                     }
                     else
                     {
-                        idx = (int)Math.Floor((ps.Current.Seconds - x.Terminal.Seconds) * 60) + 1;
+                        if (x.Terminal.Broken)
+                        {
+                            idx = (int)Math.Floor((ps.Current.Seconds - x.Terminal.BrokeAt) * 60) + 1;
+                        }
+                        else
+                        {
+                            idx = (int)Math.Floor((ps.Current.Seconds - x.Terminal.Seconds) * 60) + 1;
+                        }
                     }
 
-                    if (x.Terminal == null || x.Terminal.Seconds <= ps.Current.Seconds)
+                    if (x.Terminal != null && x.Terminal.Broken && x.Terminal.Judge == Judgement.None)
+                    {
+                        // LN途切れた
+                        int score = 0;
+
+                        if (idx < 32)
+                        {
+                            rt.DrawBitmapSrc(judgement,
+                                xpos - 64f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f + 39f,
+                                idx / 2 % 2 * 128, (3 - score) * 64,
+                                128, 64,
+                                1.0f, 1.0f);
+                        }
+                    }
+                    else if (x.Terminal == null || x.Terminal.Broken)
                     {
                         if (idx < 32)
                         {
@@ -287,7 +309,7 @@ namespace HatoPainter
                         //rt.DrawBitmap(bomb, 30f + ObjectPosX[(x.BMSChannel - 36) % 72] - 72f, 400f - 40f, (float)Math.Exp(-3 * displacement) * 1.0f, 0.1f);
                         rt.DrawBitmapSrc(ring3,
                             xpos - 32f + 16f, -MeasureToYPos(x.Measure, 0) * 320 + 400f - 32f,
-                            512 -  64, 512 - 64,
+                            512 - 64, 512 - 64,
                             64, 64,
                             1.0f);
                         rt.DrawBitmapSrc(ring3,
@@ -314,12 +336,12 @@ namespace HatoPainter
         public override void DrawFront(RenderTarget rt, BMSStruct b, PlayingState ps)
         {
             #region キー入力時間を示す白いバー（多分）
-            while (ps.LastKeyEvent != null)
+            while (ps.LastKeyDownEvent != null)
             {
-                var xpos = 40f + ObjectPosX[(ps.LastKeyEvent.keyid + 36 + (false ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
+                var xpos = 40f + ObjectPosX[(ps.LastKeyDownEvent.keyid + 36 + (false ? 0 : 1) * 36) % 72] * ttt * 0.8f - 72f;
                 var xpos2 = 40f + 180 * ttt * 0.8f;
-                var displacement = ps.Current.Seconds - ps.LastKeyEvent.seconds;  // >= 0
-                var m = b.transp.BeatToMeasure(b.transp.SecondsToBeat(ps.LastKeyEvent.seconds));
+                var displacement = ps.Current.Seconds - ps.LastKeyDownEvent.seconds;  // >= 0
+                var m = b.transp.BeatToMeasure(b.transp.SecondsToBeat(ps.LastKeyDownEvent.seconds));
 
                 if (((int)(displacement * 30)) < 16)
                 {

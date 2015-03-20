@@ -22,6 +22,6 @@ namespace HatoBMSLib
         public int CurrentMaximumAcceptance;
         public int MaximumAcceptance;
 
-        public KeyEvent LastKeyEvent;
+        public KeyEvent LastKeyDownEvent;
     }
 }

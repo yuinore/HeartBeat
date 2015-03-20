@@ -11,6 +11,7 @@ namespace HatoBMSLib
     /// </summary>
     public class KeyEvent
     {
+        public bool IsKeyUp;
         public int keyid;
         public double seconds;
     }

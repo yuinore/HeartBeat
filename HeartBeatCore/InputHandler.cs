@@ -27,7 +27,7 @@ namespace HeartBeatCore
         /// <summary>
         /// 各キーidに対応する、最後に押したキーの時刻。キーフラッシュ用。
         /// </summary>
-        public Dictionary<int, double> LastKeyEventDict = new Dictionary<int, double>();
+        public Dictionary<int, double> LastKeyDownEventDict = new Dictionary<int, double>();
 
         // キー入力キューで、フレームごとに消化される。（描画に直接用いることはない）
         public Queue<KeyEvent> KeyEventList = new Queue<KeyEvent>();
@@ -35,7 +35,7 @@ namespace HeartBeatCore
         /// <summary>
         /// 最後に押されたキーとその時刻を表します。
         /// </summary>
-        public KeyEvent LastKeyEvent;
+        public KeyEvent LastKeyDownEvent;
 
         Form form;
         BMSPlayer player;
@@ -55,10 +55,28 @@ namespace HeartBeatCore
         void form_KeyUp(object sender, KeyEventArgs ev)
         {
             int? keyid = KeyCodeToKeyid(ev.KeyCode);
+            bool cond = false;
 
-            if (keyid != null && isKeyDown.ContainsKey((int)keyid))
+            lock (isKeyDown)  // デッドロックに注意
             {
-                isKeyDown[(int)keyid] = false;  // removeでも良い感
+                if (keyid != null && isKeyDown.ContainsKey((int)keyid))
+                {
+                    isKeyDown[(int)keyid] = false;  // removeでも良い感
+                    cond = true;
+                }
+            }
+
+            if (cond)
+            {
+                lock (KeyEventList)
+                {
+                    KeyEventList.Enqueue(new KeyEvent
+                    {
+                        IsKeyUp = true,
+                        keyid = (int)keyid,
+                        seconds = player.CurrentSongPosition()
+                    });
+                }
 
                 KeyUp(sender, (int)keyid);
             }
@@ -67,26 +85,34 @@ namespace HeartBeatCore
         void form_KeyDown(object sender, KeyEventArgs ev)
         {
             int? keyid = KeyCodeToKeyid(ev.KeyCode);
+            bool cond = false;
 
-            if (keyid != null && isKeyDown.GetValueOrDefault((int)keyid) == false)
+            lock (isKeyDown)  // デッドロックに注意
             {
-                isKeyDown[(int)keyid] = true;
+                if (keyid != null && isKeyDown.GetValueOrDefault((int)keyid) == false)
+                {
+                    isKeyDown[(int)keyid] = true;
+                    cond = true;
+                }
+            }
 
+            if (cond)
+            {
                 double CSP = player.CurrentSongPosition();
 
-                LastKeyEvent = new KeyEvent
+                LastKeyDownEvent = new KeyEvent
                 {
                     keyid = (int)keyid,
                     seconds = CSP
                 };
-                lock (LastKeyEventDict)
+                lock (LastKeyDownEventDict)
                 {
-                    LastKeyEventDict[(int)keyid] = CSP;
+                    LastKeyDownEventDict[(int)keyid] = CSP;
                 }
 
                 lock (KeyEventList)
                 {
-                    KeyEventList.Enqueue(LastKeyEvent);
+                    KeyEventList.Enqueue(LastKeyDownEvent);
                 }
 
                 KeyDown(sender, (int)keyid);

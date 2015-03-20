@@ -186,27 +186,17 @@ namespace HatoPainter
 
             if (x.Terminal == null)
             {
-                if (!x.Broken)
+                if (!x.Broken || x.Judge <= Judgement.Bad)
                 {
-                    // キー押し下しがなかった場合の処理
-
-                    if (displacement > 0) displacement *= 0.25f;
-
-                    rt.DrawBitmapSrc(chip,
-                        xpos - 32f + 16f, displacement * (float)myHS * 360 + 420f - 32f,
-                        col * 64, x.IsLandmine() ? 192 : 0,
-                        64, 64);
-                }
-                else if (x.Judge <= Judgement.Bad)
-                {
-                    // BAD判定だった
+                    // キー押し下しがなかった場合の処理 or BAD判定だった
 
                     if (displacement > 0) displacement *= 0.25f;
 
                     rt.DrawBitmapSrc(chip,
                         xpos - 32f + 16f, displacement * (float)myHS *  360 + 420f - 32f,
                         col * 64, x.IsLandmine() ? 192 : 0,
-                        64, 64, 0.3f);
+                        64, 64,
+                        !x.Broken ? 1.0f : 0.3f);
                 }
                 
                 if(x.Broken)
@@ -219,14 +209,6 @@ namespace HatoPainter
                         
                         if (x.Judge >= Judgement.Bad)
                         {
-                            /*
-                            // 判定文字描画
-                            rt.DrawBitmapSrc(judgement,
-                                xpos - 64f + 16f, -128 + 420f - 32f + 39f,
-                                idx / 2 % 2 * 128, (3 - score) * 64,
-                                128, 64,
-                                1.0f, 1.0f);
-                             */
                             keyidToLastJudge[x.Keyid] = x;
                         }
                         if (idx < 16 && x.Judge >= Judgement.Good)
@@ -246,7 +228,7 @@ namespace HatoPainter
                 float opac;
                 float length;
 
-                if (!x.Broken || x.Judge <= Judgement.Bad)
+                if (!x.Broken || x.Judge <= Judgement.Bad || (x.Terminal.Broken && x.Terminal.Judge == Judgement.None))
                 {
                     // キー押し下しがなかった場合の処理
                     if (displacement > 0) displacement *= 0.25f;
@@ -294,6 +276,32 @@ namespace HatoPainter
                         col * 64, 155,
                         64, 37,
                         opac);
+                }
+
+                if (x.Terminal.Broken)
+                {
+                    idx = (int)Math.Floor((ps.Current.Seconds - x.Terminal.BrokeAt) * 60) + 1;
+
+                    if (idx < 32)
+                    {
+                        // keyは、soundbmobjectのインデックス。まあuniqueなら何でもいい
+                        int score = (int)x.Terminal.Judge - 1;  // 0,1,2,3. 3:pg;
+                        if (score < 0) score = 0;
+
+                        if (x.Terminal.Judge >= Judgement.Bad)
+                        {
+                            keyidToLastJudge[x.Keyid] = x.Terminal;
+                        }
+                        if (idx < 16 && x.Terminal.Judge >= Judgement.Good)
+                        {
+                            // ボム描画
+                            rt.DrawBitmapSrc(bomb,
+                                xpos - 64f + 16f - 64, +420f - 104f + 39f - 64,
+                                idx % 4 * 128, idx / 4 * 128,
+                                128, 128,
+                                1.0f, 2.0f);
+                        }
+                    }
                 }
             }
         }
