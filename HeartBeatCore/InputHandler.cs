@@ -59,6 +59,8 @@ namespace HeartBeatCore
             if (keyid != null && isKeyDown.ContainsKey((int)keyid))
             {
                 isKeyDown[(int)keyid] = false;  // removeでも良い感
+
+                KeyUp(sender, (int)keyid);
             }
         }
 

@@ -227,7 +227,7 @@ namespace HatoPainter
                                 128, 64,
                                 1.0f, 1.0f);
                              */
-                            keyidToLastJudge[(x.BMSChannel - 36) % 72] = x;
+                            keyidToLastJudge[x.Keyid] = x;
                         }
                         if (idx < 16 && x.Judge >= Judgement.Good)
                         {

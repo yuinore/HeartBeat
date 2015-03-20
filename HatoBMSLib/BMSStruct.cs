@@ -328,12 +328,11 @@ namespace HatoBMSLib
                     // 暫定設定
                     obj.IsLongNoteTerminal = (obj.Wavid == LNObj);
 
-                    int keyid = (obj.BMSChannel - 36) % 72;
                     if (obj.Wavid == LNObj)
                     {
                         // LNOBJタイプのロングノートの終端チェック
                         BMObject longbegin;
-                        if (prevobj.TryGetValue(keyid, out longbegin))
+                        if (prevobj.TryGetValue(obj.Keyid, out longbegin))
                         {
                             // ロングノートの始点が見つかった場合
                             if (longbegin.Wavid == LNObj || longbegin.IsNotChannel1X2X())
@@ -341,7 +340,7 @@ namespace HatoBMSLib
                                 ExceptionHandler.ThrowFormatError("LNOBJの始点が通常オブジェではありません。BMSファイルが誤っている可能性があります。");
                             }
                             longbegin.Terminal = obj;
-                            prevobj.Remove(keyid);
+                            prevobj.Remove(obj.Keyid);
                         }
                         else
                         {
@@ -352,7 +351,7 @@ namespace HatoBMSLib
                     {
                         // 0x5X 0x6X の始点または終点チェック
                         BMObject longbegin;
-                        if (prevobj.TryGetValue(keyid, out longbegin))
+                        if (prevobj.TryGetValue(obj.Keyid, out longbegin))
                         {
                             if (longbegin.IsChannel5X6X())
                             {
@@ -360,24 +359,24 @@ namespace HatoBMSLib
                                 obj.IsLongNoteTerminal = true;
                                 longbegin.IsLongNoteTerminal = false;
                                 longbegin.Terminal = obj;
-                                prevobj.Remove(keyid);
+                                prevobj.Remove(obj.Keyid);
                             }
                             else
                             {
-                                prevobj[keyid] = obj;
+                                prevobj[obj.Keyid] = obj;
                             }
                         }
                         else
                         {
                             // objは始点
-                            prevobj[keyid] = obj;
+                            prevobj[obj.Keyid] = obj;
                         }
                     }
                     else
                     {
                         // 通常オブジェの場合
                         BMObject longbegin;
-                        if (prevobj.TryGetValue(keyid, out longbegin))
+                        if (prevobj.TryGetValue(obj.Keyid, out longbegin))
                         {
                             if (longbegin.IsChannel5X6X())
                             {
@@ -385,12 +384,12 @@ namespace HatoBMSLib
                             }
                             else
                             {
-                                prevobj[keyid] = obj;
+                                prevobj[obj.Keyid] = obj;
                             }
                         }
                         else
                         {
-                            prevobj[keyid] = obj;
+                            prevobj[obj.Keyid] = obj;
                         }
                     }
                 }

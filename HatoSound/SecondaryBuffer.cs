@@ -49,6 +49,7 @@ namespace HatoSound
         {
             try
             {
+                // ↓ここで同時にNVorbisからの2ファイルの読み込みが発生しているのかもしれない
                 fbuf = AudioFileReader.ReadAllSamples(filename);  // ここで一度8/16bitから32bitに変換されてしまうんですよね・・・無駄・・・
                 AudioFileReader.ReadAttribute(filename, out SamplingRate, out ChannelsCount, out BufSamplesCount);
 

@@ -360,6 +360,7 @@ namespace HeartBeatCore
                     {
                         hplayer.PrepareSound(kvpair.Value);
                     });
+
                     Parallel.ForEach(b.SoundBMObjects, (sb) =>
                     { 
                         // 等号が入るかどうかに注意な！
@@ -378,11 +379,6 @@ namespace HeartBeatCore
                                 hplayer.PrepareSound(sb.Wavid);
                             }
                         }
-
-                        // TraceMessage("    Preload " + sb.Wavid);
-                        // 一部の音しかプリロードされないことがある・・・？
-                        // で、どういう時かというと、NVorbisがぽしゃった時っぽい。
-                        // やっぱりNVorbisはやめよう
                     });
                 });
 
@@ -501,7 +497,7 @@ namespace HeartBeatCore
                                    var dif = Math.Abs(obj.Seconds - kvpair.seconds);
                                    if (dif < min &&
                                        obj.Broken == false &&
-                                       (obj.BMSChannel - 36) % 72 == kvpair.keyid)
+                                       obj.Keyid == kvpair.keyid)
                                    {
                                        min = dif;
                                        minAt = b.PlayableBMObjects[i];
@@ -665,7 +661,7 @@ namespace HeartBeatCore
 
                         if (x.Seconds >= PlayFrom && (x.IsPlayable() || x.IsInvisible()))  // autoplayかどうかによらない、また、非表示でもOK
                         {
-                            keysound[(x.BMSChannel - 36) % 72] = x.Wavid;
+                            keysound[x.Keyid] = x.Wavid;
                         }
 
                     }
@@ -749,23 +745,22 @@ namespace HeartBeatCore
                     {
                         while (x.Seconds - 0.0025 >= CurrentSongPosition())
                         {
-                            await Task.Delay(5);
+                            await Task.Delay(10);
                         }
 
                         if (x.Seconds >= PlayFrom && autoplay && !x.IsLandmine())
                         {
-                            int keyid = (x.BMSChannel - 36) % 72;
                             //double CSP = CurrentSongPosition();  // ベンチマーク？用
                             double CSP = x.Seconds;  // 見栄え優先で行こう
 
                             ih.LastKeyEvent = new KeyEvent
                             {
-                                keyid = keyid,
+                                keyid = x.Keyid,
                                 seconds = CSP
                             };
                             lock (ih.LastKeyEventDict)
                             {
-                                ih.LastKeyEventDict[keyid] = CSP;
+                                ih.LastKeyEventDict[x.Keyid] = CSP;
                             }
 
                             lock (ih.KeyEventList)
@@ -773,10 +768,7 @@ namespace HeartBeatCore
                                 ih.KeyEventList.Enqueue(ih.LastKeyEvent);
                             }
 
-                            /*if (keysound.TryGetValue(36 + keyid, out wavid))
-                            {
-                                hplayer.PlaySound(wavid, true);
-                            }*/
+                            // ここではキー音の再生はしない
                         }
                     }
                 });

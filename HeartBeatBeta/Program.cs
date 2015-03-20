@@ -34,7 +34,7 @@ namespace HeartBeatBeta
                 }
             }
         }
-        static bool autoplay_ = false;  // 初期設定値
+        static bool autoplay_ = true;  // 初期設定値
         static bool autoplay
         {
             get
@@ -91,7 +91,7 @@ namespace HeartBeatBeta
         {
             var prevproc = GetPreviousProcess();
 
-            if (prevproc != null)
+            if (prevproc != null)  // 多重起動チェック（iBMSCとの連携用）
             {
                 prevproc.Kill();
             }
@@ -139,6 +139,7 @@ namespace HeartBeatBeta
             }
 
             player = new BMSPlayer();
+
             form = player.OpenForm();
 
             // ファイルのドロップ設定
@@ -202,18 +203,16 @@ namespace HeartBeatBeta
 
             player.Run();
 
-            /*hdraw.Start(
-            (rt) =>
-            {
-            },
-            (rt) =>
-            {
-            });*/
-
+            form.Dispose();
         }
 
         // C#(.net)で他のプロセスのメインウィンドウハンドルを取得する
         // http://tomoemon.hateblo.jp/entry/20080430/p2
+        /// <summary>
+        /// 自身と同じプログラムが起動しているかどうか確認し、
+        /// 起動していた場合はそのプロセスを、
+        /// そうでない場合はnullを返します。
+        /// </summary>
         public static Process GetPreviousProcess()
         {
             Process curProcess = Process.GetCurrentProcess();

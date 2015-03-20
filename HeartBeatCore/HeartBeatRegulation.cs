@@ -21,19 +21,21 @@ namespace HeartBeatCore
 
         public override Judgement SecondsToJudgement(double timedifference)
         {
-            if (timedifference <= 0.02)
+            // http://vsrg.club/forum/archive/index.php?thread-86-2.html
+
+            if (timedifference <= 0.021)
             {
                 return Judgement.Perfect;
             }
-            else if (timedifference <= 0.04)
+            else if (timedifference <= 0.060)
             {
                 return Judgement.Great;
             }
-            else if (timedifference <= 0.10)
+            else if (timedifference <= 0.120)
             {
                 return Judgement.Good;
             }
-            else if (timedifference <= 0.20)
+            else if (timedifference <= 0.200)
             {
                 return Judgement.Bad;  // 対象を取る（判定表示有り）
             }

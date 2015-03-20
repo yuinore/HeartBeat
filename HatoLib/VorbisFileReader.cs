@@ -13,7 +13,7 @@ namespace HatoLib
     /// </summary>
     public class VorbisFileReader
     {
-        private static List<int> lockObject = new List<int>();
+        //private static List<int> lockObject = new List<int>();
 
         public VorbisFileReader(Stream strm)
         {
@@ -22,7 +22,7 @@ namespace HatoLib
 
         public static float[][] ReadAllSamples(string filename)
         {
-            lock (lockObject)
+            //lock (lockObject)
             {
                 return VorbisFileReader.ReadAllSamples(new FileStream(filename, FileMode.Open, FileAccess.Read));
             }
@@ -30,7 +30,7 @@ namespace HatoLib
 
         public static float[][] ReadAllSamples(Stream strm)
         {
-            lock (lockObject)
+            //lock (lockObject)
             {
                 float[] buf;
                 int ch;
