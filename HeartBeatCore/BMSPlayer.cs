@@ -52,7 +52,7 @@ namespace HeartBeatCore
         /// 楽曲の開始前にファイル読み込みを行うフェーズのタイムアウト時間。
         /// HDDの速度が極端に遅かったりするとタイムアウトする。
         /// </summary>
-        int PreLoadingTimeoutMilliSeconds = 20000;
+        int PreLoadingTimeoutMilliSeconds = 40000;//20000;
 
         /// <summary>
         /// LN終端で、早く離しても接続される時間。GOOD判定の時間と等しい値にするのが良い。
@@ -291,7 +291,7 @@ namespace HeartBeatCore
 
             foreach (var x in b.SoundBMObjects)
             {
-                if(x.BMSChannel != 0x01 && !keysound.ContainsKey(x.Wavid)) {
+                if(x.BMSChannel != 0x01 && !keysound.ContainsKey(x.Keyid)) {
                     keysound[x.Keyid] = x.Wavid;
                 }
             }
@@ -707,6 +707,7 @@ namespace HeartBeatCore
                         {
                             // awaitしない！！ するな！！
                             // って思ったけど、awaitしなきゃいけない程重要な処理じゃないんですよね・・・
+                            // できればスレッドの優先度をBMPも含めて下げたい
                             await Task.Run(() => hplayer.PrepareSound(x.Wavid));
                             // Parallel.Invoke(async () => await Task.Run(() => hplayer.PrepareSound(x.Wavid)));
                         }
