@@ -290,7 +290,7 @@ namespace HatoPainter
 
                         if (x.Terminal.Judge >= Judgement.Bad)
                         {
-                            keyidToLastJudge[x.Keyid] = x.Terminal;
+                            keyidToLastJudge[x.Keyid] = x;
                         }
                         if (idx < 16 && x.Terminal.Judge >= Judgement.Good)
                         {

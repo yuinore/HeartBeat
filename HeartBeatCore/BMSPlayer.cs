@@ -54,6 +54,11 @@ namespace HeartBeatCore
         /// </summary>
         int PreLoadingTimeoutMilliSeconds = 20000;
 
+        /// <summary>
+        /// LN終端で、早く離しても接続される時間。GOOD判定の時間と等しい値にするのが良い。
+        /// </summary>
+        double LNTerminalJudgeSeconds = 0.12;
+
         //******************************************//
         // 設定可能なプロパティ
 
@@ -458,19 +463,19 @@ namespace HeartBeatCore
                            if (x.Seconds + regulation.JudgementWindowSize >= current.Seconds) break;
                            else
                            {
-                               // 判定ゾーンから外にオブジェクトが出ます
-                               if (x.Broken == false)
+                               lock (x)
                                {
-                                   x.Broken = true; // これは消してもいいはず
-                                   x.Judge = Judgement.None;
-                                   x.BrokeAt = CurrentSongPosition();
-
-                                   ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                   ps.CurrentMaximumAcceptance += 1;
-
-                                   if (x.Terminal != null)
+                                   // 判定ゾーンから外にオブジェクトが出ます
+                                   if (x.Broken == false)
                                    {
-                                       if (x.Judge <= Judgement.Bad)
+                                       x.Broken = true;
+                                       x.Judge = Judgement.None;
+                                       x.BrokeAt = CurrentSongPosition();
+
+                                       ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                       ps.CurrentMaximumAcceptance += 1;
+
+                                       if (x.Terminal != null)
                                        {
                                            // LNつながりません
                                            x.Terminal.Broken = true;
@@ -511,6 +516,12 @@ namespace HeartBeatCore
                                    x.Value.Terminal.Broken = true;
                                    x.Value.Terminal.Judge = Judgement.Perfect;
                                    x.Value.Terminal.BrokeAt = x.Value.Terminal.Seconds;
+
+                                   ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                   ps.TotalExScore += regulation.JudgementToScore(x.Value.Judge);
+
+                                   ps.CurrentMaximumAcceptance += 1;
+                                   ps.TotalAcceptance += ((x.Value.Judge >= Judgement.Good) ? 1 : 0);  // 常に1を返す
 
                                    removeList.Add(x.Key);
                                }
@@ -562,18 +573,23 @@ namespace HeartBeatCore
                                            minAt.Judge = regulation.SecondsToJudgement(min);
                                            minAt.BrokeAt = kvpair.seconds;
 
-                                           ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                           ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
-
-                                           ps.CurrentMaximumAcceptance += 1;
-                                           ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
-
-                                           if (minAt.Terminal != null)
+                                           if (minAt.Terminal == null)
                                            {
+                                               // LNではないなら
+                                               ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                               ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
+
+                                               ps.CurrentMaximumAcceptance += 1;
+                                               ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
+                                           }
+                                           else
+                                           {
+                                               // LNなら
+
                                                if (minAt.Judge >= Judgement.Good)
                                                {
                                                    // LNが繋がりそう
-                                                   // 既にLN押してる状態だと例外が出そう
+                                                   // FIXME: 既にLN押してる状態だと例外が出そう
                                                    holdingObject.Add(minAt.Keyid, minAt);
                                                }
                                                else
@@ -582,6 +598,9 @@ namespace HeartBeatCore
                                                    minAt.Terminal.Broken = true;
                                                    minAt.Terminal.Judge = Judgement.None;
                                                    minAt.Terminal.BrokeAt = kvpair.seconds;
+
+                                                   ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                                   ps.CurrentMaximumAcceptance += 1;
                                                }
                                            }
                                        }
@@ -592,10 +611,19 @@ namespace HeartBeatCore
                                    // キーアップ
                                    if (holdingObject.ContainsKey(kvpair.keyid))
                                    {
-                                       var term = holdingObject[kvpair.keyid].Terminal;
+                                       var begin = holdingObject[kvpair.keyid];
+                                       var term = begin.Terminal;
+                                       bool OK = term.Seconds - LNTerminalJudgeSeconds <= kvpair.seconds;  // LN繋いだ？
+
                                        term.Broken = true;
-                                       term.Judge = Judgement.None;
+                                       term.Judge = OK ? Judgement.Perfect : Judgement.None;
                                        term.BrokeAt = kvpair.seconds;
+
+                                       ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                       ps.TotalExScore += regulation.JudgementToScore(OK ? begin.Judge : Judgement.None);
+
+                                       ps.CurrentMaximumAcceptance += 1;
+                                       ps.TotalAcceptance += OK ? 1 : 0;  // LN切ってしまった
 
                                        holdingObject.Remove(kvpair.keyid);
                                    }
