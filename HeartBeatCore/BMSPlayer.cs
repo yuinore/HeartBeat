@@ -26,12 +26,12 @@ namespace HeartBeatCore
         /// 1.0くらいで読み込みミスが発生しないくらいがちょうどいいと思う。
         /// (TODO:曲開始前のキー音割り当て)
         /// </summary>
-        double WavFileLoadingDelayTime = 10.0;
+        double WavFileLoadingDelayTime = 999;//10.0;
 
         /// <summary>
         /// 読み込み完了から曲が再生されるまでの時間
         /// </summary>
-        double DelayingTimeBeforePlay = 1.0;
+        double DelayingTimeBeforePlay = 3.0;//1.0;
 
         /// <summary>
         /// 曲の再生を開始する地点（秒）

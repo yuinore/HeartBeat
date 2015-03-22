@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeat", "HeartBeat\HeartBeat.csproj", "{9466681B-25FF-4A7D-8A9A-D119A6443D7C}"
 EndProject
@@ -20,6 +20,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPlayer", "HatoPlayer\HatoPlayer.csproj", "{94B5907D-6278-4D22-B95C-5D58DD5BED4F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPainter", "HatoPainter\HatoPainter.csproj", "{7346C91F-817D-47AB-B584-FB05A34390FF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoDSP", "HatoDSP\HatoDSP.csproj", "{CF6B7A50-1511-4208-9333-C26B80CB9CF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoDSPTest", "HatoDSPTest\HatoDSPTest.csproj", "{72E1C880-214A-48A4-ADE8-B041EE576FF3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,8 +67,19 @@ Global
 		{7346C91F-817D-47AB-B584-FB05A34390FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7346C91F-817D-47AB-B584-FB05A34390FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7346C91F-817D-47AB-B584-FB05A34390FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF6B7A50-1511-4208-9333-C26B80CB9CF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF6B7A50-1511-4208-9333-C26B80CB9CF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF6B7A50-1511-4208-9333-C26B80CB9CF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF6B7A50-1511-4208-9333-C26B80CB9CF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72E1C880-214A-48A4-ADE8-B041EE576FF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72E1C880-214A-48A4-ADE8-B041EE576FF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72E1C880-214A-48A4-ADE8-B041EE576FF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72E1C880-214A-48A4-ADE8-B041EE576FF3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
