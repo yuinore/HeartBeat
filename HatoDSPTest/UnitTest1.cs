@@ -43,6 +43,22 @@ namespace HatoDSPTest
 
             Assert.IsTrue(Signal.Equals(sum, new ExactSignal(new float[] { 5, 7, 9, 11, 13 })));
             Assert.IsTrue(Signal.Equals(mul, new ExactSignal(new float[] { 0, 6, 14, 24, 36 })));
+
+            var iir1 = new IIRFilter(2, 1, 0, 0, 1, -1, 0);
+
+            var filt = iir1.Take(5, new[] { sig1, sig2 });
+            Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { 0, 1, 1, 1, 1 })));
+            Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { 5, 1, 1, 1, 1 })));
+
+            filt = iir1.Take(5, new[] { sig1, sig2 });
+            Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
+            Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
+
+            var iir2 = new IIRFilter(2, 1, 1, 0, 1, 0, 1);
+
+            filt = iir2.Take(5, new[] { sig1, sig2 });
+            Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { 0, 1, 3, 7, 13 })));
+            Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { 5, 11, 23, 37, 53 })));
         }
     }
 }

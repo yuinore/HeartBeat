@@ -41,9 +41,12 @@
   <ItemGroup>
     <Compile Include="ConstantSignal.cs" />
     <Compile Include="ExactSignal.cs" />
+    <Compile Include="IIRFilter.cs" />
     <Compile Include="JoinedSignal.cs" />
+    <Compile Include="Module.cs" />
     <Compile Include="Signal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SinGenerator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
