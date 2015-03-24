@@ -8,12 +8,25 @@ namespace HatoDSP
 {
     public class CellTree
     {
+        Func<Cell> generator;
+
         public CellTree()
         {
         }
 
-        public Cell Generate() {
-            return null;
+        public CellTree(Func<Cell> generator)
+        {
+            this.generator = generator;
+        }
+
+        public Cell Generate()
+        {
+            if (generator == null)
+            {
+                return null;
+            }
+
+            return generator();
         }
     }
 }

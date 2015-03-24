@@ -16,7 +16,7 @@ namespace HatoDSP
 
             for (int i = 0; i < count; i++)
             {
-                ret[i] = (float)Math.Sin(2 * Math.PI * 441 * index++);
+                ret[i] = (float)Math.Sin(2 * Math.PI * 441 * index++ / 44100) * 0.1f;
             }
 
             return new[] { new ExactSignal(ret, 1.0f, false) };

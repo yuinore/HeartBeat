@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AnalogOscillator.cs" />
     <Compile Include="Cell.cs" />
     <Compile Include="CellTree.cs" />
     <Compile Include="ConstantSignal.cs" />

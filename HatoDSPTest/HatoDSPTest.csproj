@@ -58,6 +58,10 @@
       <Project>{cf6b7a50-1511-4208-9333-c26b80cb9cf1}</Project>
       <Name>HatoDSP</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HatoLib\HatoLib.csproj">
+      <Project>{9c573aae-1884-4de0-854f-bc31f1fd65e0}</Project>
+      <Name>HatoLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
