@@ -18,9 +18,9 @@ namespace HatoDSP
         {
         }
 
-        public override void AssignChildren(CellTree children)
+        public override void AssignChildren(CellTree[] children)
         {
-            this.children = children;
+            this.children = children[0];
         }
 
         public override Signal[] Take(int count, LocalEnvironment lenv)

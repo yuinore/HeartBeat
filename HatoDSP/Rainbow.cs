@@ -27,15 +27,15 @@ namespace HatoDSP
             }
         }
 
-        public override void AssignChildren(CellTree children)
+        public override void AssignChildren(CellTree[] children)
         {
-            this.children = children;
+            this.children = children[0];
 
             list = new List<Cell>();  // 既存の割り当ては削除
 
             for (int i = 0; i < rainbowN; i++)
             {
-                list.Add(children.Generate());
+                list.Add(children[0].Generate());
             }
         }
 

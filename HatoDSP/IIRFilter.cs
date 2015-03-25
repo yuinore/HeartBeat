@@ -45,8 +45,13 @@ namespace HatoDSP
         // input[0] : フィルタへの入力信号
         public override Signal[] Take(int count, params Signal[][] input)
         {
-            if (input.Length != 1) throw new Exception("Invalid Input Count.");
+            if (input.Length != 1 && input.Length != 2) throw new Exception("Invalid Input Count.");
             if (input[0].Length != chCnt) throw new Exception("Invalid Input Signal's Channels Count.");
+            float[][] param = null;
+            if (input.Length >= 2)
+            {
+                param = input[1].Select(x => x.ToArray()).ToArray();
+            }
 
             Signal[] ret = new Signal[input[0].Length];
 
@@ -62,6 +67,16 @@ namespace HatoDSP
 
                 for (int i = 0; i < count; i++)
                 {
+                    if (input.Length >= 2)
+                    {
+                        float inv_a0 = 1.0f / param[0][i];
+                        a1 = param[1][i] * inv_a0;
+                        a2 = param[2][i] * inv_a0;
+                        b0 = param[3][i] * inv_a0;
+                        b1 = param[4][i] * inv_a0;
+                        b2 = param[5][i] * inv_a0;
+                    }
+
                     t0 = arr[i] - a1 * t1 - a2 * t2;
                     arr[i] = t0 * b0 + t1 * b1 + t2 * b2;
 

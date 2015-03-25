@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ADSR.cs" />
     <Compile Include="AnalogFilter.cs" />
     <Compile Include="AnalogOscillator.cs" />
     <Compile Include="Cell.cs" />

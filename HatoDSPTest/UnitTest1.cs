@@ -64,7 +64,7 @@ namespace HatoDSPTest
 
             {
                 var rainbow = new Rainbow();
-                rainbow.AssignChildren(new CellTree(() => new AnalogOscillator()));
+                rainbow.AssignChildren(new[] { new CellTree(() => new AnalogOscillator()) });
                 var sig5 = rainbow.Take(100000, new LocalEnvironment
                 {
                     SamplingRate = 44100,
@@ -78,15 +78,24 @@ namespace HatoDSPTest
 
             {
                 var filt2 = new AnalogFilter();
-                filt2.AssignChildren(new CellTree(() =>
-                {
-                    var cell = new Rainbow();
-                    cell.AssignChildren(new CellTree(() => {
-                        var cell2 = new AnalogOscillator();
-                        return cell2;
-                    }));
-                    return cell;
-                }));
+                filt2.AssignChildren(new[] {
+                    new CellTree(() =>
+                    {
+                       var cell = new Rainbow();
+                       cell.AssignChildren(new[]
+                       { 
+                           new CellTree(() =>
+                           {
+                               return new AnalogOscillator();
+                           })
+                       });
+                       return cell;
+                    }),
+                    new CellTree(() =>
+                    {
+                        return new ADSR();
+                    })
+                });
                 var sig5 = filt2.Take(100000, new LocalEnvironment
                 {
                     SamplingRate = 44100,
