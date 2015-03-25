@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeat", "HeartBeat\HeartBeat.csproj", "{9466681B-25FF-4A7D-8A9A-D119A6443D7C}"
 EndProject
@@ -24,6 +24,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoDSP", "HatoDSP\HatoDSP.csproj", "{CF6B7A50-1511-4208-9333-C26B80CB9CF1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoDSPTest", "HatoDSPTest\HatoDSPTest.csproj", "{72E1C880-214A-48A4-ADE8-B041EE576FF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoDSPSample", "HatoDSPSample\HatoDSPSample.csproj", "{B2EDE1C3-FA3D-48E2-809D-26C8764F109D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -75,6 +77,10 @@ Global
 		{72E1C880-214A-48A4-ADE8-B041EE576FF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72E1C880-214A-48A4-ADE8-B041EE576FF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72E1C880-214A-48A4-ADE8-B041EE576FF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2EDE1C3-FA3D-48E2-809D-26C8764F109D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2EDE1C3-FA3D-48E2-809D-26C8764F109D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2EDE1C3-FA3D-48E2-809D-26C8764F109D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2EDE1C3-FA3D-48E2-809D-26C8764F109D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

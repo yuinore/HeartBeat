@@ -42,7 +42,7 @@ namespace HatoDSP
                         int n2 = 1;
                         for (double n = phasedelta; n < Math.PI; n += phasedelta)
                         {
-                            ret[i] += (float)Math.Sin(n2 * phase) * 0.01f / n2++;
+                            ret[i] += FastMath.Sin(n2 * phase) * 0.01f / n2++;
                         }
                         phase += phasedelta;
                     }

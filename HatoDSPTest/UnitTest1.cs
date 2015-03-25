@@ -61,51 +61,6 @@ namespace HatoDSPTest
             filt = iir2.Take(5, new[] { sig1, sig2 });
             Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { 0, 1, 3, 7, 13 })));
             Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { 5, 11, 23, 37, 53 })));
-
-            {
-                var rainbow = new Rainbow();
-                rainbow.AssignChildren(new[] { new CellTree(() => new AnalogOscillator()) });
-                var sig5 = rainbow.Take(100000, new LocalEnvironment
-                {
-                    SamplingRate = 44100,
-                    Freq = new ConstantSignal(441, 100000),
-                    Pitch = new ConstantSignal(60, 100000),
-                    Locals = null
-                });
-
-                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test1.wav"), sig5.Select(x => x.ToArray()).ToArray());
-            }
-
-            {
-                var filt2 = new AnalogFilter();
-                filt2.AssignChildren(new[] {
-                    new CellTree(() =>
-                    {
-                       var cell = new Rainbow();
-                       cell.AssignChildren(new[]
-                       { 
-                           new CellTree(() =>
-                           {
-                               return new AnalogOscillator();
-                           })
-                       });
-                       return cell;
-                    }),
-                    new CellTree(() =>
-                    {
-                        return new ADSR();
-                    })
-                });
-                var sig5 = filt2.Take(100000, new LocalEnvironment
-                {
-                    SamplingRate = 44100,
-                    Freq = new ConstantSignal(441, 100000),
-                    Pitch = new ConstantSignal(60, 100000),
-                    Locals = null
-                });
-
-                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test2.wav"), sig5.Select(x => x.ToArray()).ToArray());
-            }
         }
     }
 }
