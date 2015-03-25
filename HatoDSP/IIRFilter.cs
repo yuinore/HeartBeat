@@ -31,6 +31,17 @@ namespace HatoDSP
             z2 = new float[chCnt];
         }
 
+        public void UpdateParams(float a0, float a1, float a2, float b0, float b1, float b2)
+        {
+            float inv_a0 = 1.0f / a0;
+
+            this.a1 = a1 * inv_a0;
+            this.a2 = a2 * inv_a0;
+            this.b0 = b0 * inv_a0;
+            this.b1 = b1 * inv_a0;
+            this.b2 = b2 * inv_a0;
+        }
+
         // input[0] : フィルタへの入力信号
         public override Signal[] Take(int count, params Signal[][] input)
         {
@@ -51,7 +62,7 @@ namespace HatoDSP
 
                 for (int i = 0; i < count; i++)
                 {
-                    t0 = arr[i] + a1 * t1 + a2 * t2;
+                    t0 = arr[i] - a1 * t1 - a2 * t2;
                     arr[i] = t0 * b0 + t1 * b1 + t2 * b2;
 
                     t2 = t1;

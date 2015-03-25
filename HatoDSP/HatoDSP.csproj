@@ -39,11 +39,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AnalogFilter.cs" />
     <Compile Include="AnalogOscillator.cs" />
     <Compile Include="Cell.cs" />
     <Compile Include="CellTree.cs" />
     <Compile Include="ConstantSignal.cs" />
     <Compile Include="ExactSignal.cs" />
+    <Compile Include="FilterType.cs" />
     <Compile Include="IIRFilter.cs" />
     <Compile Include="JoinedSignal.cs" />
     <Compile Include="LocalEnvironment.cs" />
