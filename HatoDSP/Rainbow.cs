@@ -10,13 +10,21 @@ namespace HatoDSP
     {
         CellTree children;
         List<Cell> list;
-        int rainbowN = 3;
+        int rainbowN = 7;
+        float[] rand;
 
         public Rainbow()
         {
             this.children = null;
 
             list = new List<Cell>();
+
+            Random r = new Random(57923741);
+            rand = new float[rainbowN];
+            for (int i = 0; i < rainbowN; i++)
+            {
+                rand[i] = (float)r.NextDouble();
+            }
         }
 
         public override void AssignChildren(CellTree children)
@@ -42,7 +50,7 @@ namespace HatoDSP
 
                 // lenvのピッチをここで加工する
 
-                lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.02f * (j - 1), count));
+                lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.02f * (j - (rainbowN - 1) / 2 + (rand[j] - 0.5f) * 1.0f), count));
 
                 var sig = x.Take(count, lenv);
                 if (sum == null)

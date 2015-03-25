@@ -66,6 +66,7 @@ namespace HatoDSPTest
             rainbow.AssignChildren(new CellTree(() => new AnalogOscillator()));
             var sig5 = rainbow.Take(100000, new LocalEnvironment
             {
+                SamplingRate = 44100,
                 Freq = new ConstantSignal(441, 100000),
                 Pitch = new ConstantSignal(60, 100000),
                 Locals = null

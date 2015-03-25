@@ -11,5 +11,6 @@ namespace HatoDSP
         public Signal Pitch;
         public Signal Freq;
         public Dictionary<string, Signal> Locals;
+        public float SamplingRate;
     }
 }
