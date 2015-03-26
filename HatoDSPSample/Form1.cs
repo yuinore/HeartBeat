@@ -71,11 +71,11 @@ namespace HatoDSPSample
 
             {
                 var filt2 = new AnalogOscillator();
-                var sig5 = filt2.Take(1000000, new LocalEnvironment
+                var sig5 = filt2.Take(2000000, new LocalEnvironment
                 {
                     SamplingRate = 44100,
-                    Freq = new ConstantSignal(441, 1000000),
-                    Pitch = new ExactSignal(Enumerable.Range(0,1000000).Select(i => (float)(12 + i / 10000.0)).ToArray()),
+                    Freq = new ConstantSignal(441, 2000000),
+                    Pitch = new ExactSignal(Enumerable.Range(0, 2000000).Select(i => (float)(-12 + i / 10000.0)).ToArray()),
                     Locals = null
                 });
 

@@ -16,12 +16,13 @@ namespace HatoDSP
         static readonly float[][] saw2;
         static readonly double r;
 
-        private const int WT_N = 8;  // wavetable n
-        private const int N_SAW = 128;  // 高速化のために敢えてconstで（高速化になるのか？）
+        private const int WT_N = 8;  // wavetable n, sawのwavetableの分割数
+        //private const int N_SAW = 256;  // 高速化のために敢えてconstで（高速化になるのか？）
+        private const int N_SAW = 16;  // 高速化のために敢えてconstで（高速化になるのか？）
         private const double INV_2PI = 1.0 / (2 * Math.PI);
 
         // N = 512 で十分なサイズだと思います（積分しないなら）
-        private const int N = 512;  // 高速化のために敢えてconstで（高速化になるのか？）
+        private const int N = 256;  // 高速化のために敢えてconstで（高速化になるのか？）
         private const int Mask = N - 1;
 
         static FastMath()
@@ -57,9 +58,9 @@ namespace HatoDSP
                 {
                     for (int n = 1; n <= 1 << j; n++)
                     {
-                        saw0[j][i] += (float)Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / n;
-                        saw1[j][i] += (float)(_2pi_N2 * n * Math.Cos(2 * Math.PI * (i + 0.5) / N2)) / n;
-                        saw2[j][i] += -(float)(_2pi_N2 * _2pi_N2 * n * n * Math.Sin(2 * Math.PI * (i + 0.5) / N2) / 2) / n;
+                        saw0[j][i] += (float)(Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / n);
+                        saw1[j][i] += (float)(_2pi_N2 * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / n);
+                        saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / 2 / n);
                     }
                 }
             }
@@ -67,7 +68,7 @@ namespace HatoDSP
             r = (1.0 / _2pi_N);
         }
 
-        public static double Sin(double x)  // 位相は誤差を蓄積させやすいのでdouble型です。というかfloatよりdoubleの方が速いというのは本当みたいです。
+        public static double Sin(double x)
         {
             if (x < 0) x = -x;
             double xr = x * r;
@@ -88,9 +89,10 @@ namespace HatoDSP
             }
         }
 
-        public static double Saw(double x, int logovertone)  // 位相は誤差を蓄積させやすいのでdouble型です。というかfloatよりdoubleの方が速いというのは本当みたいです。
+        public static double Saw(double x, int logovertone)
         {
             if (logovertone >= WT_N) logovertone = WT_N - 1;
+            if (logovertone < 0) logovertone = 0;
 
             int N2 = N_SAW << logovertone;
             int mask = N2 - 1;
