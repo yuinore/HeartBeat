@@ -35,7 +35,7 @@ namespace HatoDSPSample
                     Locals = null
                 });
 
-                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test1.wav"), sig5.Select(x => x.ToArray()).ToArray());
+                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test1.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
             }
 
             {
@@ -66,11 +66,24 @@ namespace HatoDSPSample
                     Locals = null
                 });
 
-                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test2.wav"), sig5.Select(x => x.ToArray()).ToArray());
+                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test2.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
             }
 
-            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test3.wav"), new float[][] { Enumerable.Range(0, 100000).Select(x => (float)Math.Sin(8 * Math.PI * x / 100000)).ToArray() }, 1, 44100, 32);
-            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test4.wav"), new float[][] { Enumerable.Range(0, 100000).Select(x => FastMath.Sin(8 * Math.PI * x / 100000)).ToArray() }, 1, 44100, 32);
+            {
+                var filt2 = new AnalogOscillator();
+                var sig5 = filt2.Take(100000, new LocalEnvironment
+                {
+                    SamplingRate = 44100,
+                    Freq = new ConstantSignal(441, 100000),
+                    Pitch = new ConstantSignal(60, 100000),
+                    Locals = null
+                });
+
+                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test5.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+            }
+
+            //WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test3.wav"), new float[][] { Enumerable.Range(0, 100000).Select(x => (float)Math.Sin(8 * Math.PI * x * 0.00001)).ToArray() }, 1, 44100, 32);
+            //WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test4.wav"), new float[][] { Enumerable.Range(0, 100000).Select(x => FastMath.Sin(8 * Math.PI * x * 0.00001)).ToArray() }, 1, 44100, 32);
 
             s.Stop();
             label1.Text = "" + s.ElapsedMilliseconds;

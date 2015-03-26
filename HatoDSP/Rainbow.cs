@@ -50,7 +50,7 @@ namespace HatoDSP
 
                 // lenvのピッチをここで加工する
 
-                lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.02f * (j - (rainbowN - 1) / 2 + (rand[j] - 0.5f) * 1.0f), count));
+                lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.05f * (j - (rainbowN - 1) / 2 + (rand[j] - 0.5f) * 1.0f), count));
 
                 var sig = x.Take(count, lenv);
                 if (sum == null)
