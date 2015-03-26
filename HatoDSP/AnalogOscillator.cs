@@ -37,25 +37,29 @@ namespace HatoDSP
 
             float _1_rate = 1.0f / lenv.SamplingRate;
 
+            double log2_100 = Math.Log(100) / Math.Log(2);
+
             switch (waveform)
             {
                 case Waveform.Saw:
                     for (int i = 0; i < count; i++, i2++)
                     {
-                        double freq = Math.Pow(2, (pitch[i] - 60.0) / 12.0) * 600;
+                        double freq = Math.Pow(2, (pitch[i] - 60.0) / 12.0) * 441;
                         double phasedelta = (2 * Math.PI * freq * _1_rate);
 
-                        /*
-                        ret[i] = 0;
+                        /*ret[i] = 0;
                         int n2 = 1;
-                        for (double n = phasedelta; n < Math.PI && n2 <= MAX_OVERTONE; n += phasedelta, n2 ++)
+                        for (double n = phasedelta; n < Math.PI / 4 && n2 < MAX_OVERTONE; n += phasedelta, n2 ++)
                         {
                             ret[i] += (float)(FastMath.Sin(n2 * phase) * 0.01 * int_inv[n2] * int_inv[n2]);
                         }*/
+                        ret[i] = (float)(FastMath.Saw(phase, (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 2)) * 0.01);
+                        /*
                         double P = lenv.SamplingRate / freq;
                         double M = Math.Floor((P + 1) / 2) * 2 - 1;
                         old = old + FastMath.Sin(Math.PI * M / P * (i2 + 1e-1)) / (FastMath.Sin(Math.PI / P * (i2 + 1e-1)) * P) - 1 / P;  // TODO:ゼロ除算
                         ret[i] = (float)((old - 0.5) * 0.01);
+                         */
                         //ret[i] += (float)((0.5 - (phase / (2 * Math.PI)) % 1) * 0.01);
                         phase += phasedelta;
                     }
