@@ -25,9 +25,12 @@ namespace HatoDSPSample
             Stopwatch s = new Stopwatch();
             s.Start();
             {
-                var rainbow = new Rainbow();
-                rainbow.AssignChildren(new[] { new CellTree(() => new AnalogOscillator()) });
-                var sig5 = rainbow.Take(100000, new LocalEnvironment
+                var rainbow = new CellTree(() => new Rainbow());
+                var osc1 = new CellTree(() => new AnalogOscillator());
+
+                rainbow.AssignChildren(new[] { osc1 });
+
+                var sig5 = rainbow.Generate().Take(100000, new LocalEnvironment
                 {
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),
@@ -39,26 +42,16 @@ namespace HatoDSPSample
             }
 
             {
-                var filt2 = new AnalogFilter();
-                filt2.AssignChildren(new[] {
-                    new CellTree(() =>
-                    {
-                       var cell = new Rainbow();
-                       cell.AssignChildren(new[]
-                       { 
-                           new CellTree(() =>
-                           {
-                               return new AnalogOscillator();
-                           })
-                       });
-                       return cell;
-                    }),
-                    new CellTree(() =>
-                    {
-                        return new ADSR();
-                    })
-                });
-                var sig5 = filt2.Take(100000, new LocalEnvironment
+                var filt2 = new CellTree(() => new AnalogFilter());
+                var rainbow = new CellTree(() => new Rainbow());
+                var osc1 = new CellTree(() => new AnalogOscillator());
+                var adsr = new CellTree(() => new ADSR());
+
+                // 順序は問わない
+                filt2.AssignChildren(new[] { rainbow, adsr });
+                rainbow.AssignChildren(new[] { osc1 });
+
+                var sig5 = filt2.Generate().Take(100000, new LocalEnvironment
                 {
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),

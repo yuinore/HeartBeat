@@ -9,6 +9,9 @@ namespace HatoDSP
     public class CellTree
     {
         Func<Cell> generator;
+        string Name;  // must be unique
+        int Port;  // connection type, 0, 1, ...
+        CellTree[] children;
 
         public CellTree()
         {
@@ -19,6 +22,11 @@ namespace HatoDSP
             this.generator = generator;
         }
 
+        public void AssignChildren(CellTree[] children)
+        {
+            this.children = children;
+        }
+
         public Cell Generate()
         {
             if (generator == null)
@@ -26,7 +34,12 @@ namespace HatoDSP
                 return null;
             }
 
-            return generator();
+            Cell cell = generator();
+            if (children != null)
+            {
+                cell.AssignChildren(children);
+            }
+            return cell;
         }
     }
 }
