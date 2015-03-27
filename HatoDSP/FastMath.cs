@@ -14,6 +14,9 @@ namespace HatoDSP
         static readonly float[][] saw0;
         static readonly float[][] saw1;
         static readonly float[][] saw2;
+        static readonly float[][] tri0;
+        static readonly float[][] tri1;
+        static readonly float[][] tri2;
         static readonly double r;
 
         private const int WT_N = 8;  // wavetable n, sawのwavetableの分割数
@@ -43,6 +46,9 @@ namespace HatoDSP
             saw0 = new float[WT_N][];
             saw1 = new float[WT_N][];
             saw2 = new float[WT_N][];
+            tri0 = new float[WT_N][];
+            tri1 = new float[WT_N][];
+            tri2 = new float[WT_N][];
 
             for (int j = 0; j < WT_N; j++)
             {
@@ -51,6 +57,9 @@ namespace HatoDSP
                 saw0[j] = new float[N2];  // 配列の内容は0で初期化される
                 saw1[j] = new float[N2];
                 saw2[j] = new float[N2];
+                tri0[j] = new float[N2];
+                tri1[j] = new float[N2];
+                tri2[j] = new float[N2];
 
                 double _2pi_N2 = 2 * Math.PI / N2;
 
@@ -60,7 +69,14 @@ namespace HatoDSP
                     {
                         saw0[j][i] += (float)(Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / n);
                         saw1[j][i] += (float)(_2pi_N2 * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / n);
-                        saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / 2 / n);
+                        saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (2 * n));
+
+                        if (n % 2 == 1)
+                        {
+                            tri0[j][i] += (float)(Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (n * n));
+                            tri1[j][i] += (float)(-_2pi_N2 * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (n * n));
+                            tri2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (2 * n * n));
+                        }
                     }
                 }
             }
@@ -103,6 +119,22 @@ namespace HatoDSP
             double d = xr - (int)xr - 0.5;
 
             return saw0[logovertone][a] + d * (saw1[logovertone][a] + d * saw2[logovertone][a]);
+        }
+
+        public static double Tri(double x, int logovertone)
+        {
+            if (logovertone >= WT_N) logovertone = WT_N - 1;
+            if (logovertone < 0) logovertone = 0;
+
+            int N2 = N_SAW << logovertone;
+            int mask = N2 - 1;
+
+            if (x < 0) x = -x;  // Fixme:
+            double xr = x * N2 * INV_2PI;
+            int a = ((int)xr) & mask;
+            double d = xr - (int)xr - 0.5;
+
+            return tri0[logovertone][a] + d * (tri1[logovertone][a] + d * tri2[logovertone][a]);
         }
     }
 }

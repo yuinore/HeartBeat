@@ -10,7 +10,7 @@ namespace HatoDSP
     {
         CellTree children;
 
-        Waveform waveform = Waveform.Square;
+        Waveform waveform = Waveform.Tri;
 
         const int MAX_OVERTONE = 100;
         float[] int_inv;
@@ -93,6 +93,25 @@ namespace HatoDSP
                     }
                     break;
 
+                case Waveform.Tri:
+                    for (int i = 0; i < count; i++, i2++)
+                    {
+                        double freq = Math.Pow(2, (pitch[i] - 60.0) / 12.0) * 441;
+                        double phasedelta = (2 * Math.PI * freq * _1_rate);
+                        int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
+
+                        if (phasedelta >= Math.PI)
+                        {
+                            ret[i] = 0;
+                        }
+                        else
+                        {
+                            ret[i] = (float)(FastMath.Tri(phase, logovertone) * 0.25);
+                        }
+
+                        phase += phasedelta;
+                    }
+                    break;
                 default:
                     for (int i = 0; i < count; i++)
                     {
