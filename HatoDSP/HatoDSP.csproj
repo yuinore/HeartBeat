@@ -45,6 +45,7 @@
     <Compile Include="Cell.cs" />
     <Compile Include="CellTree.cs" />
     <Compile Include="ConstantSignal.cs" />
+    <Compile Include="Controller.cs" />
     <Compile Include="ExactSignal.cs" />
     <Compile Include="FastMath.cs" />
     <Compile Include="FilterType.cs" />

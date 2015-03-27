@@ -51,6 +51,8 @@ namespace HatoDSPSample
                 filt2.AssignChildren(new[] { rainbow, adsr });
                 rainbow.AssignChildren(new[] { osc1 });
 
+                osc1.AssignControllers(new[] { new Controller("Pitch", 0), new Controller("Amp", 0.01f), new Controller("Type", (int)Waveform.Saw), new Controller("OP 1", 0) });
+
                 var sig5 = filt2.Generate().Take(100000, new LocalEnvironment
                 {
                     SamplingRate = 44100,

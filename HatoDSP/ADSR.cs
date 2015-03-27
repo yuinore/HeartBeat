@@ -8,7 +8,7 @@ namespace HatoDSP
 {
     public class ADSR : Cell
     {
-        CellTree children;
+        CellTree child0;
 
         Waveform waveform = Waveform.Saw;
 
@@ -27,7 +27,12 @@ namespace HatoDSP
 
         public override void AssignChildren(CellTree[] children)
         {
-            this.children = children[0];
+            this.child0 = children[0];
+        }
+
+        public override void AssignControllers(Controller[] ctrl)
+        {
+            // TODO:
         }
 
         public override Signal[] Take(int count, LocalEnvironment lenv)

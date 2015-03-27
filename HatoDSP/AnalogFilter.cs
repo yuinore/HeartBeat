@@ -28,6 +28,11 @@ namespace HatoDSP
             }
         }
 
+        public override void AssignControllers(Controller[] ctrl)
+        {
+            // TODO:
+        }
+
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
             Signal[] input = waveCell.Take(count, lenv);

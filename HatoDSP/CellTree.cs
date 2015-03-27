@@ -6,17 +6,14 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class CellTree
+    public class CellTree  // HatoSynthでのモジュールの単位
     {
         Func<Cell> generator;
-        string Name;  // must be unique
-        int Port;  // connection type, 0, 1, ...
+        public string Name;  // must be unique
+        public int Port;  // connection type, 0, 1, ...
         CellTree[] children;
-
-        public CellTree()
-        {
-        }
-
+        Controller[] ctrl;
+        
         public CellTree(Func<Cell> generator)
         {
             this.generator = generator;
@@ -24,7 +21,12 @@ namespace HatoDSP
 
         public void AssignChildren(CellTree[] children)
         {
-            this.children = children;
+            this.children = children;  // カプセル化？？
+        }
+
+        public void AssignControllers(Controller[] ctrl)
+        {
+            this.ctrl = ctrl;  // カプセル化？？
         }
 
         public Cell Generate()
@@ -38,6 +40,10 @@ namespace HatoDSP
             if (children != null)
             {
                 cell.AssignChildren(children);
+            }
+            if (ctrl != null)
+            {
+                cell.AssignControllers(ctrl);
             }
             return cell;
         }
