@@ -21,12 +21,17 @@ namespace HatoDSP
 
         public void AssignChildren(CellTree[] children)
         {
-            this.children = children;  // カプセル化？？
+            this.children = children;  // カプセル化は？？
         }
 
         public void AssignControllers(Controller[] ctrl)
         {
-            this.ctrl = ctrl;  // カプセル化？？
+            this.ctrl = ctrl;  // カプセル化は？？
+        }
+
+        public void AssignControllers(float[] ctrl)  // 便宜的に
+        {
+            this.ctrl = ctrl.Select(x => new Controller("Unknown", x)).ToArray();
         }
 
         public Cell Generate()

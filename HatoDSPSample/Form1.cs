@@ -30,6 +30,9 @@ namespace HatoDSPSample
 
                 rainbow.AssignChildren(new[] { osc1 });
 
+                // Pitch, Amp, Type, OP1
+                osc1.AssignControllers(new float[] { 0, 0.03f, (float)Waveform.Saw, 0});
+
                 var sig5 = rainbow.Generate().Take(100000, new LocalEnvironment
                 {
                     SamplingRate = 44100,
@@ -45,15 +48,21 @@ namespace HatoDSPSample
                 var filt2 = new CellTree(() => new AnalogFilter());
                 var rainbow = new CellTree(() => new Rainbow());
                 var osc1 = new CellTree(() => new AnalogOscillator());
-                var adsr = new CellTree(() => new ADSR());
+                var osc2 = new CellTree(() => new AnalogOscillator());
+                var fenv = new CellTree(() => new ADSR());
+                var aenv = new CellTree(() => new ADSR());
 
                 // 順序は問わない
-                filt2.AssignChildren(new[] { rainbow, adsr });
-                rainbow.AssignChildren(new[] { osc1 });
+                aenv.AssignChildren(new[] { filt2 });
+                filt2.AssignChildren(new[] { rainbow, fenv });
+                rainbow.AssignChildren(new[] { osc2 });
+                osc2.AssignChildren(new[] { osc1 });
 
-                osc1.AssignControllers(new[] { new Controller("Pitch", 0), new Controller("Amp", 0.01f), new Controller("Type", (int)Waveform.Saw), new Controller("OP 1", 0) });
+                osc1.AssignControllers(new float[] { 0, 0.03f, (float)Waveform.Saw, 0 });
+                osc2.AssignControllers(new float[] { -12, 0.003f, (float)Waveform.Saw, 0 });
+                aenv.AssignControllers(new float[] { 0.01f, 2, 0, 0.01f });
 
-                var sig5 = filt2.Generate().Take(100000, new LocalEnvironment
+                var sig5 = aenv.Generate().Take(100000, new LocalEnvironment
                 {
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),

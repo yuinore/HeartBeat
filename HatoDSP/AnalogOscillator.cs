@@ -8,10 +8,11 @@ namespace HatoDSP
 {
     public class AnalogOscillator : Cell
     {
-        CellTree children;
+        CellTree child0;
+        Cell cell;
         Controller[] ctrl;
 
-        Waveform waveform = Waveform.Tri;
+        Waveform waveform = Waveform.Saw;
 
         const int MAX_OVERTONE = 100;
         float[] int_inv;
@@ -27,7 +28,8 @@ namespace HatoDSP
 
         public override void AssignChildren(CellTree[] children)
         {
-            this.children = children[0];
+            this.child0 = children[0];
+            cell = child0.Generate();
         }
 
         public override void AssignControllers(Controller[] ctrl)
@@ -143,7 +145,15 @@ namespace HatoDSP
                     break;
             }
 
-            return new[] { new ExactSignal(ret, 1.0f, false) };
+            if (child0 != null)
+            {
+                var src = cell.Take(count, lenv);
+                return src.Select(x => Signal.Add(x, new ExactSignal(ret, 1.0f, false))).ToArray();  // チャンネル数は入力信号と同じ
+            }
+            else
+            {
+                return new[] { new ExactSignal(ret, 1.0f, false) };  // チャンネル数は1
+            }
         }
     }
 }

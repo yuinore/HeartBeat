@@ -9,6 +9,8 @@ namespace HatoDSP
     public class ADSR : Cell
     {
         CellTree child0;
+        Cell cell;
+        Controller[] ctrl;
 
         Waveform waveform = Waveform.Saw;
 
@@ -28,15 +30,26 @@ namespace HatoDSP
         public override void AssignChildren(CellTree[] children)
         {
             this.child0 = children[0];
+            cell = child0.Generate();
         }
 
         public override void AssignControllers(Controller[] ctrl)
         {
-            // TODO:
+            this.ctrl = ctrl;
         }
 
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
+            // ctrlの解釈
+            // A, D, S, R
+            if (ctrl != null)
+            {
+                if (ctrl.Length >= 1) { A = ctrl[0].Value; }
+                if (ctrl.Length >= 2) { D = ctrl[1].Value; }
+                if (ctrl.Length >= 3) { S = ctrl[2].Value; }
+                if (ctrl.Length >= 4) { R = ctrl[3].Value; }
+            }
+
             float[] ret = new float[count];
 
             double dt = 1.0 / lenv.SamplingRate;
@@ -60,7 +73,15 @@ namespace HatoDSP
                 // TODO: リリースの実装
             }
 
-            return new[] { new ExactSignal(ret, 1.0f, false) };
+            if (child0 != null)
+            {
+                var src = cell.Take(count, lenv);
+                return src.Select(x => Signal.Multiply(x, new ExactSignal(ret, 1.0f, false))).ToArray();  // チャンネル数は入力信号と同じ
+            }
+            else
+            {
+                return new[] { new ExactSignal(ret, 1.0f, false) };  // チャンネル数は1
+            }
         }
     }
 }
