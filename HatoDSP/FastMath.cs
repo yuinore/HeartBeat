@@ -25,7 +25,7 @@ namespace HatoDSP
         private const double INV_2PI = 1.0 / (2 * Math.PI);
 
         // N = 512 で十分なサイズだと思います（積分しないなら）
-        private const int N = 256;  // 高速化のために敢えてconstで（高速化になるのか？）
+        private const int N = 128;  // 高速化のために敢えてconstで（高速化になるのか？）
         private const int Mask = N - 1;
 
         static FastMath()
@@ -67,15 +67,15 @@ namespace HatoDSP
                 {
                     for (int n = 1; n <= 1 << j; n++)
                     {
-                        saw0[j][i] += (float)(Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / n);
-                        saw1[j][i] += (float)(_2pi_N2 * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / n);
-                        saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (2 * n));
+                        saw0[j][i] += (float)(Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (n * Math.PI / 2));
+                        saw1[j][i] += (float)(_2pi_N2 * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (n * Math.PI / 2));
+                        saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (2 * n * Math.PI / 2));
 
                         if (n % 2 == 1)
                         {
-                            tri0[j][i] += (float)(Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (n * n));
-                            tri1[j][i] += (float)(-_2pi_N2 * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (n * n));
-                            tri2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (2 * n * n));
+                            tri0[j][i] += (float)(Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (n * n * Math.PI * Math.PI / 8));
+                            tri1[j][i] += (float)(-_2pi_N2 * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (n * n * Math.PI * Math.PI / 8));
+                            tri2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (2 * n * n * Math.PI * Math.PI / 8));
                         }
                     }
                 }

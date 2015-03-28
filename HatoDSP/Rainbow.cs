@@ -46,7 +46,7 @@ namespace HatoDSP
 
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
-            Signal[] sum = null;
+            Signal[] sum = new Signal[] { new ConstantSignal(0, count), new ConstantSignal(0, count) };
             Signal originalPitch = lenv.Pitch;
 
             for (int j = 0; j < list.Count; j++)
@@ -63,9 +63,32 @@ namespace HatoDSP
                     //sum = (new Signal[sig.Length]).Select(nil => new ConstantSignal(0, count)).ToArray();  // ArrayTypeMismatchException
                     sum = (new Signal[sig.Length]).Select(nil => (Signal)(new ConstantSignal(0, count))).ToArray();
                 }
+
+                var panL = new ConstantSignal(1 - 0.5f * ((j - (rainbowN - 1) / 2) / ((rainbowN - 1) / 2)), count);
+                var panR = new ConstantSignal(1 + 0.5f * ((j - (rainbowN - 1) / 2) / ((rainbowN - 1) / 2)), count);
+
+                /*
                 for (int i = 0; i < sig.Length; i++)
                 {
-                    sum[i] = Signal.Add(sum[i], sig[i]);
+                    sum[i] = Signal.Add(
+                        Signal.Multiply(sig[i], i % 2 == 0 ? panL : panR),
+                        sum[i]);
+                }*/
+
+                if (sig.Length == 1)
+                {
+                    sum[0] = Signal.Add(sum[0], Signal.Multiply(sig[0], panL));
+                    sum[1] = Signal.Add(sum[1], Signal.Multiply(sig[0], panR));
+                }
+                else if (sig.Length == 2)
+                {
+                    sum[0] = Signal.Add(sum[0], Signal.Multiply(sig[0], panL));
+                    sum[1] = Signal.Add(sum[1], Signal.Multiply(sig[1], panR));
+                }
+                else
+                {
+                    try { throw new NotImplementedException("未実装"); }
+                    catch { }
                 }
             }
 

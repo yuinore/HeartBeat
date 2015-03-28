@@ -60,7 +60,9 @@ namespace HatoDSP
 
             float _1_rate = 1.0f / lenv.SamplingRate;
 
-            double log2_100 = Math.Log(100) / Math.Log(2);
+            double log2_100 = Math.Log(100) / Math.Log(2);  // FIXME: サンプリングレートが44k以外のとき
+
+            Func<double, int, double> generator = FastMath.Saw;
 
             switch (waveform)
             {
@@ -71,27 +73,33 @@ namespace HatoDSP
                         double phasedelta = (2 * Math.PI * freq * _1_rate);
                         int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
 
-                        /*ret[i] = 0;
-                        int n2 = 1;
-                        for (double n = phasedelta; n < Math.PI / 4 && n2 < MAX_OVERTONE; n += phasedelta, n2 ++)
+                        if (logovertone < 8)
                         {
-                            ret[i] += (float)(FastMath.Sin(n2 * phase) * 0.01 * int_inv[n2] * int_inv[n2]);
-                        }*/
-                        if (phasedelta >= Math.PI)
-                        {
-                            ret[i] = 0;
+                            /*ret[i] = 0;
+                            int n2 = 1;
+                            for (double n = phasedelta; n < Math.PI / 4 && n2 < MAX_OVERTONE; n += phasedelta, n2 ++)
+                            {
+                                ret[i] += (float)(FastMath.Sin(n2 * phase) * 0.01 * int_inv[n2] * int_inv[n2]);
+                            }*/
+                            if (phasedelta >= Math.PI)
+                            {
+                                ret[i] = 0;
+                            }
+                            else
+                            {
+                                ret[i] = (float)(FastMath.Saw(phase, logovertone) * amp);
+                            }
+                            /*
+                            double P = lenv.SamplingRate / freq;
+                            double M = Math.Floor((P + 1) / 2) * 2 - 1;
+                            old = old + FastMath.Sin(Math.PI * M / P * (i2 + 1e-1)) / (FastMath.Sin(Math.PI / P * (i2 + 1e-1)) * P) - 1 / P;  // TODO:ゼロ除算
+                            ret[i] = (float)((old - 0.5) * 0.01);
+                             */
                         }
                         else
                         {
-                            ret[i] = (float)(FastMath.Saw(phase, logovertone) * 0.5 * amp);
+                            ret[i] += (float)((0.5 - (phase / (2 * Math.PI)) % 1) * 2 * amp);
                         }
-                        /*
-                        double P = lenv.SamplingRate / freq;
-                        double M = Math.Floor((P + 1) / 2) * 2 - 1;
-                        old = old + FastMath.Sin(Math.PI * M / P * (i2 + 1e-1)) / (FastMath.Sin(Math.PI / P * (i2 + 1e-1)) * P) - 1 / P;  // TODO:ゼロ除算
-                        ret[i] = (float)((old - 0.5) * 0.01);
-                         */
-                        //ret[i] += (float)((0.5 - (phase / (2 * Math.PI)) % 1) * 0.01);
                         phase += phasedelta;
                     }
                     break;
@@ -103,13 +111,20 @@ namespace HatoDSP
                         double phasedelta = (2 * Math.PI * freq * _1_rate);
                         int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
 
-                        if (phasedelta >= Math.PI)
+                        if (logovertone < 8)
                         {
-                            ret[i] = 0;
+                            if (phasedelta >= Math.PI)
+                            {
+                                ret[i] = 0;
+                            }
+                            else
+                            {
+                                ret[i] = (float)((FastMath.Saw(phase, logovertone) - FastMath.Saw(phase + Math.PI, logovertone)) * amp);
+                            }
                         }
                         else
                         {
-                            ret[i] = (float)((FastMath.Saw(phase, logovertone) - FastMath.Saw(phase + Math.PI, logovertone)) * 0.5 * amp);
+                            ret[i] += (float)((int)(phase / Math.PI) % 2 == 0 ? amp : -amp);
                         }
 
                         phase += phasedelta;
@@ -129,7 +144,7 @@ namespace HatoDSP
                         }
                         else
                         {
-                            ret[i] = (float)(FastMath.Tri(phase, logovertone) * 0.5 * amp);
+                            ret[i] = (float)(FastMath.Tri(phase, logovertone) * amp);
                         }
 
                         phase += phasedelta;
@@ -138,9 +153,19 @@ namespace HatoDSP
                 default:
                     for (int i = 0; i < count; i++)
                     {
-                        ret[i] = (float)(FastMath.Sin(phase) * 0.5 * amp);
+                        double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
+                        double phasedelta = (2 * Math.PI * freq * _1_rate);
 
-                        phase += (2 * Math.PI * Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 442 * _1_rate);
+                        if (phasedelta >= Math.PI)
+                        {
+                            ret[i] = 0;
+                        }
+                        else
+                        {
+                            ret[i] = (float)(FastMath.Sin(phase) * amp);
+                        }
+
+                        phase += phasedelta;
                     }
                     break;
             }
