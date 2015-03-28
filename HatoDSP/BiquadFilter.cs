@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class AnalogFilter : Cell
+    public class BiquadFilter : Cell
     {
         FilterType type = FilterType.LowPass;
 
@@ -14,8 +14,7 @@ namespace HatoDSP
         Cell cutoffCell;
         IIRFilter filt;
 
-
-        public AnalogFilter()
+        public BiquadFilter()
         {
         }
 

@@ -40,8 +40,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ADSR.cs" />
-    <Compile Include="AnalogFilter.cs" />
+    <Compile Include="BiquadFilter.cs" />
     <Compile Include="AnalogOscillator.cs" />
+    <Compile Include="FilterDesigner.cs" />
+    <Compile Include="ButterworthFilterCell.cs" />
     <Compile Include="Cell.cs" />
     <Compile Include="CellTree.cs" />
     <Compile Include="ConstantSignal.cs" />

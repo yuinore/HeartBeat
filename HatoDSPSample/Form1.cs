@@ -45,7 +45,7 @@ namespace HatoDSPSample
             }
 
             {
-                var filt2 = new CellTree(() => new AnalogFilter());
+                var filt2 = new CellTree(() => new ButterworthFilterCell());
                 var rainbow = new CellTree(() => new Rainbow());
                 var osc1 = new CellTree(() => new AnalogOscillator());
                 var osc2 = new CellTree(() => new AnalogOscillator());
