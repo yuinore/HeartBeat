@@ -150,6 +150,34 @@ namespace HatoDSP
                         phase += phasedelta;
                     }
                     break;
+
+                case Waveform.Impulse:
+                    for (int i = 0; i < count; i++, i2++)
+                    {
+                        double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
+                        double phasedelta = (2 * Math.PI * freq * _1_rate);
+                        int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
+
+                        if (logovertone < 8 || true)
+                        {
+                            if (phasedelta >= Math.PI)
+                            {
+                                ret[i] = 0;
+                            }
+                            else
+                            {
+                                ret[i] = (float)(FastMath.Impulse(phase, logovertone) * amp);
+                            }
+                        }
+                        else
+                        {
+                            ret[i] += (float)((int)(phase / Math.PI) % 2 == 0 ? amp : -amp);
+                        }
+
+                        phase += phasedelta;
+                    }
+                    break;
+
                 default:
                     for (int i = 0; i < count; i++)
                     {

@@ -17,17 +17,22 @@ namespace HatoDSP
         static readonly float[][] tri0;
         static readonly float[][] tri1;
         static readonly float[][] tri2;
+        static readonly float[][] imp0;
+        static readonly float[][] imp1;
+        static readonly float[][] imp2;
         static readonly double r;
-
+ 
+        // 高速化のために敢えてconstで（高速化になるのか？）
         private const int WT_N = 8;  // wavetable n, sawのwavetableの分割数
-        //private const int N_SAW = 256;  // 高速化のために敢えてconstで（高速化になるのか？）
-        private const int N_SAW = 16;  // 高速化のために敢えてconstで（高速化になるのか？）
+        //private const int N_SAW = 256;
+        private const int N_SAW = 16;
         private const double INV_2PI = 1.0 / (2 * Math.PI);
 
         // N = 512 で十分なサイズだと思います（積分しないなら）
-        private const int N = 128;  // 高速化のために敢えてconstで（高速化になるのか？）
+        private const int N = 128;
         private const int Mask = N - 1;
 
+        // いくら必要になるまで呼ばれないからといって静的コンストラクタで重い処理をさせるのは良くないと思います。
         static FastMath()
         {
             f0 = new float[N / 2];
@@ -49,6 +54,9 @@ namespace HatoDSP
             tri0 = new float[WT_N][];
             tri1 = new float[WT_N][];
             tri2 = new float[WT_N][];
+            imp0 = new float[WT_N][];
+            imp1 = new float[WT_N][];
+            imp2 = new float[WT_N][];
 
             for (int j = 0; j < WT_N; j++)
             {
@@ -60,6 +68,9 @@ namespace HatoDSP
                 tri0[j] = new float[N2];
                 tri1[j] = new float[N2];
                 tri2[j] = new float[N2];
+                imp0[j] = new float[N2];
+                imp1[j] = new float[N2];
+                imp2[j] = new float[N2];
 
                 double _2pi_N2 = 2 * Math.PI / N2;
 
@@ -71,6 +82,10 @@ namespace HatoDSP
                         saw1[j][i] += (float)(_2pi_N2 * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (n * Math.PI / 2));
                         saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (2 * n * Math.PI / 2));
 
+                        imp0[j][i] += (float)(Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (Math.PI / 2));
+                        imp1[j][i] += (float)(-_2pi_N2 * n * Math.Sin(2 * Math.PI * n * (i + 0.5) / N2) / (Math.PI / 2));
+                        imp2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (2 * Math.PI / 2));
+                        
                         if (n % 2 == 1)
                         {
                             tri0[j][i] += (float)(Math.Cos(2 * Math.PI * n * (i + 0.5) / N2) / (n * n * Math.PI * Math.PI / 8));
@@ -135,6 +150,22 @@ namespace HatoDSP
             double d = xr - (int)xr - 0.5;
 
             return tri0[logovertone][a] + d * (tri1[logovertone][a] + d * tri2[logovertone][a]);
+        }
+
+        public static double Impulse(double x, int logovertone)
+        {
+            if (logovertone >= WT_N) logovertone = WT_N - 1;
+            if (logovertone < 0) logovertone = 0;
+
+            int N2 = N_SAW << logovertone;
+            int mask = N2 - 1;
+
+            if (x < 0) x = -x;  // Fixme:
+            double xr = x * N2 * INV_2PI;  // TODO:除算の削除
+            int a = ((int)xr) & mask;
+            double d = xr - (int)xr - 0.5;
+
+            return imp0[logovertone][a] + d * (imp1[logovertone][a] + d * imp2[logovertone][a]);
         }
     }
 }

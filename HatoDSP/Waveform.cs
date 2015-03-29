@@ -12,6 +12,7 @@ namespace HatoDSP
         Tri,
         Saw,
         Square,
-        Pulse
+        Pulse,
+        Impulse
     }
 }

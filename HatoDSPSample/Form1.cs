@@ -106,6 +106,12 @@ namespace HatoDSPSample
                     var sig5 = osc1.Generate().Take(2000000, lenv);
                     WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_sin.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
+                {
+                    var osc1 = new CellTree(() => new AnalogOscillator());
+                    osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Impulse, 0 });
+                    var sig5 = osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_impulse.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                }
             }
 
             WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test3.wav"), new float[][] { Enumerable.Range(0, 1048576).Select(x => (float)Math.Sin(8 * Math.PI * x / 1048576)).ToArray() }, 1, 44100, 32);
