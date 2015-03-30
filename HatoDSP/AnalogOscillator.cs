@@ -157,8 +157,9 @@ namespace HatoDSP
                         double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
                         double phasedelta = (2 * Math.PI * freq * _1_rate);
                         int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
+                        float logovertonefloat = (float)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
 
-                        if (logovertone < 8 || true)
+                        if (logovertone < 8)
                         {
                             if (phasedelta >= Math.PI)
                             {
@@ -166,12 +167,12 @@ namespace HatoDSP
                             }
                             else
                             {
-                                ret[i] = (float)(FastMath.Impulse(phase, logovertone) * amp);
+                                ret[i] = (float)(FastMath.Impulse(phase, logovertone) * amp / (Math.Pow(2,logovertonefloat) + 1) * 10 / Math.PI);
                             }
                         }
                         else
                         {
-                            ret[i] += (float)((int)(phase / Math.PI) % 2 == 0 ? amp : -amp);
+                            ret[i] += (float)((int)((phase - phasedelta) / Math.PI) % 2 == 1 && (int)(phase / Math.PI) % 2 == 0 ? amp : 0);
                         }
 
                         phase += phasedelta;

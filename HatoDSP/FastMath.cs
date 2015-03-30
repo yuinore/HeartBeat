@@ -129,7 +129,7 @@ namespace HatoDSP
             int mask = N2 - 1;
 
             if (x < 0) x = -x;  // Fixme:
-            double xr = x * N2 * INV_2PI;  // TODO:除算の削除
+            double xr = x * N2 * INV_2PI;
             int a = ((int)xr) & mask;
             double d = xr - (int)xr - 0.5;
 

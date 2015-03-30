@@ -35,7 +35,7 @@ namespace HatoDSP
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
             Signal[] input = waveCell.Take(count, lenv);
-            float[] cutoff = cutoffCell.Take(count, lenv)[0].ToArray();
+            var cutoffsignal = cutoffCell.Take(count, lenv)[0];
             filt = filt ?? new IIRFilter(input.Length, 1, 0, 0, 0, 0, 0);
 
             float[] a0 = new float[count];
@@ -45,9 +45,15 @@ namespace HatoDSP
             float[] b1 = new float[count];
             float[] b2 = new float[count];
 
-            for (int i = 0; i < count; i++)
+            if (cutoffsignal == null)
             {
-                double w0 = 2 * Math.PI * (100 + cutoff[i] * 5000) / lenv.SamplingRate;
+            }
+            else if (cutoffsignal is ConstantSignal)
+            {
+                if (((ConstantSignal)(cutoffsignal)).count != count) throw new Exception();
+                float cutoff = ((ConstantSignal)(cutoffsignal)).val;
+
+                double w0 = 2 * Math.PI * (100 + cutoff * 5000) / lenv.SamplingRate;
                 float sin = (float)Math.Sin(w0);
                 float cos = (float)Math.Cos(w0);
                 float Q = 6.0f;
@@ -56,15 +62,37 @@ namespace HatoDSP
                 switch (type)
                 {
                     case FilterType.LowPass:
-                        a0[i] = 1 + alp;
-                        a1[i] = -2 * cos;
-                        a2[i] = 1 - alp;
-                        b0[i] = (1 - cos) * 0.5f;
-                        b1[i] = 1 - cos;
-                        b2[i] = (1 - cos) * 0.5f;
+                        filt.UpdateParams(1 + alp, -2 * cos, 1 - alp, (1 - cos) * 0.5f, 1 - cos, (1 - cos) * 0.5f);
                         break;
                     default:
                         break;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    float[] cutoff = cutoffsignal.ToArray();
+
+                    double w0 = 2 * Math.PI * (100 + cutoff[i] * 5000) / lenv.SamplingRate;
+                    float sin = (float)Math.Sin(w0);
+                    float cos = (float)Math.Cos(w0);
+                    float Q = 6.0f;
+                    float alp = sin / Q;
+
+                    switch (type)
+                    {
+                        case FilterType.LowPass:
+                            a0[i] = 1 + alp;
+                            a1[i] = -2 * cos;
+                            a2[i] = 1 - alp;
+                            b0[i] = (1 - cos) * 0.5f;
+                            b1[i] = 1 - cos;
+                            b2[i] = (1 - cos) * 0.5f;
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
 

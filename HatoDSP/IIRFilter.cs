@@ -18,17 +18,11 @@ namespace HatoDSP
         {
             this.chCnt = chCnt;
 
-            float inv_a0 = 1.0f / a0;
-
-            this.a1 = a1 * inv_a0;
-            this.a2 = a2 * inv_a0;
-            this.b0 = b0 * inv_a0;
-            this.b1 = b1 * inv_a0;
-            this.b2 = b2 * inv_a0;
-
             z0 = new float[chCnt];
             z1 = new float[chCnt];
             z2 = new float[chCnt];
+
+            UpdateParams(a0, a1, a2, b0, b1, b2);
         }
 
         public void UpdateParams(float a0, float a1, float a2, float b0, float b1, float b2)

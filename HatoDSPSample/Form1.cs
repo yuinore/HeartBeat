@@ -90,6 +90,14 @@ namespace HatoDSPSample
                 }
                 {
                     var osc1 = new CellTree(() => new AnalogOscillator());
+                    var filt = new CellTree(() => new ButterworthFilterCell());
+                    filt.AssignChildren(new[] { osc1 });
+                    osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Saw, 0 });
+                    var sig5 = filt.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_saw_lp.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                }
+                {
+                    var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Square, 0 });
                     var sig5 = osc1.Generate().Take(2000000, lenv);
                     WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_squ.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
