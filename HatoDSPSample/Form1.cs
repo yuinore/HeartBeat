@@ -128,5 +128,31 @@ namespace HatoDSPSample
             s.Stop();
             label1.Text = "" + s.ElapsedMilliseconds;
         }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Stopwatch s = new Stopwatch();
+            s.Start();
+
+            string json = System.IO.File.ReadAllText(HatoPath.FromAppDir("patch.txt"));
+
+            PatchReader pr = new PatchReader(json);
+
+
+            var lenv = new LocalEnvironment
+            {
+                SamplingRate = 44100,
+                Freq = new ConstantSignal(441, 20000),
+                Pitch = new ConstantSignal(60, 20000),
+                Locals = null
+            };
+
+            var sig = pr.Root.Generate().Take(20000, lenv);
+
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("new_from_patch.wav"), sig.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+
+            s.Stop();
+            label1.Text = "" + s.ElapsedMilliseconds;
+        }
     }
 }

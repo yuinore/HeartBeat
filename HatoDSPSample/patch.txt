@@ -1,0 +1,15 @@
+﻿[{
+  "name":"$synth",
+  "children":["filter 1"]
+},{
+  "name":"filter 1",
+  "module":"analog filter",
+  "children":["osc 1", "ADSR 1"]
+},{
+  "name":"osc 1",
+  "module":"analog osc",
+  "ctrl":[0,1,1]
+},{
+  "name":"ADSR 1",
+  "module":"ADSR"
+}]

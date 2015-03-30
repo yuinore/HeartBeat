@@ -19,6 +19,26 @@ namespace HatoDSP
             this.generator = generator;
         }
 
+        public CellTree(string name, string module)
+        {
+            Name = name;
+
+            switch (module)
+            {
+                case "analog filter":
+                    generator = () => new BiquadFilter();
+                    break;
+                case "analog osc":
+                    generator = () => new AnalogOscillator();
+                    break;
+                case "ADSR":
+                    generator = () => new ADSR();
+                    break;
+                default:
+                    throw new PatchFormatException("モジュール " + module + " は存在しません。");
+            }
+        }
+
         public void AssignChildren(CellTree[] children)
         {
             this.children = children;  // カプセル化は？？

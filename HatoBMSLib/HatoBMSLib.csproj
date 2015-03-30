@@ -43,6 +43,7 @@
     <Compile Include="BMConvert.cs" />
     <Compile Include="BMObject.cs" />
     <Compile Include="BMSExceptionHandler.cs" />
+    <Compile Include="BMSFormatException.cs" />
     <Compile Include="BMSStruct.cs" />
     <Compile Include="BMTime.cs" />
     <Compile Include="Judgement.cs" />
