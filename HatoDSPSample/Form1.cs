@@ -58,8 +58,8 @@ namespace HatoDSPSample
                 rainbow.AssignChildren(new[] { osc2 });
                 osc2.AssignChildren(new[] { osc1 });
 
-                osc1.AssignControllers(new float[] { 0, 0.03f, (float)Waveform.Saw, 0 });
-                osc2.AssignControllers(new float[] { -12, 0.003f, (float)Waveform.Saw, 0 });
+                osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Saw, 0 });
+                osc2.AssignControllers(new float[] { -12, 0.05f, (float)Waveform.Saw, 0 });
                 aenv.AssignControllers(new float[] { 0.01f, 2, 0, 0.01f });
 
                 var sig5 = aenv.Generate().Take(100000, new LocalEnvironment
@@ -142,12 +142,12 @@ namespace HatoDSPSample
             var lenv = new LocalEnvironment
             {
                 SamplingRate = 44100,
-                Freq = new ConstantSignal(441, 20000),
-                Pitch = new ConstantSignal(60, 20000),
+                Freq = new ConstantSignal(441, 200000),
+                Pitch = new ConstantSignal(60, 200000),
                 Locals = null
             };
 
-            var sig = pr.Root.Generate().Take(20000, lenv);
+            var sig = pr.Root.Generate().Take(200000, lenv);
 
             WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("new_from_patch.wav"), sig.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
 

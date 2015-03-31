@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace HatoDSP
@@ -22,8 +23,26 @@ namespace HatoDSP
             }
         }
         public PatchReader(string json)
-        {            try
+        {
+            try
             {
+                // jsonではコメント使えないんですか！？！？
+                //json = Regex.Replace(json, @"//.*$", "", RegexOptions.Multiline);
+                //json = Regex.Replace(json, @"/\*.*\*/", "");  // これだと /* /* */ もアレしてしまう気がする
+                //json = Regex.Replace(json, @"/\*.*?\*/", "");  // これだと /* // */ もアレしてしまう
+                json = Regex.Replace(json, @"(/\*.*?\*/|//.*?$)", "", RegexOptions.Multiline | RegexOptions.Singleline);
+
+                /*
+                var pos = 0;
+                while ((pos = json.IndexOf("/" + "*")) != -1)
+                {
+                    int end = json.IndexOf("*" + "/", pos + 2);
+                    if (end != -1)
+                    {
+                        json = json.Substring(0, pos) + json.Substring(end);
+                    }
+                }*/
+
                 dynamic dj = DynamicJson.Parse(json);
 
                 if (!dj.IsArray) throw new PatchFormatException();

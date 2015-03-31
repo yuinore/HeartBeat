@@ -17,7 +17,7 @@ namespace HatoDSP
         double time = 0;
         int n = 0;
 
-        float A = 0.01f;
+        float A = 0.00f;
         float D = 0.5f;
         float S = 0.1f;
         float R = 0.01f;

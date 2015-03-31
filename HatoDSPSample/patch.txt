@@ -8,7 +8,7 @@
 },{
   "name":"osc 1",
   "module":"analog osc",
-  "ctrl":[0,1,1]
+  "ctrl":[0,1,5]         // pitch, amp, waveform
 },{
   "name":"ADSR 1",
   "module":"ADSR"

@@ -42,6 +42,7 @@ namespace HatoDSP
             float pshift = 0;
             float amp = 1;
             float op1 = 0;
+            double overtoneBias = 0.36;  // 調整値
 
             // ctrlの解釈
             // Pitch, Amp, Type, OP1
@@ -60,153 +61,94 @@ namespace HatoDSP
 
             float _1_rate = 1.0f / lenv.SamplingRate;
 
-            double log2_100 = Math.Log(100) / Math.Log(2);  // FIXME: サンプリングレートが44k以外のとき
+            double temp = Math.Log((lenv.SamplingRate * 0.5) / 441.0) / Math.Log(2);  // log2((SR * 0.5) / 441)
+            double temp2 = 1.0 / ((lenv.SamplingRate * 0.5) / 441.0);
 
             Func<double, int, double> generator = FastMath.Saw;
 
-            switch (waveform)
+            for (int i = 0; i < count; i++, i2++)
             {
-                case Waveform.Saw:
-                    for (int i = 0; i < count; i++, i2++)
-                    {
-                        double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
-                        double phasedelta = (2 * Math.PI * freq * _1_rate);
-                        int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
+                double freqoctave = (pitch[i] + pshift - 60.0) / 12.0;  // 441HzのAの音からのオクターブ差[oct]
+                double freqratio = Math.Pow(2, freqoctave);             // 441HzのAの音からの音声の周波数比
+                double freq = freqratio * 441;                          // 音声の周波数[Hz]
+                double phasedelta = (2 * Math.PI * freq * _1_rate);     // 音声の角周波数；基音の位相の増分[rad]
+                double logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
+                // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
+                int logovertone = (int)logovertonefloat;                // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
 
+                switch (waveform)
+                {
+                    case Waveform.Saw:
                         if (logovertone < 8)
                         {
-                            /*ret[i] = 0;
-                            int n2 = 1;
-                            for (double n = phasedelta; n < Math.PI / 4 && n2 < MAX_OVERTONE; n += phasedelta, n2 ++)
-                            {
-                                ret[i] += (float)(FastMath.Sin(n2 * phase) * 0.01 * int_inv[n2] * int_inv[n2]);
-                            }*/
-                            if (phasedelta >= Math.PI)
-                            {
-                                ret[i] = 0;
-                            }
-                            else
-                            {
-                                ret[i] = (float)(FastMath.Saw(phase, logovertone) * amp);
-                            }
-                            /*
-                            double P = lenv.SamplingRate / freq;
-                            double M = Math.Floor((P + 1) / 2) * 2 - 1;
-                            old = old + FastMath.Sin(Math.PI * M / P * (i2 + 1e-1)) / (FastMath.Sin(Math.PI / P * (i2 + 1e-1)) * P) - 1 / P;  // TODO:ゼロ除算
-                            ret[i] = (float)((old - 0.5) * 0.01);
-                             */
+                            if (phasedelta >= Math.PI) { ret[i] = 0; }
+                            else { ret[i] = (float)(FastMath.Saw(phase, logovertone)); }
                         }
                         else
                         {
-                            ret[i] += (float)((0.5 - (phase / (2 * Math.PI)) % 1) * 2 * amp);
+                            ret[i] += (float)((0.5 - (phase / (2 * Math.PI)) % 1) * 2);
                         }
-                        phase += phasedelta;
-                    }
-                    break;
+                        break;
 
-                case Waveform.Square:
-                    for (int i = 0; i < count; i++, i2++)
-                    {
-                        double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
-                        double phasedelta = (2 * Math.PI * freq * _1_rate);
-                        int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
-
+                    case Waveform.Square:
                         if (logovertone < 8)
                         {
-                            if (phasedelta >= Math.PI)
-                            {
-                                ret[i] = 0;
-                            }
+                            if (phasedelta >= Math.PI) { ret[i] = 0; }
+                            else { ret[i] = (float)((FastMath.Saw(phase, logovertone) - FastMath.Saw(phase + Math.PI, logovertone))); }
+                        }
+                        else
+                        {
+                            ret[i] += (float)((int)(phase / Math.PI) % 2 == 0 ? 1 : -1);
+                        }
+                        break;
+
+                    case Waveform.Tri:
+                        if (phasedelta >= Math.PI) { ret[i] = 0; }
+                        else
+                        {
+                            ret[i] = (float)(FastMath.Tri(phase, logovertone));
+                        }
+                        break;
+
+                    case Waveform.Impulse:
+                        if (logovertone < 8)
+                        {
+                            if (phasedelta >= Math.PI) { ret[i] = 0; }
                             else
                             {
-                                ret[i] = (float)((FastMath.Saw(phase, logovertone) - FastMath.Saw(phase + Math.PI, logovertone)) * amp);
+                                double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
+                                ret[i] = (float)(FastMath.Impulse(phase, logovertone) * invovertonecount * 10 / Math.PI);  // 音量はLPFを通した後基準で
                             }
                         }
                         else
                         {
-                            ret[i] += (float)((int)(phase / Math.PI) % 2 == 0 ? amp : -amp);
+                            ret[i] += (float)((int)((phase - phasedelta) / Math.PI) % 2 == 1 && (int)(phase / Math.PI) % 2 == 0 ? 2 : 0);
                         }
+                        break;
 
-                        phase += phasedelta;
-                    }
-                    break;
-
-                case Waveform.Tri:
-                    for (int i = 0; i < count; i++, i2++)
-                    {
-                        double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
-                        double phasedelta = (2 * Math.PI * freq * _1_rate);
-                        int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
-
+                    default:
                         if (phasedelta >= Math.PI)
                         {
                             ret[i] = 0;
                         }
                         else
                         {
-                            ret[i] = (float)(FastMath.Tri(phase, logovertone) * amp);
+                            ret[i] = (float)FastMath.Sin(phase);
                         }
+                        break;
+                }
 
-                        phase += phasedelta;
-                    }
-                    break;
-
-                case Waveform.Impulse:
-                    for (int i = 0; i < count; i++, i2++)
-                    {
-                        double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
-                        double phasedelta = (2 * Math.PI * freq * _1_rate);
-                        int logovertone = (int)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
-                        float logovertonefloat = (float)((60.0 - pitch[i]) / 12.0 + log2_100 - 1);
-
-                        if (logovertone < 8)
-                        {
-                            if (phasedelta >= Math.PI)
-                            {
-                                ret[i] = 0;
-                            }
-                            else
-                            {
-                                ret[i] = (float)(FastMath.Impulse(phase, logovertone) * amp / (Math.Pow(2,logovertonefloat) + 1) * 10 / Math.PI);
-                            }
-                        }
-                        else
-                        {
-                            ret[i] += (float)((int)((phase - phasedelta) / Math.PI) % 2 == 1 && (int)(phase / Math.PI) % 2 == 0 ? amp : 0);
-                        }
-
-                        phase += phasedelta;
-                    }
-                    break;
-
-                default:
-                    for (int i = 0; i < count; i++)
-                    {
-                        double freq = Math.Pow(2, (pitch[i] + pshift - 60.0) / 12.0) * 441;
-                        double phasedelta = (2 * Math.PI * freq * _1_rate);
-
-                        if (phasedelta >= Math.PI)
-                        {
-                            ret[i] = 0;
-                        }
-                        else
-                        {
-                            ret[i] = (float)(FastMath.Sin(phase) * amp);
-                        }
-
-                        phase += phasedelta;
-                    }
-                    break;
+                phase += phasedelta;
             }
 
             if (child0 != null)
             {
                 var src = cell.Take(count, lenv);
-                return src.Select(x => Signal.Add(x, new ExactSignal(ret, 1.0f, false))).ToArray();  // チャンネル数は入力信号と同じ
+                return src.Select(x => Signal.Add(x, new ExactSignal(ret, amp, false))).ToArray();  // チャンネル数は入力信号と同じ
             }
             else
             {
-                return new[] { new ExactSignal(ret, 1.0f, false) };  // チャンネル数は1
+                return new[] { new ExactSignal(ret, amp, false) };  // チャンネル数は1
             }
         }
     }

@@ -70,9 +70,11 @@ namespace HatoDSP
             }
             else
             {
+                float[] cutoff = cutoffsignal.ToArray();
+
                 for (int i = 0; i < count; i++)
                 {
-                    float[] cutoff = cutoffsignal.ToArray();
+                    // float[] cutoff = cutoffsignal.ToArray(); // 酷すぎる
 
                     double w0 = 2 * Math.PI * (100 + cutoff[i] * 5000) / lenv.SamplingRate;
                     float sin = (float)Math.Sin(w0);

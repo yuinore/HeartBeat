@@ -8,10 +8,10 @@ namespace HatoDSP
 {
     public enum Waveform
     {
-        Sin = 0,
-        Tri,
-        Saw,
+        Saw = 0,
         Square,
+        Sin,
+        Tri,
         Pulse,
         Impulse
     }
