@@ -35,7 +35,7 @@ namespace HatoSound
             BufSamplesCount = bufSamplesCount;
             ChannelsCount = channelsCount;
 
-            fbuf = (new float[channelsCount][]).Select((x) => new float[bufSamplesCount]).ToArray();
+            fbuf = (new[] { 0, 0 }).Select((x) => new float[bufSamplesCount]).ToArray();
 
             CreateBuffer(hsound);
         }
@@ -98,7 +98,7 @@ namespace HatoSound
                 dsSecondaryBuffer = new SecondarySoundBuffer(hsound.dsound, new SoundBufferDescription()
                 {
                     Flags =
-                        BufferFlags.GetCurrentPosition2 |
+                        //BufferFlags.GetCurrentPosition2 |  // ←お前か・・・・・・！！？？？
                         BufferFlags.ControlPositionNotify |
                         BufferFlags.GlobalFocus |
                         BufferFlags.ControlVolume |
@@ -127,7 +127,7 @@ namespace HatoSound
         /// デバイスバッファにデータを書き込みます。
         /// </summary>
         /// <param name="data"></param>
-        public void WriteSamples(float[][] data, int dstPositionInSample, int count)
+        public void WriteSamples(float[][] data, int dstPositionInSample, int count, bool playing = false)
         {
             // TODO: バッファが短すぎる場合の例外
             // TODO: クリッピングの処理
@@ -138,7 +138,11 @@ namespace HatoSound
 
             // Lock the buffer
             DataStream dataPart2;
-            var dataPart1 = dsSecondaryBuffer.Lock((dstPositionInSample % BufSamplesCount) * ChannelsCount * 16 / 8, capabilities.BufferBytes, LockFlags.EntireBuffer, out dataPart2);
+            var dataPart1 = dsSecondaryBuffer.Lock(
+                (dstPositionInSample % BufSamplesCount) * ChannelsCount * (16 / 8),
+                count * ChannelsCount * (16 / 8),
+                LockFlags.None,
+                out dataPart2);
 
             // Fill the buffer with some sound
             //int numberOfSamples = (int)BufSamplesCount * ChannelsCount;
@@ -210,22 +214,32 @@ namespace HatoSound
                 while (true)
                 {
                     dsSecondaryBuffer.GetCurrentPosition(out playCursor, out writeCursor);
-                    playCursor /= (16 / 8);
-                    writeCursor /= (16 / 8);
+                    playCursor /= (ChannelsCount * 16 / 8);
+                    //playCursor = (playCursor - 1000 + BufSamplesCount) % BufSamplesCount;//適当
+                    writeCursor /= (ChannelsCount * 16 / 8);
 
-                    Console.WriteLine(writtenPosition + ", " + playCursor + ", " + writeCursor + "; " + BufSamplesCount);
+                    //Console.WriteLine("writtenPosition=" + writtenPosition + ", playCursor=" + playCursor + ", writeCursor=" + writeCursor + "; BufSamplesCount=" + BufSamplesCount);
 
-                    int range = (playCursor - writtenPosition + BufSamplesCount) % BufSamplesCount;
+                    int range = (playCursor - writtenPosition + BufSamplesCount) % BufSamplesCount;  // ←OK
+                    //int range = (writtenPosition - writeCursor + BufSamplesCount) % BufSamplesCount - 512;
 
-                    Console.WriteLine(range + " in " + BufSamplesCount);
+                    //Console.WriteLine(range + " in " + BufSamplesCount);
 
-                    eventhandler(fbuf, range);
+                    //if (range < 0) range = 0;
+                    range = Math.Min(range, 256);
 
-                    WriteSamples(fbuf, writtenPosition, range);
+                    if (range != 0)
+                    {
+                        eventhandler(fbuf, range);
 
-                    writtenPosition = (writtenPosition + range) % BufSamplesCount;
+                        WriteSamples(fbuf, writtenPosition, range, true);
 
-                    Thread.Sleep(50);
+                        writtenPosition = (writtenPosition + range) % BufSamplesCount;
+                    }
+                    else
+                    {
+                        Thread.Sleep(5);
+                    }
                 }
             });
         }

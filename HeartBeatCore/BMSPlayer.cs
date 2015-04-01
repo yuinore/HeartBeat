@@ -351,13 +351,22 @@ namespace HeartBeatCore
             TraceMessage("PlayFrom = " + Math.Round(PlayFrom * 1000) + "ms, Delay = " + Math.Round(DelayingTimeBeforePlay * 1000) + "ms");
             #endregion
 
-            if (hplayer == null)
+            Stopwatch loadingTime = new Stopwatch();
+            loadingTime.Start();
+
+            #region HatoPlayerの初期化とシンセの初期化
+            if (hplayer == null)  // ←？？？？？
             {
                 hplayer = new HatoPlayerDevice(form, b);  // thisでもいいのか？
             }
 
-            Stopwatch loadingTime = new Stopwatch();
-            loadingTime.Start();
+            foreach (var kvpair in b.SynthDefinitionList)
+            {
+                hplayer.PrepareSynth(kvpair.Key, kvpair.Value);
+            }
+
+            hplayer.Run();
+            #endregion
 
             #region プリローディング
             {

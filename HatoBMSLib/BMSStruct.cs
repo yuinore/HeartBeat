@@ -60,6 +60,7 @@ namespace HatoBMSLib
         public List<BMObject> PlayableBMObjects = new List<BMObject>();
 
         public Dictionary<int, string> WavDefinitionList = new Dictionary<int, string>();
+        public Dictionary<int, string> SynthDefinitionList = new Dictionary<int, string>();
         public Dictionary<int, string> BitmapDefinitionList = new Dictionary<int, string>();
         public Dictionary<int, double> BPMDefinitionList = new Dictionary<int, double>();
         public Dictionary<int, double> StopDefinitionList = new Dictionary<int, double>();
@@ -224,6 +225,7 @@ namespace HatoBMSLib
                             var val = match.Groups[2].Captures[0].Value;
 
                             var MatchWavXX = new LazyMatch(header, @"^WAV([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                            var MatchSynthXX = new LazyMatch(header, @"^SYNTH([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                             var MatchBMPXX = new LazyMatch(header, @"^BMP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                             var MatchBPMXX = new LazyMatch(header, @"^BPM([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                             var MatchSTOPXX = new LazyMatch(header, @"^STOP([0-9A-Za-z][0-9A-Za-z])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -252,6 +254,11 @@ namespace HatoBMSLib
                                 double vald;
                                 SetField("#" + header, val, out vald, 192, 0, Double.MaxValue);
                                 StopDefinitionList.Add(wavid, vald);
+                            }
+                            else if (MatchSynthXX.Evaluate(out match))
+                            {
+                                int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
+                                SynthDefinitionList.Add(wavid, val);
                             }
                             else
                             {

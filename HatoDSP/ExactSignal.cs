@@ -29,7 +29,10 @@ namespace HatoDSP
 
         public override float[] ToArray()
         {
-            var ret = array.ToArray();  // Signal.ToArrayはオーバーヘッドが高いという認識でよろしいでしょうか
+            // Signal.ToArrayは配列の複製をするためオーバーヘッドが高いという認識でよろしいでしょうか
+
+            float[] ret = array.ToArray();
+            // メモ：Array.Copyにしてもあまりパフォーマンスは変わらなかった
 
             for (int i = 0; i < ret.Length; i++)
             {
