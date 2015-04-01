@@ -57,7 +57,9 @@ namespace HatoDSP
             // 処理
             float[] ret = new float[count];
 
-            float[] pitch = lenv.Pitch.ToArray();  // TODO:ConstantSignalの場合の最適化
+            float[] pitch = null;
+
+            bool constantPitch = (lenv.Pitch is ConstantSignal);  // メモ：Expressionが導入された場合に修正
 
             float _1_rate = 1.0f / lenv.SamplingRate;
 
@@ -66,15 +68,41 @@ namespace HatoDSP
 
             Func<double, int, double> generator = FastMath.Saw;
 
+            double freqoctave = 0;
+            double freqratio = 0;
+            double freq = 0;
+            double phasedelta = 0;
+            double logovertonefloat = 0;
+            int logovertone = 0;
+
+            if (constantPitch)
+            {
+                float constpitch = ((ConstantSignal)lenv.Pitch).val;
+                freqoctave = (constpitch + pshift - 60.0) / 12.0;  // 441HzのAの音からのオクターブ差[oct]
+                freqratio = Math.Pow(2, freqoctave);             // 441HzのAの音からの音声の周波数比
+                freq = freqratio * 441;                          // 音声の周波数[Hz]
+                phasedelta = (2 * Math.PI * freq * _1_rate);     // 音声の角周波数；基音の位相の増分[rad]
+                logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
+                // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
+                logovertone = (int)logovertonefloat;                // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+            }
+            else
+            {
+                pitch = lenv.Pitch.ToArray();
+            }
+
             for (int i = 0; i < count; i++, i2++)
             {
-                double freqoctave = (pitch[i] + pshift - 60.0) / 12.0;  // 441HzのAの音からのオクターブ差[oct]
-                double freqratio = Math.Pow(2, freqoctave);             // 441HzのAの音からの音声の周波数比
-                double freq = freqratio * 441;                          // 音声の周波数[Hz]
-                double phasedelta = (2 * Math.PI * freq * _1_rate);     // 音声の角周波数；基音の位相の増分[rad]
-                double logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
-                // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
-                int logovertone = (int)logovertonefloat;                // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                if (!constantPitch)
+                {
+                    freqoctave = (pitch[i] + pshift - 60.0) / 12.0;  // 441HzのAの音からのオクターブ差[oct]
+                    freqratio = Math.Pow(2, freqoctave);             // 441HzのAの音からの音声の周波数比
+                    freq = freqratio * 441;                          // 音声の周波数[Hz]
+                    phasedelta = (2 * Math.PI * freq * _1_rate);     // 音声の角周波数；基音の位相の増分[rad]
+                    logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
+                    // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
+                    logovertone = (int)logovertonefloat;                // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                }
 
                 switch (waveform)
                 {
