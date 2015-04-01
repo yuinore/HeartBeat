@@ -12,16 +12,17 @@ namespace HatoDSP
         Cell cell;
         Controller[] ctrl;
 
-        Waveform waveform = Waveform.Saw;
-
-        double time = 0;
-        int n = 0;
+        double time = 0;  // 累積時間
+        int n = 0;  // 累積サンプル数
 
         float A = 0.00f;
         float D = 0.5f;
         float S = 0.1f;
         float R = 0.01f;
 
+        float lastgain = 0.0f;
+        double releasedAt = 0.0f;
+        bool releaseFinished = false;
 
         public ADSR()
         {
@@ -40,6 +41,8 @@ namespace HatoDSP
 
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
+            if (releaseFinished) return new Signal []{ new ConstantSignal(0, count) };
+
             // ctrlの解釈
             // A, D, S, R
             if (ctrl != null)
@@ -50,27 +53,45 @@ namespace HatoDSP
                 if (ctrl.Length >= 4) { R = ctrl[3].Value; }
             }
 
+            float[] gate = lenv.Gate.ToArray();
+
             float[] ret = new float[count];
 
             double dt = 1.0 / lenv.SamplingRate;
 
-            for (int i = 0; n < count; n++, i++)
+            for (int i = 0; i < count; n++, i++, time += dt)
             {
-                if (time < A)
+                if (gate[i] > 0.5)
                 {
-                    ret[i] = (float)(time / A);
-                    time += dt;
-                }
-                else if (time < A + D)
-                {
-                    ret[i] = (float)(1.0f - (1.0f - S) * (time - A) / D);
-                    time += dt;
+                    if (time < A)
+                    {
+                        lastgain = ret[i] = (float)(time / A);
+                    }
+                    else if (time < A + D)
+                    {
+                        double rate = Math.Pow(0.00001, (time - A) / D); // 0dB to -100dB
+                        lastgain = ret[i] = (float)((1.0f - S) * rate + S);
+                    }
+                    else
+                    {
+                        lastgain = ret[i] = S;  // TODO: ConstantSignal化
+                    }
+                    releasedAt = time;
                 }
                 else
                 {
-                    ret[i] = S;
+                    if (time < releasedAt + R)
+                    {
+                        double rate = Math.Pow(0.00001, (time - releasedAt) / R); // 0dB to -100dB
+                        ret[i] = (float)(lastgain * rate);
+                    }
+                    else
+                    {
+                        ret[i] = 0;  // TODO: ConstantSignal化
+                        releaseFinished = true;
+                    }
                 }
-                // TODO: リリースの実装
+
             }
 
             if (child0 != null)

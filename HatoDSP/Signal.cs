@@ -95,6 +95,11 @@ namespace HatoDSP
             }
         }
 
+        public static Signal Concat(Signal x, Signal y)
+        {
+            return new JoinedSignal(new[] { x, y });
+        }
+
         public static bool Equals(Signal x, Signal y)
         {
             var arr1 = x.ToArray();

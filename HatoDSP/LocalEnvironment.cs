@@ -10,6 +10,7 @@ namespace HatoDSP
     {
         public Signal Pitch;
         public Signal Freq;
+        public Signal Gate;
         public Dictionary<string, Signal> Locals;
         public float SamplingRate;
     }

@@ -34,6 +34,9 @@ namespace HatoDSP
                 case "ADSR":
                     generator = () => new ADSR();
                     break;
+                case "rainbow":
+                    generator = () => new Rainbow();
+                    break;
                 default:
                     throw new PatchFormatException("モジュール " + module + " は存在しません。");
             }

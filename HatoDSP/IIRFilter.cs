@@ -55,7 +55,7 @@ namespace HatoDSP
 
                 float[] arr = input[0][j].ToArray();
 
-                float t0 = z0[j];  // これで高速化はされるのか？
+                float t0 = z0[j];  // これで高速化はされるのか？ → 計測したら高速化されてるっぽいです・・・
                 float t1 = z1[j];
                 float t2 = z2[j];
 
@@ -72,6 +72,7 @@ namespace HatoDSP
                     }
 
                     t0 = arr[i] - a1 * t1 - a2 * t2;
+                    if (-1.1754944e-38 < t0 && t0 < 1.1754944e-38) t0 = 0;  // 1.1754944e-38 は 2^(-126) で、正の最小の正規化数
                     arr[i] = t0 * b0 + t1 * b1 + t2 * b2;
 
                     t2 = t1;

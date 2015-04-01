@@ -35,25 +35,15 @@ namespace HatoDSP
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
             Signal[] input = waveCell.Take(count, lenv);
-            var cutoffsignal = cutoffCell.Take(count, lenv)[0];
+            var cutoffsignal = cutoffCell == null ? new ConstantSignal(0, count) : cutoffCell.Take(count, lenv)[0];
             filt = filt ?? new IIRFilter(input.Length, 1, 0, 0, 0, 0, 0);
 
-            float[] a0 = new float[count];
-            float[] a1 = new float[count];
-            float[] a2 = new float[count];
-            float[] b0 = new float[count];
-            float[] b1 = new float[count];
-            float[] b2 = new float[count];
-
-            if (cutoffsignal == null)
-            {
-            }
-            else if (cutoffsignal is ConstantSignal)
+            if (cutoffsignal is ConstantSignal)
             {
                 if (((ConstantSignal)(cutoffsignal)).count != count) throw new Exception();
                 float cutoff = ((ConstantSignal)(cutoffsignal)).val;
 
-                double w0 = 2 * Math.PI * (100 + cutoff * 5000) / lenv.SamplingRate;
+                double w0 = 2 * Math.PI * (800 + cutoff * 5000) / lenv.SamplingRate;
                 float sin = (float)Math.Sin(w0);
                 float cos = (float)Math.Cos(w0);
                 float Q = 6.0f;
@@ -67,16 +57,25 @@ namespace HatoDSP
                     default:
                         break;
                 }
+
+                return filt.Take(count, new Signal[][] { input });
             }
             else
             {
+                float[] a0 = new float[count];
+                float[] a1 = new float[count];
+                float[] a2 = new float[count];
+                float[] b0 = new float[count];
+                float[] b1 = new float[count];
+                float[] b2 = new float[count];
+
                 float[] cutoff = cutoffsignal.ToArray();
 
                 for (int i = 0; i < count; i++)
                 {
                     // float[] cutoff = cutoffsignal.ToArray(); // 酷すぎる
 
-                    double w0 = 2 * Math.PI * (100 + cutoff[i] * 5000) / lenv.SamplingRate;
+                    double w0 = 2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate;
                     float sin = (float)Math.Sin(w0);
                     float cos = (float)Math.Cos(w0);
                     float Q = 6.0f;
@@ -96,9 +95,8 @@ namespace HatoDSP
                             break;
                     }
                 }
-            }
 
-            return filt.Take(count, new Signal[][] { 
+                return filt.Take(count, new Signal[][] { 
                 input, 
                 new Signal[] { 
                     new ExactSignal(a0,1.0f, false),
@@ -108,6 +106,7 @@ namespace HatoDSP
                     new ExactSignal(b1,1.0f, false),
                     new ExactSignal(b2,1.0f, false)
                 }});
+            }
         }
     }
 }

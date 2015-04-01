@@ -55,7 +55,7 @@ namespace HatoDSP
 
                 // lenvのピッチをここで加工する
 
-                lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.05f * (j - (rainbowN - 1) / 2 + (rand[j] - 0.5f) * 1.0f), count));
+                lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.2f * (j - (rainbowN - 1.0f) / 2 + (rand[j] - 0.5f) * 1.0f) / ((rainbowN - 1.0f) / 2), count));
 
                 var sig = x.Take(count, lenv);
                 if (sum == null)
@@ -64,8 +64,8 @@ namespace HatoDSP
                     sum = (new Signal[sig.Length]).Select(nil => (Signal)(new ConstantSignal(0, count))).ToArray();
                 }
 
-                var panL = new ConstantSignal(1 - 0.5f * ((j - (rainbowN - 1) / 2) / ((rainbowN - 1) / 2)), count);
-                var panR = new ConstantSignal(1 + 0.5f * ((j - (rainbowN - 1) / 2) / ((rainbowN - 1) / 2)), count);
+                var panL = new ConstantSignal(1 - 0.5f * ((j - (rainbowN - 1.0f) / 2) / ((rainbowN - 1.0f) / 2)), count);
+                var panR = new ConstantSignal(1 + 0.5f * ((j - (rainbowN - 1.0f) / 2) / ((rainbowN - 1.0f) / 2)), count);
 
                 /*
                 for (int i = 0; i < sig.Length; i++)

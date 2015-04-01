@@ -51,6 +51,7 @@
     <Compile Include="ExactSignal.cs" />
     <Compile Include="FastMath.cs" />
     <Compile Include="FilterType.cs" />
+    <Compile Include="HatoSynthDevice.cs" />
     <Compile Include="IIRFilter.cs" />
     <Compile Include="JoinedSignal.cs" />
     <Compile Include="PatchFormatException.cs" />

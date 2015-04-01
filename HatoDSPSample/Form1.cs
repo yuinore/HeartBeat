@@ -38,6 +38,7 @@ namespace HatoDSPSample
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),
                     Pitch = new ConstantSignal(60, 100000),
+                    Gate = new ConstantSignal(1, 100000),
                     Locals = null
                 });
 
@@ -67,6 +68,7 @@ namespace HatoDSPSample
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),
                     Pitch = new ConstantSignal(60, 100000),
+                    Gate = new ConstantSignal(1, 100000),
                     Locals = null
                 });
 
@@ -79,6 +81,7 @@ namespace HatoDSPSample
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 2000000),
                     Pitch = new ExactSignal(Enumerable.Range(0, 2000000).Select(i => (float)(-12 + i / 10000.0)).ToArray()),
+                    Gate = new ConstantSignal(1, 2000000),
                     Locals = null
                 };
 
@@ -144,12 +147,55 @@ namespace HatoDSPSample
                 SamplingRate = 44100,
                 Freq = new ConstantSignal(441, 200000),
                 Pitch = new ConstantSignal(60, 200000),
+                Gate = new ConstantSignal(1, 200000),
                 Locals = null
             };
 
             var sig = pr.Root.Generate().Take(200000, lenv);
 
             WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("new_from_patch.wav"), sig.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+
+            s.Stop();
+            label1.Text = "" + s.ElapsedMilliseconds;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Stopwatch s = new Stopwatch();
+            s.Start();
+
+            string json = System.IO.File.ReadAllText(HatoPath.FromAppDir("patch.txt"));
+
+            HatoSynthDevice dev = new HatoSynthDevice(json);
+
+            Signal[] sig = dev.Take(20000);
+
+            dev.NoteOn(63);
+
+            Signal[] sig2 = dev.Take(20000);
+            sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+
+            sig2 = dev.Take(20000);
+            sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+
+            dev.NoteOn(67);
+
+            sig2 = dev.Take(20000);
+            sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+
+            dev.NoteOff(67);
+            dev.NoteOn(70);
+
+            sig2 = dev.Take(20000);
+            sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+
+            dev.NoteOff(63);
+            dev.NoteOff(70);
+
+            sig2 = dev.Take(40000);
+            sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("hatosynthdevice.wav"), sig.Select(x => x.ToArray()).ToArray(), 2, 44100, 32);
 
             s.Stop();
             label1.Text = "" + s.ElapsedMilliseconds;
