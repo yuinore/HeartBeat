@@ -167,12 +167,16 @@ namespace HatoSound
 
         public void Play()
         {
+            return;
+
             dsSecondaryBuffer.Volume = 0;
             dsSecondaryBuffer.Play(0, PlayFlags.None);
         }
 
         public void StopAndPlay()
         {
+            return;
+
             dsSecondaryBuffer.Stop();
             dsSecondaryBuffer.CurrentPosition = 0;
             dsSecondaryBuffer.Volume = 0;
@@ -181,6 +185,8 @@ namespace HatoSound
 
         public void StopAndPlay(double volumeInDb)
         {
+            return;
+
             dsSecondaryBuffer.Stop();
             dsSecondaryBuffer.CurrentPosition = 0;
             dsSecondaryBuffer.Volume = (int)(volumeInDb * 100.0);

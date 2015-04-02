@@ -243,6 +243,9 @@ namespace HeartBeatCore
         /// </summary>
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
+            hplayer = new HatoPlayerDevice(form, null);
+            hplayer.Run();
+
             {
                 Process thisProcess = System.Diagnostics.Process.GetCurrentProcess();
                 thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
@@ -360,12 +363,14 @@ namespace HeartBeatCore
                 hplayer = new HatoPlayerDevice(form, b);  // thisでもいいのか？
             }
 
+            hplayer.b = b;
+
             foreach (var kvpair in b.SynthDefinitionList)
             {
                 hplayer.PrepareSynth(kvpair.Key, kvpair.Value);
             }
 
-            hplayer.Run();
+            //hplayer.Run();
             #endregion
 
             #region プリローディング

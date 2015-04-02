@@ -36,6 +36,9 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <Content Include="ASIOHost.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="key.ogg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

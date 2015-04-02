@@ -13,11 +13,12 @@
 #include "asiosys.h"
 #include "asio.h"
 #include "asiodrivers.h"
+#include "hostsample.h"
 
 // name of the ASIO device to be used
 #if WINDOWS
 //	#define ASIO_DRIVER_NAME    "ASIO Multimedia Driver"
-	#define ASIO_DRIVER_NAME    "ASIO Sample"
+	#define ASIO_DRIVER_NAME    "ASIO4ALL v2"
 #elif MAC
 //	#define ASIO_DRIVER_NAME   	"Apple Sound Manager"
 	#define ASIO_DRIVER_NAME   	"ASIO Sample"
@@ -106,6 +107,8 @@ void sampleRateChanged(ASIOSampleRate sRate);
 long asioMessages(long selector, long value, void* message, double* opt);
 
 
+void(__stdcall *asioCallback)(float* buf, int chIdx, int count);  // C#のコールバック関数へのポインタ
+
 
 //----------------------------------------------------------------------------------
 long init_asio_static_data (DriverInfo *asioDriverInfo)
@@ -171,8 +174,12 @@ long init_asio_static_data (DriverInfo *asioDriverInfo)
 
 ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processNow)
 {	// the actual processing callback.
+    // 　ここが実際の処理のコールバック関数です。
 	// Beware that this is normally in a seperate thread, hence be sure that you take care
+    // 　この処理はふつう別のスレッドで処理されることに注意して下さい。
 	// about thread synchronization. This is omitted here for simplicity.
+    // 　従ってスレッドの同期に気を付ける必要があります。簡単のためここでは省略しています。
+
 	static long processedSamples = 0;
 
 	// store the timeInfo for later use
@@ -216,7 +223,10 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	for (int i = 0; i < asioDriverInfo.inputBuffers + asioDriverInfo.outputBuffers; i++)
 	{
 		if (asioDriverInfo.bufferInfos[i].isInput == false)
-		{
+        {
+            // printf("buffer %d: type =%d\r\n", i, (int)asioDriverInfo.channelInfos[i].type);  // ASIOSTInt32LSB = 18
+            // printf("buffer %d: samplerequired = %d\r\n", i, buffSize);  // buffSizeはAsioのコントロールパネルで設定可能
+
 			// OK do processing for the outputs only
 			switch (asioDriverInfo.channelInfos[i].type)
 			{
@@ -227,7 +237,14 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 				memset (asioDriverInfo.bufferInfos[i].buffers[index], 0, buffSize * 3);
 				break;
 			case ASIOSTInt32LSB:
-				memset (asioDriverInfo.bufferInfos[i].buffers[index], 0, buffSize * 4);
+                memset(asioDriverInfo.bufferInfos[i].buffers[index], 0, buffSize * 4);
+                /*{
+                    float* ptr = (float*)asioDriverInfo.bufferInfos[i].buffers[index];
+                    for (int j = 0; j < buffSize; j++) {
+                        ptr[j] = (j % 16) * 0.01f;
+                    }
+                }*/
+                asioCallback((float*)(asioDriverInfo.bufferInfos[i].buffers[index]), i, buffSize); 
 				break;
 			case ASIOSTFloat32LSB:		// IEEE 754 32 bit float, as found on Intel x86 architecture
 				memset (asioDriverInfo.bufferInfos[i].buffers[index], 0, buffSize * 4);
@@ -288,11 +305,17 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 //----------------------------------------------------------------------------------
 void bufferSwitch(long index, ASIOBool processNow)
 {	// the actual processing callback.
+    // 　ここが実際の処理のコールバック関数です。
 	// Beware that this is normally in a seperate thread, hence be sure that you take care
+    // 　この処理はふつう別のスレッドで処理されることに注意して下さい。
 	// about thread synchronization. This is omitted here for simplicity.
-
+    // 　従ってスレッドの同期に気を付ける必要があります。簡単のためここでは省略しています。
+    //
 	// as this is a "back door" into the bufferSwitchTimeInfo a timeInfo needs to be created
+    // 　この関数は bufferSwitchTimeInfo 関数への"バックドア"であるため、 timeInfo インスタンスをここで作成します。
 	// though it will only set the timeInfo.samplePosition and timeInfo.systemTime fields and the according flags
+    // 　timeInfo.samplePosition とか timeInfo.systemTime とかのフィールドとかそれに応じて flags とかを設定するだけですが。
+
 	ASIOTime  timeInfo;
 	memset (&timeInfo, 0, sizeof (timeInfo));
 
@@ -445,8 +468,21 @@ ASIOError create_asio_buffers (DriverInfo *asioDriverInfo)
 	return result;
 }
 
-int main(int argc, char* argv[])
+// ↓この __stdcall というのが重要なのカッ！？
+extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
 {
+    static bool first = true;
+    if (!first) {
+        goto callcc;
+    }
+    first = false;
+
+    printf("begin\r\n");
+
+    asioCallback = asio_callback;
+
+    printf("continue\r\n");
+
 	// load the driver, this will setup all the necessary internal data structures
 	if (loadAsioDriver (ASIO_DRIVER_NAME))
 	{
@@ -461,7 +497,7 @@ int main(int argc, char* argv[])
 					asioDriverInfo.driverInfo.name, asioDriverInfo.driverInfo.errorMessage);
 			if (init_asio_static_data (&asioDriverInfo) == 0)
 			{
-				// ASIOControlPanel(); you might want to check wether the ASIOControlPanel() can open
+				// ASIOControlPanel();  // you might want to check wether the ASIOControlPanel() can open
 
 				// set up the asioCallback structure and create the ASIO data buffer
 				asioCallbacks.bufferSwitch = &bufferSwitch;
@@ -473,16 +509,18 @@ int main(int argc, char* argv[])
 					if (ASIOStart() == ASE_OK)
 					{
 						// Now all is up and running
-						fprintf (stdout, "\nASIO Driver started succefully.\n\n");
-						while (!asioDriverInfo.stopped)
-						{
+						fprintf (stdout, "\r\nASIO Driver started succefully.\r\n\r\n");
+						//while (!asioDriverInfo.stopped)
+						//{
 #if WINDOWS
+                            return 0;
 							Sleep(100);	// goto sleep for 100 milliseconds
+                            callcc:
 #elif MAC
 							unsigned long dummy;
 							Delay (6, &dummy);
 #endif
-							fprintf (stdout, "%d ms / %d ms / %d samples", asioDriverInfo.sysRefTime, (long)(asioDriverInfo.nanoSeconds / 1000000.0), (long)asioDriverInfo.samples);
+						/*	fprintf (stdout, "%d ms / %d ms / %d samples", asioDriverInfo.sysRefTime, (long)(asioDriverInfo.nanoSeconds / 1000000.0), (long)asioDriverInfo.samples);
 
 							// create a more readable time code format (the quick and dirty way)
 							double remainder = asioDriverInfo.tcSamples;
@@ -494,20 +532,28 @@ int main(int argc, char* argv[])
 							remainder -= seconds * asioDriverInfo.sampleRate;
 							fprintf (stdout, " / TC: %2.2d:%2.2d:%2.2d:%5.5d", (long)hours, (long)minutes, (long)seconds, (long)remainder);
 
-							fprintf (stdout, "     \r");
+							fprintf (stdout, "     \r\n");
 							#if !MAC
 							fflush (stdout);
 							#endif
-						}
+                        */
+						//}
 						ASIOStop();
 					}
 					ASIODisposeBuffers();
 				}
 			}
 			ASIOExit();
-		}
+        }
+        else {
+            fprintf(stdout, "init failed.\r\n");
+        }
 		asioDrivers->removeCurrentDriver();
-	}
+    }
+    else {
+        fprintf(stdout, "load failed.\r\n");
+    }
+    fprintf(stdout, "end\r\n");
 	return 0;
 }
 
