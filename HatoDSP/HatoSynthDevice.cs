@@ -24,10 +24,13 @@ namespace HatoDSP
         // 空のパッチでシンセサイザーを初期化します。
         public HatoSynthDevice()
         {
+            Task.Run(() => FastMath.Saw(1.0, 2));
         }
 
         public HatoSynthDevice(string patch)
         {
+            Task.Run(() => FastMath.Saw(1.0, 2));
+
             var r = new PatchReader(patch);
 
             rootTree = r.Root;
@@ -35,19 +38,28 @@ namespace HatoDSP
 
         /// <summary>
         /// 合成された2チャンネルの信号を返します。
+        /// このクラスはスレッドセーフですが、同時に2つのスレッドから Take を呼ばないで下さい。
         /// </summary>
         public Signal[] Take(int count)
         {
             var mix = (new int[2]).Select(x => (Signal)(new ConstantSignal(0, count))).ToArray();
 
-            foreach (var note in notes)
+            MyNoteEvent[] notes1 = null, notes2 = null;
+
+            lock (notes)
+            {
+                notes1 = notes.ToArray();
+                notes2 = releasedNotes.ToArray();
+            }
+
+            foreach (var note in notes1)
             {
                 var lenv = new LocalEnvironment()
                 {
                     Freq = new ConstantSignal(0, count),
                     Pitch = new ConstantSignal(note.n, count),
                     Locals = new Dictionary<string, Signal>(),
-                    Gate = new ConstantSignal(1, count),
+                    Gate = new ConstantSignal(1, count),  // ここが違う！！
                     SamplingRate = 44100
                 };
                 var ret = note.cell.Take(count, lenv);
@@ -66,14 +78,15 @@ namespace HatoDSP
                     throw new NotImplementedException("todo");
                 }
             }
-            foreach (var note in releasedNotes)
+
+            foreach (var note in notes2)
             {
                 var lenv = new LocalEnvironment()
                 {
                     Freq = new ConstantSignal(0, count),
                     Pitch = new ConstantSignal(note.n, count),
                     Locals = new Dictionary<string, Signal>(),
-                    Gate = new ConstantSignal(0, count),
+                    Gate = new ConstantSignal(0, count),  // ここが違う！！
                     SamplingRate = 44100
                 };
                 var ret = note.cell.Take(count, lenv);
@@ -97,7 +110,7 @@ namespace HatoDSP
         }
 
         /// <summary>
-        /// 音符を直ちに再生します。
+        /// 音符を直ちに再生します。このクラスはスレッドセーフです。
         /// </summary>
         public void NoteOn(int n)
         {
@@ -108,27 +121,35 @@ namespace HatoDSP
                 NoteOff(notes[0].n);
             }
 
-            notes.Add(new MyNoteEvent()
+            var cell = rootTree.Generate();
+
+            lock (notes)
             {
-                cell = rootTree.Generate(),
-                n = n
-            });
+                notes.Add(new MyNoteEvent()
+                {
+                    cell = cell,
+                    n = n
+                });
+            }
         }
 
         /// <summary>
-        /// 音符を直ちに停止します。
+        /// 音符を直ちに停止します。このクラスはスレッドセーフです。
         /// </summary>
         public void NoteOff(int n)
         {
-            var list = notes.FindAll(x => x.n == n).ToArray();
-            foreach (var item in list)
+            lock (notes)
             {
-                if (releasedNotes.Count >= ReleasePolyphony)
+                var list = notes.FindAll(x => x.n == n).ToArray();
+                foreach (var item in list)
                 {
-                    releasedNotes.RemoveAt(0);
+                    if (releasedNotes.Count >= ReleasePolyphony)
+                    {
+                        releasedNotes.RemoveAt(0);
+                    }
+                    releasedNotes.Add(item);
+                    notes.Remove(item);  // 遅いかも？
                 }
-                releasedNotes.Add(item);
-                notes.Remove(item);  // 遅いかも？
             }
         }
     }

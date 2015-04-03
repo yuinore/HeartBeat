@@ -10,9 +10,13 @@ namespace HatoDSP
     {
         FilterType type = FilterType.LowPass;
 
+        readonly int ParamsRefreshRate = 16;
+
         Cell waveCell;
         Cell cutoffCell;
-        IIRFilter filt;
+        IIRFilter[] filt;
+
+        int slope = 2;
 
         public BiquadFilter()
         {
@@ -36,7 +40,7 @@ namespace HatoDSP
         {
             Signal[] input = waveCell.Take(count, lenv);
             var cutoffsignal = cutoffCell == null ? new ConstantSignal(0, count) : cutoffCell.Take(count, lenv)[0];
-            filt = filt ?? new IIRFilter(input.Length, 1, 0, 0, 0, 0, 0);
+            filt = filt ?? (new int[slope]).Select(x => new IIRFilter(input.Length, 1, 0, 0, 0, 0, 0)).ToArray();
 
             if (cutoffsignal is ConstantSignal)
             {
@@ -49,16 +53,26 @@ namespace HatoDSP
                 float Q = 6.0f;
                 float alp = sin / Q;
 
+                float[] ab = null;
+
                 switch (type)
                 {
                     case FilterType.LowPass:
-                        filt.UpdateParams(1 + alp, -2 * cos, 1 - alp, (1 - cos) * 0.5f, 1 - cos, (1 - cos) * 0.5f);
+                        ab = new float[6] { 1 + alp, -2 * cos, 1 - alp, (1 - cos) * 0.5f, 1 - cos, (1 - cos) * 0.5f };
                         break;
                     default:
                         break;
                 }
 
-                return filt.Take(count, new Signal[][] { input });
+                for (int i = 0; i < filt.Length; i++)
+                {
+                    filt[i].UpdateParams(ab[0], ab[1], ab[2], ab[3], ab[4], ab[5]);
+                }
+
+                for (int i = 0; i < filt.Length; i++)
+                {
+                    input = filt[i].Take(count, new Signal[][] { input });
+                }
             }
             else
             {
@@ -71,15 +85,22 @@ namespace HatoDSP
 
                 float[] cutoff = cutoffsignal.ToArray();
 
+                double w0 = 0;
+                float sin = 0, cos = 0, alp = 0;
+
+                float Q = 6.0f;
+
                 for (int i = 0; i < count; i++)
                 {
                     // float[] cutoff = cutoffsignal.ToArray(); // 酷すぎる
 
-                    double w0 = 2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate;
-                    float sin = (float)Math.Sin(w0);
-                    float cos = (float)Math.Cos(w0);
-                    float Q = 6.0f;
-                    float alp = sin / Q;
+                    if (i % ParamsRefreshRate == 0)
+                    {
+                        w0 = 2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate;
+                        sin = (float)FastMath.Sin(w0);
+                        cos = (float)Math.Cos(w0);
+                        alp = sin / Q;
+                    }
 
                     switch (type)
                     {
@@ -96,17 +117,22 @@ namespace HatoDSP
                     }
                 }
 
-                return filt.Take(count, new Signal[][] { 
-                input, 
-                new Signal[] { 
-                    new ExactSignal(a0,1.0f, false),
-                    new ExactSignal(a1,1.0f, false),
-                    new ExactSignal(a2,1.0f, false),
-                    new ExactSignal(b0,1.0f, false),
-                    new ExactSignal(b1,1.0f, false),
-                    new ExactSignal(b2,1.0f, false)
-                }});
+                for (int i = 0; i < filt.Length; i++)
+                {
+                    input = filt[i].Take(count, new Signal[][] { 
+                        input, 
+                        new Signal[] { 
+                            new ExactSignal(a0,1.0f, false),
+                            new ExactSignal(a1,1.0f, false),
+                            new ExactSignal(a2,1.0f, false),
+                            new ExactSignal(b0,1.0f, false),
+                            new ExactSignal(b1,1.0f, false),
+                            new ExactSignal(b2,1.0f, false)
+                    }});
+                }
             }
+
+            return input;
         }
     }
 }

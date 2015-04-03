@@ -72,7 +72,7 @@ namespace HatoPlayer
 
         public void StopAndPlay(double volumeInDb = 0)
         {
-            amp = (float)Math.Pow(10, volumeInDb / 20.0);
+            amp = (float)Math.Pow(10, volumeInDb * 0.05);
 
             if (sbuf != null && hplayer.PlaybackDevice == HatoPlayerDevice.PlaybackDeviceType.DirectSound)
             {

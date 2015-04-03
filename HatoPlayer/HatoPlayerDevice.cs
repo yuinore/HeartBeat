@@ -28,6 +28,11 @@ namespace HatoPlayer
         internal PlaybackDeviceType PlaybackDevice = PlaybackDeviceType.ASIO;
 
         /// <summary>
+        /// シンセサイザーの音量。キー音とそれ以外で分けられたら良いのですが。
+        /// </summary>
+        float SynthVolumeInDb = -10.0f;
+
+        /// <summary>
         /// 音声処理をした結果を格納するバッファのサイズ。
         /// ASIOバッファサイズの2～4倍くらいが良いと思います。
         /// </summary>
@@ -207,10 +212,7 @@ namespace HatoPlayer
                                 var s = MixchToSynth[mixch];
                                 Task.Run(() =>
                                 {
-                                    lock (MixchToSynth[mixch])
-                                    {
-                                        MixchToSynth[mixch].NoteOn(noteno);
-                                    }
+                                    MixchToSynth[mixch].NoteOn(noteno);
                                 });
                                 return true;
                             }
@@ -328,25 +330,24 @@ namespace HatoPlayer
                         float[][] buf = new float[2][] { new float[count], new float[count] };
 
                         // シンセの再生
+                        float amp = (float)Math.Pow(10, SynthVolumeInDb * 0.05);
+
                         foreach (var kvpair in MixchToSynth)
                         {
                             var s = kvpair.Value;
                             float[][] ret = null;
 
-                                await Task.Run(() =>
-                                {
-                                    lock (s)
-                                    {
-                                        ret = s.Take(count).Select(x => x.ToArray()).ToArray();
-                                    }
-                                });
+                            await Task.Run(() =>
+                            {
+                                ret = s.Take(count).Select(x => x.ToArray()).ToArray();
+                            });
 
                             if (ret.Length == 2)
                             {
                                 for (int i = 0; i < count; i++)
                                 {
-                                    buf[0][i] += ret[0][i];
-                                    buf[1][i] += ret[1][i];
+                                    buf[0][i] += ret[0][i] * amp;
+                                    buf[1][i] += ret[1][i] * amp;
                                 }
                             }
                             else

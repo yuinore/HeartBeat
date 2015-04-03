@@ -64,8 +64,9 @@ namespace HatoDSP
                     sum = (new Signal[sig.Length]).Select(nil => (Signal)(new ConstantSignal(0, count))).ToArray();
                 }
 
-                var panL = new ConstantSignal(1 - 0.5f * ((j - (rainbowN - 1.0f) / 2) / ((rainbowN - 1.0f) / 2)), count);
-                var panR = new ConstantSignal(1 + 0.5f * ((j - (rainbowN - 1.0f) / 2) / ((rainbowN - 1.0f) / 2)), count);
+                float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
+                var panL = new ConstantSignal(1 - 1.0f * ((j - width) / width), count);
+                var panR = new ConstantSignal(1 + 1.0f * ((j - width) / width), count);
 
                 /*
                 for (int i = 0; i < sig.Length; i++)

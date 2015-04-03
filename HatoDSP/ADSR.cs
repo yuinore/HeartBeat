@@ -59,6 +59,8 @@ namespace HatoDSP
 
             double dt = 1.0 / lenv.SamplingRate;
 
+            double log2a = Math.Log(0.00001, 2);  // -100dB (1 / 10^5)
+
             for (int i = 0; i < count; n++, i++, time += dt)
             {
                 if (gate[i] > 0.5)
@@ -69,7 +71,8 @@ namespace HatoDSP
                     }
                     else if (time < A + D)
                     {
-                        double rate = Math.Pow(0.00001, (time - A) / D); // 0dB to -100dB
+                        //double rate = Math.Pow(0.00001, (time - A) / D);
+                        double rate = FastMath.Pow2(log2a * (time - A) / D); // 0dB to -100dB
                         lastgain = ret[i] = (float)((1.0f - S) * rate + S);
                     }
                     else
@@ -82,7 +85,8 @@ namespace HatoDSP
                 {
                     if (time < releasedAt + R)
                     {
-                        double rate = Math.Pow(0.00001, (time - releasedAt) / R); // 0dB to -100dB
+                        //double rate = Math.Pow(0.00001, (time - releasedAt) / R);
+                        double rate = FastMath.Pow2(log2a * (time - releasedAt) / R); // 0dB to -100dB
                         ret[i] = (float)(lastgain * rate);
                     }
                     else

@@ -31,17 +31,8 @@ namespace HatoDSP
                 //json = Regex.Replace(json, @"/\*.*\*/", "");  // これだと /* /* */ もアレしてしまう気がする
                 //json = Regex.Replace(json, @"/\*.*?\*/", "");  // これだと /* // */ もアレしてしまう
                 json = Regex.Replace(json, @"(/\*.*?\*/|//.*?$)", "", RegexOptions.Multiline | RegexOptions.Singleline);
-
-                /*
-                var pos = 0;
-                while ((pos = json.IndexOf("/" + "*")) != -1)
-                {
-                    int end = json.IndexOf("*" + "/", pos + 2);
-                    if (end != -1)
-                    {
-                        json = json.Substring(0, pos) + json.Substring(end);
-                    }
-                }*/
+                // ↑これだと文字列定数中のコメントも削除されそう・・・
+                // これだと単独の/*はコメント化されないですが構いませんよね？
 
                 dynamic dj = DynamicJson.Parse(json);
 
@@ -90,7 +81,6 @@ namespace HatoDSP
             {
                 throw new PatchFormatException(ex.ToString());
             }
-            cells = cells;
         }
     }
 }

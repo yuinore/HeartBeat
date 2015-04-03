@@ -61,9 +61,13 @@ namespace HatoDSP
 
             bool constantPitch = (lenv.Pitch is ConstantSignal);  // メモ：Expressionが導入された場合に修正
 
-            float _1_rate = 1.0f / lenv.SamplingRate;
+            double _2pi_rate = 2.0 * Math.PI / lenv.SamplingRate;
+            double inv_2pi = 1.0 / (2.0 * Math.PI);
+            double inv_pi = 1.0 / Math.PI;
+            double inv_12 = 1.0 / 12.0;
 
-            double temp = Math.Log((lenv.SamplingRate * 0.5) / 441.0) / Math.Log(2);  // log2((SR * 0.5) / 441)
+            // これらの中間変数自体に物理的な意味は恐らく無いと思います。441は真ん中のラの音の周波数です。
+            double temp = Math.Log((lenv.SamplingRate * 0.5) / 441.0) / Math.Log(2);  // log_2((SamplingRate * 0.5) / 441)
             double temp2 = 1.0 / ((lenv.SamplingRate * 0.5) / 441.0);
 
             Func<double, int, double> generator = FastMath.Saw;
@@ -74,17 +78,20 @@ namespace HatoDSP
             double phasedelta = 0;
             double logovertonefloat = 0;
             int logovertone = 0;
+            bool isNotTooLow = false, isTooHigh = false;
 
             if (constantPitch)
             {
                 float constpitch = ((ConstantSignal)lenv.Pitch).val;
-                freqoctave = (constpitch + pshift - 60.0) / 12.0;  // 441HzのAの音からのオクターブ差[oct]
-                freqratio = Math.Pow(2, freqoctave);             // 441HzのAの音からの音声の周波数比
+                freqoctave = (constpitch + pshift - 60.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
+                freqratio = FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
                 freq = freqratio * 441;                          // 音声の周波数[Hz]
-                phasedelta = (2 * Math.PI * freq * _1_rate);     // 音声の角周波数；基音の位相の増分[rad]
+                phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]
                 logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
                 // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
-                logovertone = (int)logovertonefloat;                // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                logovertone = (int)logovertonefloat;             // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                isNotTooLow = logovertone < 8;                   // 音が低すぎないかどうかを表すbool変数
+                isTooHigh = phasedelta >= Math.PI;               // 音が高すぎるかどうかを表すbool変数
             }
             else
             {
@@ -95,43 +102,48 @@ namespace HatoDSP
             {
                 if (!constantPitch)
                 {
-                    freqoctave = (pitch[i] + pshift - 60.0) / 12.0;  // 441HzのAの音からのオクターブ差[oct]
-                    freqratio = Math.Pow(2, freqoctave);             // 441HzのAの音からの音声の周波数比
+                    freqoctave = (pitch[i] + pshift - 60.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
+                    freqratio = FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
                     freq = freqratio * 441;                          // 音声の周波数[Hz]
-                    phasedelta = (2 * Math.PI * freq * _1_rate);     // 音声の角周波数；基音の位相の増分[rad]
+                    phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]
                     logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
                     // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
-                    logovertone = (int)logovertonefloat;                // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                    logovertone = (int)logovertonefloat;             // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                    isNotTooLow = logovertone < 8;                   // 音が低すぎないかどうかを表すbool変数
+                    isTooHigh = phasedelta >= Math.PI;               // 音が高すぎるかどうかを表すbool変数
                 }
 
                 switch (waveform)
                 {
                     case Waveform.Saw:
-                        if (logovertone < 8)
+                        if (isNotTooLow)
                         {
-                            if (phasedelta >= Math.PI) { ret[i] = 0; }
+                            if (isTooHigh) { ret[i] = 0; }
                             else { ret[i] = (float)(FastMath.Saw(phase, logovertone)); }
                         }
                         else
                         {
-                            ret[i] += (float)((0.5 - (phase / (2 * Math.PI)) % 1) * 2);
+                            var normphase = phase * inv_2pi;
+                            //ret[i] += (float)((0.5 - normphase % 1) * 2);  // FIXME: phaseが負の時の処理
+                            var temp3 = normphase - (int)normphase;  // 剰余演算。"temp3 = normphase % 1;" を表す。
+                            ret[i] += (float)((0.5 - temp3) * 2);  // FIXME: phaseが負の時の処理
                         }
                         break;
 
                     case Waveform.Square:
-                        if (logovertone < 8)
+                        if (isNotTooLow)
                         {
-                            if (phasedelta >= Math.PI) { ret[i] = 0; }
+                            if (isTooHigh) { ret[i] = 0; }
                             else { ret[i] = (float)((FastMath.Saw(phase, logovertone) - FastMath.Saw(phase + Math.PI, logovertone))); }
                         }
                         else
                         {
-                            ret[i] += (float)((int)(phase / Math.PI) % 2 == 0 ? 1 : -1);
+                            ret[i] += (float)(((int)(phase * inv_pi) & 1) * (-2) + 1);  // FIXME: phaseが負の時の処理
                         }
                         break;
 
                     case Waveform.Tri:
-                        if (phasedelta >= Math.PI) { ret[i] = 0; }
+                        if (isTooHigh) { ret[i] = 0; }
                         else
                         {
                             ret[i] = (float)(FastMath.Tri(phase, logovertone));
@@ -139,9 +151,9 @@ namespace HatoDSP
                         break;
 
                     case Waveform.Impulse:
-                        if (logovertone < 8)
+                        if (isNotTooLow)
                         {
-                            if (phasedelta >= Math.PI) { ret[i] = 0; }
+                            if (isTooHigh) { ret[i] = 0; }
                             else
                             {
                                 double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
@@ -150,12 +162,15 @@ namespace HatoDSP
                         }
                         else
                         {
-                            ret[i] += (float)((int)((phase - phasedelta) / Math.PI) % 2 == 1 && (int)(phase / Math.PI) % 2 == 0 ? 2 : 0);
+                            int lastval = (int)((phase - phasedelta) * inv_pi) & 1;
+                            int currval = (int)(phase * inv_pi) & 1;
+
+                            ret[i] += (float)((lastval & (1 ^ currval)) << 1);  // lastval == 1 && currentval == 0 ? 2 : 0
                         }
                         break;
 
                     default:
-                        if (phasedelta >= Math.PI)
+                        if (isTooHigh)
                         {
                             ret[i] = 0;
                         }

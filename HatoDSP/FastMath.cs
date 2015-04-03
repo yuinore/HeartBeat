@@ -11,6 +11,9 @@ namespace HatoDSP
         static readonly float[] f0;
         static readonly float[] f1;
         static readonly float[] f2;
+        static readonly float[] pow2_0;
+        static readonly float[] pow2_1;
+        static readonly float[] pow2_2;
         static readonly float[][] saw0;
         static readonly float[][] saw1;
         static readonly float[][] saw2;
@@ -20,7 +23,7 @@ namespace HatoDSP
         static readonly float[][] imp0;
         static readonly float[][] imp1;
         static readonly float[][] imp2;
-        static readonly double r;
+        static readonly double N_2pi;
  
         // 高速化のために敢えてconstで（高速化になるのか？）
         private const int WT_N = 8;  // wavetable n, sawのwavetableの分割数
@@ -35,17 +38,30 @@ namespace HatoDSP
         // いくら必要になるまで呼ばれないからといって静的コンストラクタで重い処理をさせるのは良くないと思います。
         static FastMath()
         {
+
             f0 = new float[N / 2];
             f1 = new float[N / 2];
             f2 = new float[N / 2];
+            pow2_0 = new float[N];
+            pow2_1 = new float[N];
+            pow2_2 = new float[N];
 
             double _2pi_N = 2 * Math.PI / N;
+            double log2_N = Math.Log(2.0) / N;
+            N_2pi = (1.0 / _2pi_N);
 
             for (int i = 0; i < N / 2; i++)
             {
                 f0[i] = (float)Math.Sin(2 * Math.PI * (i + 0.5) / N);
                 f1[i] = (float)(_2pi_N * Math.Cos(2 * Math.PI * (i + 0.5) / N));
                 f2[i] = -(float)(_2pi_N * _2pi_N * Math.Sin(2 * Math.PI * (i + 0.5) / N) / 2);
+            }
+
+            for (int i = 0; i < N; i++)
+            {
+                pow2_0[i] = (float)Math.Pow(2, (i + 0.5) / N);
+                pow2_1[i] = (float)(log2_N * Math.Pow(2, (i + 0.5) / N));
+                pow2_2[i] = (float)(log2_N * log2_N * Math.Pow(2, (i + 0.5) / N) / 2);
             }
 
             saw0 = new float[WT_N][];
@@ -95,14 +111,12 @@ namespace HatoDSP
                     }
                 }
             }
-
-            r = (1.0 / _2pi_N);
         }
 
         public static double Sin(double x)
         {
             if (x < 0) x = -x;
-            double xr = x * r;
+            double xr = x * N_2pi;
             int a = ((int)xr) & Mask;
             if (a < N / 2)
             {
@@ -117,6 +131,34 @@ namespace HatoDSP
                 double d = xr - (int)xr - 0.5;
 
                 return -(f0[a] + d * (f1[a] + d * f2[a]));
+            }
+        }
+
+        public static double Pow2(double x)
+        {
+            //int integPart = (int)(x - ((int)x - 1)) + ((int)x - 1);  // floor(x) ← おまけ
+
+            if (x >= 0)
+            {
+                double absx = x;
+                int integPart = (int)absx;  // floor(x)
+                double xr = (absx - integPart) * N;
+                int a = (int)xr;  // 0 ～ N-1
+
+                double d = xr - a - 0.5;  // テイラー展開の基準点からの差
+
+                return (pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * (1 << integPart);
+            }
+            else
+            {
+                double absx = -x;
+                int integPart = (int)absx;  // floor(x)
+                double xr = (absx - integPart) * N;
+                int a = (int)xr;  // 0 ～ N-1
+
+                double d = xr - a - 0.5;  // テイラー展開の基準点からの差
+
+                return 1.0f / ((pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * (1 << integPart));  // 逆数を返す（ちょっと遅い）
             }
         }
 
