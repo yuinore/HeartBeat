@@ -242,9 +242,6 @@ namespace HeartBeatCore
         /// </summary>
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
-            hplayer = new HatoPlayerDevice(form, null);
-            hplayer.Run();
-
             {
                 Process thisProcess = System.Diagnostics.Process.GetCurrentProcess();
                 thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
@@ -424,8 +421,9 @@ namespace HeartBeatCore
 
             TraceMessage("    Loading Time: " + loadingTime.ElapsedMilliseconds + "ms");
 
-            var silence = hplayer.LoadAudioFileOrGoEasy(HatoPath.FromAppDir("silence20s.wav"));
-            silence.StopAndPlay();  // 無音を再生させて、プライマリバッファが稼働していることを保証させる
+            hplayer.Run();  // ASIOデバイスを起動して再生する
+
+            s.Start();  // 内部タイマーの作動
 
             // ↓約150行
             #region 描画処理（長い）
@@ -911,8 +909,6 @@ namespace HeartBeatCore
                 });
             //);
             #endregion
-
-            s.Start();
         }
 
         public void Stop()

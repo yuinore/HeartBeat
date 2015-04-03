@@ -18,8 +18,6 @@ namespace HatoSound
         public int BufSamplesCount;
         public int ChannelsCount;
 
-        float[][] fbuf;
-
         int writtenPosition;
 
         private SecondarySoundBuffer dsSecondaryBuffer;
@@ -35,7 +33,7 @@ namespace HatoSound
             BufSamplesCount = bufSamplesCount;
             ChannelsCount = channelsCount;
 
-            fbuf = (new[] { 0, 0 }).Select((x) => new float[bufSamplesCount]).ToArray();
+            float[][] fbuf = (new[] { 0, 0 }).Select((x) => new float[bufSamplesCount]).ToArray();
 
             CreateBuffer(hsound);
         }
@@ -45,28 +43,14 @@ namespace HatoSound
         /// </summary>
         /// <param name="hsound"></param>
         /// <param name="filename"></param>
-        public SecondaryBuffer(HatoSoundDevice hsound, string filename)
+        public SecondaryBuffer(HatoSoundDevice hsound, float[][] fbuf, int bufSamplesCount, int channelsCount = 2, int samplingRate = 44100)
         {
-            try
-            {
-                // ↓ここで同時にNVorbisからの2ファイルの読み込みが発生しているのかもしれない
-                fbuf = AudioFileReader.ReadAllSamples(filename);  // ここで一度8/16bitから32bitに変換されてしまうんですよね・・・無駄・・・
-                AudioFileReader.ReadAttribute(filename, out SamplingRate, out ChannelsCount, out BufSamplesCount);
+            this.BufSamplesCount = bufSamplesCount;
+            this.ChannelsCount = channelsCount;
+            this.SamplingRate = samplingRate;
 
-                CreateBuffer(hsound);
-                WriteSamples(fbuf);
-                fbuf = null;  // ガベージコレクタに回収させる（超重要）
-            }
-            catch
-            {
-                fbuf = new float[][] { new float[] { 0 } };
-                BufSamplesCount = 1;
-                ChannelsCount = 1;
-                SamplingRate = 44100;
-
-                CreateBuffer(hsound);
-                WriteSamples(fbuf);
-            }
+            CreateBuffer(hsound);
+            WriteSamples(fbuf);
         }
 
         /// <summary>
@@ -74,7 +58,7 @@ namespace HatoSound
         /// </summary>
         public SecondaryBuffer(HatoSoundDevice hsound)
         {
-            fbuf = new float[][] { new float[] { 0 } };
+            float[][] fbuf = new float[][] { new float[] { 0 } };
             BufSamplesCount = 1;
             ChannelsCount = 1;
             SamplingRate = 44100;
@@ -193,6 +177,8 @@ namespace HatoSound
         /// <param name="eventhandler">float[] の0番目から int 個のデータを入れて下さい。</param>
         public void PlayLoop(Action<float[][],int> eventhandler)
         {
+            float[][] fbuf = (new float[ChannelsCount][]).Select(x => new float[BufSamplesCount]).ToArray();
+
             int playCursor;
             int writeCursor;
             writtenPosition = 0;

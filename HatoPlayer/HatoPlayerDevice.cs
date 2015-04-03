@@ -17,10 +17,23 @@ namespace HatoPlayer
     public class HatoPlayerDevice : IDisposable
     {
         //************* 設定 *************
+        /// <summary>
+        /// キー音の無いオブジェに、デフォルトのキー音を再生するかどうか。
+        /// </summary>
         public bool DefaultKeySound = true;
+
+        /// <summary>
+        /// 音声を再生するデバイス。DirectSoundとASIOは同時に使用できない（当たり前）
+        /// </summary>
         internal PlaybackDeviceType PlaybackDevice = PlaybackDeviceType.ASIO;
 
-        int prefetchCount = 1024;  // Asioバッファの2～4倍とかが良いと思います
+        /// <summary>
+        /// 音声処理をした結果を格納するバッファのサイズ。
+        /// ASIOバッファサイズの2～4倍くらいが良いと思います。
+        /// </summary>
+        int PrefetchCount = 1024;
+        // 512以下だとノイズが出ました。まあASIO 4 AllですしC#ですからそこはあんまり気にしないことにしましょう。
+        // 1024でもノイズが出ました。なぜですかね・・・
 
         //************* デバイス *************
         public BMSStruct b;
@@ -30,7 +43,9 @@ namespace HatoPlayer
         Dictionary<int, Sound> WavidToBuffer = new Dictionary<int, Sound>();
         Dictionary<int, HatoSynthDevice> MixchToSynth = new Dictionary<int, HatoSynthDevice>();
 
-        SecondaryBuffer defkey;
+        internal List<Sound> PlayingSoundList = new List<Sound>();
+
+        Sound defkey;
 
         //************* ここまで *************
 
@@ -48,7 +63,7 @@ namespace HatoPlayer
             this.b = b;
             hsound = new HatoSoundDevice(form);
 
-            defkey = new SecondaryBuffer(hsound, HatoPath.FromAppDir("key.ogg"));
+            defkey = new Sound(this, HatoPath.FromAppDir("key.ogg"));
         }
 
         /// <summary>
@@ -280,11 +295,20 @@ namespace HatoPlayer
 
         public void Run()
         {
-            if (PlaybackDevice != PlaybackDeviceType.ASIO) return;
+            if (PlaybackDevice == PlaybackDeviceType.DirectSound)
+            {
+                var silence = LoadAudioFileOrGoEasy(HatoPath.FromAppDir("silence20s.wav"));
+                silence.StopAndPlay();  // 無音を再生させて、プライマリバッファが稼働していることを保証させる
+            }
+
+            if (PlaybackDevice != PlaybackDeviceType.ASIO)
+            {
+                return;
+            }
 
             asio = new AsioHandler();
 
-            for (int i = 0; i < prefetchCount; i++)
+            for (int i = 0; i < PrefetchCount; i++)
             {
                 bufqueueL.Enqueue(0);
                 bufqueueR.Enqueue(0);
@@ -297,20 +321,25 @@ namespace HatoPlayer
             {
                 while (true)
                 {
-                    if (bufcountL < prefetchCount || bufcountR < prefetchCount)
+                    if (bufcountL < PrefetchCount || bufcountR < PrefetchCount)
                     {
                         int count = 256;  // 一度に取得しに行くサンプル数 256sample ≒ 5.8ms
+
                         float[][] buf = new float[2][] { new float[count], new float[count] };
 
+                        // シンセの再生
                         foreach (var kvpair in MixchToSynth)
                         {
                             var s = kvpair.Value;
                             float[][] ret = null;
 
-                            lock (s)
-                            {
-                                ret = s.Take(count).Select(x => x.ToArray()).ToArray();
-                            }
+                                await Task.Run(() =>
+                                {
+                                    lock (s)
+                                    {
+                                        ret = s.Take(count).Select(x => x.ToArray()).ToArray();
+                                    }
+                                });
 
                             if (ret.Length == 2)
                             {
@@ -323,6 +352,48 @@ namespace HatoPlayer
                             else
                             {
                                 throw new Exception("フワーッ！");
+                            }
+                        }
+
+                        // wavの再生
+                        Sound[] slist;
+                        lock (PlayingSoundList)
+                        {
+                            slist = PlayingSoundList.ToArray();
+                        }
+
+                        foreach (var snd in slist)
+                        {
+                            int j = snd.playingPosition;
+
+                            if (snd.ChannelsCount == 1)
+                            {
+                                for (int i = 0; i < count && j < snd.BufSamplesCount; i++, j++)
+                                {
+                                    buf[0][i] += snd.fbuf[0][j] * snd.amp;
+                                    buf[1][i] += snd.fbuf[0][j] * snd.amp;
+                                }
+                            }
+                            else if (snd.ChannelsCount == 2)
+                            {
+                                for (int i = 0; i < count && j < snd.BufSamplesCount; i++, j++)
+                                {
+                                    buf[0][i] += snd.fbuf[0][j] * snd.amp;
+                                    buf[1][i] += snd.fbuf[1][j] * snd.amp;
+                                }
+                            }
+                            else
+                            {
+                                throw new Exception("フワーッ！！！");
+                            }
+                            snd.playingPosition += count;
+
+                            if (j >= snd.BufSamplesCount)
+                            {
+                                lock (PlayingSoundList)
+                                {
+                                    PlayingSoundList.Remove(snd);
+                                }
                             }
                         }
 
