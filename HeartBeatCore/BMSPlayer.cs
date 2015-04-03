@@ -15,7 +15,7 @@ using HatoPainter;
 
 namespace HeartBeatCore
 {
-    public class BMSPlayer
+    public class BMSPlayer : IDisposable
     {
         //******************************************//
         // BMS読み込みオプション
@@ -919,5 +919,45 @@ namespace HeartBeatCore
         public void Stop()
         {
         }
+
+        #region implementation of IDisposable
+        // Flag: Has Dispose already been called?
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            
+            System.Diagnostics.Debug.Assert(disposing, "激おこ");
+
+            if (disposing)
+            {
+                // Free any other managed objects here.
+                if (hplayer != null)
+                {
+                    hplayer.Dispose();
+                    hplayer = null;
+                }
+            }
+
+            // Free any unmanaged objects here.
+
+            disposed = true;
+        }
+        
+        ~BMSPlayer()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

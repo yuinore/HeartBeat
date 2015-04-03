@@ -16,6 +16,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeatCore", "HeartBeatCore\HeartBeatCore.csproj", "{ABDA5D8F-19BD-4FA8-906B-59F6BDDF1207}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeatBeta", "HeartBeatBeta\HeartBeatBeta.csproj", "{B11A5637-4676-48CA-920C-82186308E1A7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C93E705A-FFE0-436F-825D-D73BE78ABFAD} = {C93E705A-FFE0-436F-825D-D73BE78ABFAD}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPlayer", "HatoPlayer\HatoPlayer.csproj", "{94B5907D-6278-4D22-B95C-5D58DD5BED4F}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -33,6 +36,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ASIOHost", "ASIOHost\ASIOHost.vcxproj", "{C93E705A-FFE0-436F-825D-D73BE78ABFAD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASIOTest", "ASIOTest\ASIOTest.csproj", "{A1606BDA-3075-4431-B19D-99986F36C4B5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C93E705A-FFE0-436F-825D-D73BE78ABFAD} = {C93E705A-FFE0-436F-825D-D73BE78ABFAD}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

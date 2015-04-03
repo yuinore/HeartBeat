@@ -24,8 +24,6 @@
 	#define ASIO_DRIVER_NAME   	"ASIO Sample"
 #endif
 
-#define TEST_RUN_TIME  20.0		// run for 20 seconds
-
 
 enum {
 	// number of input and outputs supported by the host application
@@ -180,8 +178,6 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	// about thread synchronization. This is omitted here for simplicity.
     // 　従ってスレッドの同期に気を付ける必要があります。簡単のためここでは省略しています。
 
-	static long processedSamples = 0;
-
 	// store the timeInfo for later use
 	asioDriverInfo.tInfo = *timeInfo;
 
@@ -293,11 +289,6 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	// finally if the driver supports the ASIOOutputReady() optimization, do it here, all data are in place
 	if (asioDriverInfo.postOutput)
 		ASIOOutputReady();
-
-	if (processedSamples >= asioDriverInfo.sampleRate * TEST_RUN_TIME)	// roughly measured
-		asioDriverInfo.stopped = true;
-	else
-		processedSamples += buffSize;
 
 	return 0L;
 }
@@ -471,11 +462,18 @@ ASIOError create_asio_buffers (DriverInfo *asioDriverInfo)
 // ↓この __stdcall というのが重要なのカッ！？
 extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
 {
-    static bool first = true;
-    if (!first) {
-        goto callcc;
+    // 1回目の呼び出し → ASIOの初期化
+    // 2回目の呼び出し → ASIOの停止
+    // 3回目以降の呼び出し → 何もしない
+
+    static bool initialized = false;
+    static bool disposed = false;
+    if (disposed) {
+        return 2;
     }
-    first = false;
+    if (initialized) {
+        goto callcc;  // TODO: gotoを使わないフローにする
+    }
 
     printf("begin\r\n");
 
@@ -509,35 +507,20 @@ extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
 					if (ASIOStart() == ASE_OK)
 					{
 						// Now all is up and running
-						fprintf (stdout, "\r\nASIO Driver started succefully.\r\n\r\n");
-						//while (!asioDriverInfo.stopped)
-						//{
-#if WINDOWS
-                            return 0;
-							Sleep(100);	// goto sleep for 100 milliseconds
-                            callcc:
-#elif MAC
-							unsigned long dummy;
-							Delay (6, &dummy);
-#endif
-						/*	fprintf (stdout, "%d ms / %d ms / %d samples", asioDriverInfo.sysRefTime, (long)(asioDriverInfo.nanoSeconds / 1000000.0), (long)asioDriverInfo.samples);
+                        // やっと音声の再生が開始された
+                        fprintf(stdout, "\r\nASIO Driver started succefully.\r\n\r\n");
+                        initialized = true;
+                        return 1;
 
-							// create a more readable time code format (the quick and dirty way)
-							double remainder = asioDriverInfo.tcSamples;
-							long hours = (long)(remainder / (asioDriverInfo.sampleRate * 3600));
-							remainder -= hours * asioDriverInfo.sampleRate * 3600;
-							long minutes = (long)(remainder / (asioDriverInfo.sampleRate * 60));
-							remainder -= minutes * asioDriverInfo.sampleRate * 60;
-							long seconds = (long)(remainder / asioDriverInfo.sampleRate);
-							remainder -= seconds * asioDriverInfo.sampleRate;
-							fprintf (stdout, " / TC: %2.2d:%2.2d:%2.2d:%5.5d", (long)hours, (long)minutes, (long)seconds, (long)remainder);
+                        // 参考になるかもしれない変数
+                        // asioDriverInfo.sysRefTime
+                        // asioDriverInfo.nanoSeconds
+                        // asioDriverInfo.samples
+                        // asioDriverInfo.sampleRate  // サンプリングレート
+                        // asioDriverInfo.tcSamples  // 再生済みサンプル数 (Time Code Samples)
 
-							fprintf (stdout, "     \r\n");
-							#if !MAC
-							fflush (stdout);
-							#endif
-                        */
-						//}
+                    callcc:  // return from C# and stop playing
+                        asioDriverInfo.stopped = true;  // これ意味あるの？
 						ASIOStop();
 					}
 					ASIODisposeBuffers();
@@ -554,6 +537,7 @@ extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
         fprintf(stdout, "load failed.\r\n");
     }
     fprintf(stdout, "end\r\n");
+    initialized = disposed = true;
 	return 0;
 }
 

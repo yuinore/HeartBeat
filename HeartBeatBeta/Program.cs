@@ -203,6 +203,7 @@ namespace HeartBeatBeta
 
             player.Run();
 
+            player.Dispose();
             form.Dispose();
         }
 

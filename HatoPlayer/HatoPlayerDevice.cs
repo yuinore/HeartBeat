@@ -14,13 +14,14 @@ using System.Windows.Forms;
 
 namespace HatoPlayer
 {
-    public class HatoPlayerDevice
+    public class HatoPlayerDevice : IDisposable
     {
         //************* 設定 *************
         public bool DefaultKeySound = true;
+        PlaybackDeviceType PlaybackDevice = PlaybackDeviceType.ASIO;
 
         //************* デバイス *************
-        BMSStruct b;
+        public BMSStruct b;
         HatoSoundDevice hsound;
 
         //************* データとか *************
@@ -28,6 +29,17 @@ namespace HatoPlayer
         Dictionary<int, HatoSynthDevice> MixchToSynth = new Dictionary<int, HatoSynthDevice>();
 
         SecondaryBuffer defkey;
+
+        //************* ここまで *************
+
+        /// <summary>
+        /// 音声再生に用いるデバイスを選択します。
+        /// </summary>
+        public enum PlaybackDeviceType
+        {
+            DirectSound = 0,
+            ASIO
+        }
 
         public HatoPlayerDevice(Form form, BMSStruct b)
         {
@@ -217,23 +229,66 @@ namespace HatoPlayer
             }
         }
 
-        SecondaryBuffer synthmix;
-        readonly int BufferSamples = 2048;
+        //SecondaryBuffer synthmix;
+        AsioHandler asio;
+        //readonly int BufferSamples = 2048;
 
-        Queue<float[]> bufqueue = new Queue<float[]>();
-        int bufcount = 0;
+        Queue<float> bufqueueL = new Queue<float>();
+        Queue<float> bufqueueR = new Queue<float>();
+        int bufcountL = 0;
+        int bufcountR = 0;
 
-        Stopwatch sw = new Stopwatch();
+        int prefetchCount = 1024;  // Asioバッファの2～4倍とかが良いと思います
+
+        int chLeft = 2;
+        int chRight = 3;
+
+        private unsafe void AsioCallback(IntPtr buf, int chIdx, int count)
+        {
+            if (chIdx != chLeft && chIdx != chRight) return;
+            //Console.WriteLine("Callback");
+
+            if ((chIdx == chLeft ? bufcountL : bufcountR) < count)
+            {
+                //Console.WriteLine("Not Enough Buffer... ＞＜ " + DateTime.Now.Millisecond);
+                //prefetchCount *= 2;
+            }
+            else
+            {
+                lock (bufqueueL)
+                {
+                    short* p = (short*)buf;
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (chIdx == chLeft)
+                        {
+                            var sample = bufqueueL.Dequeue();
+                            *(p++) = 0;
+                            *(p++) = (short)(sample * 32767);
+                            bufcountL--;
+                        }
+                        else if (chIdx == chRight)
+                        {
+                            var sample = bufqueueR.Dequeue();
+                            *(p++) = 0;
+                            *(p++) = (short)(sample * 32767);
+                            bufcountR--;
+                        }
+                    }
+                }
+            }
+        }
 
         public void Run()
         {
-            synthmix = new SecondaryBuffer(hsound, BufferSamples, 2, 44100);
-            sw.Start();
+            asio = new AsioHandler();
 
-            for (int i = 0; i < 2048; i++)
+            for (int i = 0; i < prefetchCount; i++)
             {
-                bufqueue.Enqueue(new float[] { 0, 0 });
-                bufcount++;
+                bufqueueL.Enqueue(0);
+                bufqueueR.Enqueue(0);
+                bufcountL++;
+                bufcountR++;
             }
 
             // PreFetch
@@ -241,14 +296,13 @@ namespace HatoPlayer
             {
                 while (true)
                 {
-                    if (bufcount < 2048)
+                    if (bufcountL < prefetchCount || bufcountR < prefetchCount)
                     {
                         int count = 256;  // 一度に取得しに行くサンプル数 256sample ≒ 5.8ms
                         float[][] buf = new float[2][] { new float[count], new float[count] };
 
                         foreach (var kvpair in MixchToSynth)
                         {
-
                             var s = kvpair.Value;
                             float[][] ret = null;
 
@@ -271,13 +325,15 @@ namespace HatoPlayer
                             }
                         }
 
-                        lock (bufqueue)
+                        lock (bufqueueL)
                         {
                             for (int i = 0; i < buf[0].Length; i++)
                             {
-                                bufqueue.Enqueue(new float[] { buf[0][i], buf[1][i] });
+                                bufqueueL.Enqueue(buf[0][i]);
+                                bufqueueR.Enqueue(buf[1][i]);
                             }
-                            bufcount += buf[0].Length;
+                            bufcountL += buf[0].Length;
+                            bufcountR += buf[0].Length;
                         }
                     }
                     else
@@ -287,28 +343,47 @@ namespace HatoPlayer
                 }
             });
 
-            synthmix.PlayLoop((buf, count) =>
-            {
-                //Console.WriteLine("required " + count + "samples at " + sw.ElapsedMilliseconds + "ms.");
-
-                if (bufcount < count)
-                {
-                    Console.WriteLine("Not Enough Buffer... ＞＜");
-                }
-                else
-                {
-                    lock (bufqueue)
-                    {
-                        for (int i = 0; i < count; i++)
-                        {
-                            var sample = bufqueue.Dequeue();
-                            buf[0][i] = sample[0];
-                            buf[1][i] = sample[1];
-                        }
-                        bufcount -= count;
-                    }
-                }
-            });
+            asio.Run(AsioCallback);
         }
+
+        #region implementation of IDisposable
+        // Flag: Has Dispose already been called?
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            
+            System.Diagnostics.Debug.Assert(disposing, "激おこ");
+
+            if (disposing)
+            {
+                // Free any other managed objects here.
+                if (asio != null)
+                {
+                    asio.Dispose();
+                    asio = null;
+                }
+            }
+
+            // Free any unmanaged objects here.
+
+            disposed = true;
+        }
+        
+        ~HatoPlayerDevice()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

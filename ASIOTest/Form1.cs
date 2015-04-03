@@ -57,13 +57,17 @@ namespace ASIOTest
             }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private async void button1_Click(object sender, EventArgs e)
         {
             s.Start();
 
             Callback = MyCallback;
 
             GC.KeepAlive(Callback);
+
+            asiomain(Callback);
+
+            await Task.Delay(1000);
 
             asiomain(Callback);
         }

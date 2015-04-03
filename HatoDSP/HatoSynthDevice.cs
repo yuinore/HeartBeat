@@ -12,6 +12,9 @@ namespace HatoDSP
         List<MyNoteEvent> notes = new List<MyNoteEvent>();
         List<MyNoteEvent> releasedNotes = new List<MyNoteEvent>();
 
+        int Polyphony = 16;
+        int ReleasePolyphony = 16;
+
         class MyNoteEvent
         {
             public Cell cell;
@@ -100,6 +103,11 @@ namespace HatoDSP
         {
             NoteOff(n);
 
+            if (notes.Count >= Polyphony)
+            {
+                NoteOff(notes[0].n);
+            }
+
             notes.Add(new MyNoteEvent()
             {
                 cell = rootTree.Generate(),
@@ -115,6 +123,10 @@ namespace HatoDSP
             var list = notes.FindAll(x => x.n == n).ToArray();
             foreach (var item in list)
             {
+                if (releasedNotes.Count >= ReleasePolyphony)
+                {
+                    releasedNotes.RemoveAt(0);
+                }
                 releasedNotes.Add(item);
                 notes.Remove(item);  // 遅いかも？
             }

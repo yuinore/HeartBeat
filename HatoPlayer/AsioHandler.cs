@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace HatoPlayer
 {
-    internal class AsioHandler
+    internal class AsioHandler : IDisposable
     {
         internal delegate void D_AsioCallback(IntPtr buf, int chIdx, int count);
 
@@ -41,12 +41,48 @@ namespace HatoPlayer
             GC.KeepAlive(Callback);
 
             Console.WriteLine("今からASIO初期化に行きます");
-            asiomain(Callback);  // dispose時にもう一度呼ぶのを忘れないで
+
+            if (asiomain(Callback) == 0)  // dispose時にもう一度呼ぶのを忘れないで
+            {
+                System.Windows.Forms.MessageBox.Show("ASIOの初期化に失敗しました。");
+                //throw new Exception("ASIOの初期化に失敗しました。");
+            }
         }
 
+        #region implementation of IDisposable
+        // Flag: Has Dispose already been called?
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            
+            System.Diagnostics.Debug.Assert(disposing, "激おこ");
+
+            if (disposing)
+            {
+                // Free any other managed objects here.
+            }
+
+            // Free any unmanaged objects here.
+            asiomain(Callback);  // dispose時にもう一度呼ぶのを忘れないで
+
+            disposed = true;
+        }
+        
         ~AsioHandler()
         {
-            asiomain(Callback);  // dispose時にもう一度呼ぶのを忘れないで
+            Dispose(false);
         }
+        #endregion
     }
 }
