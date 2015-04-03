@@ -1,7 +1,6 @@
 ﻿using HatoBMSLib;
 using HatoLib;
 using HatoDraw;
-using HatoSound;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

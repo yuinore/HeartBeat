@@ -12,8 +12,8 @@ namespace HatoDSP
         List<MyNoteEvent> notes = new List<MyNoteEvent>();
         List<MyNoteEvent> releasedNotes = new List<MyNoteEvent>();
 
-        int Polyphony = 16;
-        int ReleasePolyphony = 16;
+        public int Polyphony = 16;
+        public int ReleasePolyphony = 16;
 
         class MyNoteEvent
         {

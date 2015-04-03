@@ -20,11 +20,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeatBeta", "HeartBeatB
 		{C93E705A-FFE0-436F-825D-D73BE78ABFAD} = {C93E705A-FFE0-436F-825D-D73BE78ABFAD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPlayer", "HatoPlayer\HatoPlayer.csproj", "{94B5907D-6278-4D22-B95C-5D58DD5BED4F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C93E705A-FFE0-436F-825D-D73BE78ABFAD} = {C93E705A-FFE0-436F-825D-D73BE78ABFAD}
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPainter", "HatoPainter\HatoPainter.csproj", "{7346C91F-817D-47AB-B584-FB05A34390FF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoDSP", "HatoDSP\HatoDSP.csproj", "{CF6B7A50-1511-4208-9333-C26B80CB9CF1}"
@@ -39,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASIOTest", "ASIOTest\ASIOTe
 	ProjectSection(ProjectDependencies) = postProject
 		{C93E705A-FFE0-436F-825D-D73BE78ABFAD} = {C93E705A-FFE0-436F-825D-D73BE78ABFAD}
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPlayer", "HatoPlayer\HatoPlayer.csproj", "{94B5907D-6278-4D22-B95C-5D58DD5BED4F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -120,16 +117,6 @@ Global
 		{B11A5637-4676-48CA-920C-82186308E1A7}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{B11A5637-4676-48CA-920C-82186308E1A7}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{B11A5637-4676-48CA-920C-82186308E1A7}.Release|Win32.ActiveCfg = Release|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Win32.ActiveCfg = Debug|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Win32.ActiveCfg = Release|Any CPU
 		{7346C91F-817D-47AB-B584-FB05A34390FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7346C91F-817D-47AB-B584-FB05A34390FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7346C91F-817D-47AB-B584-FB05A34390FF}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -190,6 +177,16 @@ Global
 		{A1606BDA-3075-4431-B19D-99986F36C4B5}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{A1606BDA-3075-4431-B19D-99986F36C4B5}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{A1606BDA-3075-4431-B19D-99986F36C4B5}.Release|Win32.ActiveCfg = Release|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Win32.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

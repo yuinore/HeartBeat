@@ -103,10 +103,6 @@
       <Project>{94b5907d-6278-4d22-b95c-5d58dd5bed4f}</Project>
       <Name>HatoPlayer</Name>
     </ProjectReference>
-    <ProjectReference Include="..\HatoSound\HatoSound.csproj">
-      <Project>{4135359a-29a0-47b8-8fc8-9d0c8af8ecf1}</Project>
-      <Name>HatoSound</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

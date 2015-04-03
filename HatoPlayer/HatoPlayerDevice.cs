@@ -18,14 +18,16 @@ namespace HatoPlayer
     {
         //************* 設定 *************
         public bool DefaultKeySound = true;
-        PlaybackDeviceType PlaybackDevice = PlaybackDeviceType.ASIO;
+        internal PlaybackDeviceType PlaybackDevice = PlaybackDeviceType.ASIO;
+
+        int prefetchCount = 1024;  // Asioバッファの2～4倍とかが良いと思います
 
         //************* デバイス *************
         public BMSStruct b;
-        HatoSoundDevice hsound;
+        internal HatoSoundDevice hsound;
 
         //************* データとか *************
-        Dictionary<int, SecondaryBuffer> WavidToBuffer = new Dictionary<int, SecondaryBuffer>();
+        Dictionary<int, Sound> WavidToBuffer = new Dictionary<int, Sound>();
         Dictionary<int, HatoSynthDevice> MixchToSynth = new Dictionary<int, HatoSynthDevice>();
 
         SecondaryBuffer defkey;
@@ -55,15 +57,15 @@ namespace HatoPlayer
         /// </summary>
         /// <param name="fullpath">wavまたはoggファイルの、拡張子付きのフルパス。</param>
         /// <returns></returns>
-        public SecondaryBuffer LoadAudioFileOrGoEasy(string fullpath)
+        public Sound LoadAudioFileOrGoEasy(string fullpath)
         {
             if (AudioFileReader.FileExists(fullpath))
             {
-                return new SecondaryBuffer(hsound, fullpath);
+                return new Sound(this, fullpath);
             }
             else
             {
-                return new SecondaryBuffer(hsound);
+                return new Sound(this);
             }
         }
 
@@ -101,7 +103,7 @@ namespace HatoPlayer
             // TODO: 【重要】WavidToBufferのスレッドセーフ化
             // 参考：https://social.msdn.microsoft.com/Forums/vstudio/ja-JP/1665b757-05ba-4739-9be2-de5ba34f4762/dictionary?forum=csharpgeneralja
 
-            SecondaryBuffer sbuf = null;
+            Sound sbuf = null;
             string fn;
 
             if (!b.WavDefinitionList.TryGetValue(wavid, out fn) ||
@@ -135,7 +137,7 @@ namespace HatoPlayer
                         // TODO:ファイルが壊れていた場合やファイルが未対応形式だった場合になんとかする処理
                         try
                         {
-                            sbuf = new SecondaryBuffer(hsound, b.ToFullPath(fn));
+                            sbuf = new Sound(this, b.ToFullPath(fn));
 
                             lock (WavidToBuffer)
                             {
@@ -162,7 +164,7 @@ namespace HatoPlayer
         /// <param name="isKeysound">ユーザーの操作により再生された音であればtrue</param>
         public bool PlaySound(int wavid, bool isKeysound)
         {
-            SecondaryBuffer sbuf = null;
+            Sound sbuf = null;
 
             if (WavidToBuffer.TryGetValue(wavid, out sbuf) && sbuf != null)
             {
@@ -238,8 +240,6 @@ namespace HatoPlayer
         int bufcountL = 0;
         int bufcountR = 0;
 
-        int prefetchCount = 1024;  // Asioバッファの2～4倍とかが良いと思います
-
         int chLeft = 2;
         int chRight = 3;
 
@@ -250,8 +250,7 @@ namespace HatoPlayer
 
             if ((chIdx == chLeft ? bufcountL : bufcountR) < count)
             {
-                //Console.WriteLine("Not Enough Buffer... ＞＜ " + DateTime.Now.Millisecond);
-                //prefetchCount *= 2;
+                Console.WriteLine("Not Enough Buffer... ＞＜ " + DateTime.Now.Millisecond);
             }
             else
             {
@@ -281,6 +280,8 @@ namespace HatoPlayer
 
         public void Run()
         {
+            if (PlaybackDevice != PlaybackDeviceType.ASIO) return;
+
             asio = new AsioHandler();
 
             for (int i = 0; i < prefetchCount; i++)

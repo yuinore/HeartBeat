@@ -13,7 +13,6 @@ namespace HatoSound
 {
     public class SecondaryBuffer
     {
-        HatoSoundDevice hsound;
         static List<int> LockObject = new List<int>();
         public int SamplingRate;
         public int BufSamplesCount;
@@ -32,8 +31,6 @@ namespace HatoSound
         /// <param name="bufcount"></param>
         public SecondaryBuffer(HatoSoundDevice hsound, int bufSamplesCount, int channelsCount = 2, int samplingRate = 44100)
         {
-            this.hsound = hsound;
-
             SamplingRate = samplingRate;
             BufSamplesCount = bufSamplesCount;
             ChannelsCount = channelsCount;
@@ -50,8 +47,6 @@ namespace HatoSound
         /// <param name="filename"></param>
         public SecondaryBuffer(HatoSoundDevice hsound, string filename)
         {
-            this.hsound = hsound;
-
             try
             {
                 // ↓ここで同時にNVorbisからの2ファイルの読み込みが発生しているのかもしれない
@@ -119,7 +114,7 @@ namespace HatoSound
         /// デバイスバッファにデータを書き込みます。
         /// </summary>
         /// <param name="data"></param>
-        public void WriteSamples(float[][] data)
+        private void WriteSamples(float[][] data)
         {
             if (data.Length <= 0)
             {
@@ -132,7 +127,7 @@ namespace HatoSound
         /// デバイスバッファにデータを書き込みます。
         /// </summary>
         /// <param name="data"></param>
-        public void WriteSamples(float[][] data, int dstPositionInSample, int count, bool playing = false)
+        private void WriteSamples(float[][] data, int dstPositionInSample, int count, bool playing = false)
         {
             // TODO: バッファが短すぎる場合の例外
             // TODO: クリッピングの処理
@@ -172,16 +167,12 @@ namespace HatoSound
 
         public void Play()
         {
-            return;
-
             dsSecondaryBuffer.Volume = 0;
             dsSecondaryBuffer.Play(0, PlayFlags.None);
         }
 
         public void StopAndPlay()
         {
-            return;
-
             dsSecondaryBuffer.Stop();
             dsSecondaryBuffer.CurrentPosition = 0;
             dsSecondaryBuffer.Volume = 0;
@@ -190,8 +181,6 @@ namespace HatoSound
 
         public void StopAndPlay(double volumeInDb)
         {
-            return;
-
             dsSecondaryBuffer.Stop();
             dsSecondaryBuffer.CurrentPosition = 0;
             dsSecondaryBuffer.Volume = (int)(volumeInDb * 100.0);
