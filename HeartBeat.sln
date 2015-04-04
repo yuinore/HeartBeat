@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASIOTest", "ASIOTest\ASIOTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoPlayer", "HatoPlayer\HatoPlayer.csproj", "{94B5907D-6278-4D22-B95C-5D58DD5BED4F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioProcessingToolbox", "AudioProcessingToolbox\AudioProcessingToolbox.csproj", "{9DA50478-48C1-4A36-8F10-DA53688F8866}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -187,6 +189,16 @@ Global
 		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{94B5907D-6278-4D22-B95C-5D58DD5BED4F}.Release|Win32.ActiveCfg = Release|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{9DA50478-48C1-4A36-8F10-DA53688F8866}.Release|Win32.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

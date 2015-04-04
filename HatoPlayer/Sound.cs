@@ -47,6 +47,10 @@ namespace HatoPlayer
             }
             else
             {
+                if (SamplingRate % 11025 != 0)
+                {
+                    throw new Exception("サンプリングレートが" + SamplingRate + "のwavには対応していません。DirectSoundモードなら読み込めるかもしれません。");
+                }
             }
         }
 
