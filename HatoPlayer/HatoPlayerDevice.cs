@@ -366,10 +366,12 @@ namespace HatoPlayer
 
                         foreach (var snd in slist)
                         {
-                            int j = snd.playingPosition;
+                            int j = 0;
 
                             if (snd.SamplingRate == 44100)
                             {
+                                j = (int)snd.playingPosition;
+
                                 if (snd.ChannelsCount == 1)
                                 {
                                     for (int i = 0; i < count && j < snd.BufSamplesCount; i++, j++)
@@ -393,86 +395,47 @@ namespace HatoPlayer
 
                                 snd.playingPosition += count;
                             }
-                            else if (snd.SamplingRate == 22050)
-                            {
-                                if (snd.ChannelsCount == 1)
-                                {
-                                    for (int i = 0; i < count && j < snd.BufSamplesCount - 1; i++, j++)
-                                    {
-                                        buf[0][i] += snd.fbuf[0][j] * snd.amp;
-                                        buf[1][i] += snd.fbuf[0][j] * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] + snd.fbuf[0][j + 1]) * 0.5f * snd.amp;
-                                        buf[1][i] += (snd.fbuf[0][j] + snd.fbuf[0][j + 1]) * 0.5f * snd.amp;
-                                    }
-                                }
-                                else if (snd.ChannelsCount == 2)
-                                {
-                                    for (int i = 0; i < count && j < snd.BufSamplesCount - 1; i++, j++)
-                                    {
-                                        buf[0][i] += snd.fbuf[0][j] * snd.amp;
-                                        buf[1][i] += snd.fbuf[1][j] * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] + snd.fbuf[0][j + 1]) * 0.5f * snd.amp;
-                                        buf[1][i] += (snd.fbuf[1][j] + snd.fbuf[1][j + 1]) * 0.5f * snd.amp;
-                                    }
-                                }
-                                else
-                                {
-                                    throw new Exception("フワーッ！！！");
-                                }
-
-                                snd.playingPosition += count / 2;
-                            }
-                            else if (snd.SamplingRate == 11025)
-                            {
-                                if (snd.ChannelsCount == 1)
-                                {
-                                    for (int i = 0; i < count && j < snd.BufSamplesCount - 1; i++, j++)
-                                    {
-                                        buf[0][i] += snd.fbuf[0][j] * snd.amp;
-                                        buf[1][i] += snd.fbuf[0][j] * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] * 0.75f + snd.fbuf[0][j + 1] * 0.25f) * snd.amp;
-                                        buf[1][i] += (snd.fbuf[0][j] * 0.75f + snd.fbuf[0][j + 1] * 0.25f) * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] * 0.50f + snd.fbuf[0][j + 1] * 0.50f) * snd.amp;
-                                        buf[1][i] += (snd.fbuf[0][j] * 0.50f + snd.fbuf[0][j + 1] * 0.50f) * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] * 0.25f + snd.fbuf[0][j + 1] * 0.75f) * snd.amp;
-                                        buf[1][i] += (snd.fbuf[0][j] * 0.25f + snd.fbuf[0][j + 1] * 0.75f) * snd.amp;
-                                    }
-                                }
-                                else if (snd.ChannelsCount == 2)
-                                {
-                                    for (int i = 0; i < count && j < snd.BufSamplesCount - 1; i++, j++)
-                                    {
-                                        buf[0][i] += snd.fbuf[0][j] * snd.amp;
-                                        buf[1][i] += snd.fbuf[1][j] * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] * 0.75f + snd.fbuf[0][j + 1] * 0.25f) * snd.amp;
-                                        buf[1][i] += (snd.fbuf[1][j] * 0.75f + snd.fbuf[1][j + 1] * 0.25f) * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] * 0.50f + snd.fbuf[0][j + 1] * 0.50f) * snd.amp;
-                                        buf[1][i] += (snd.fbuf[1][j] * 0.50f + snd.fbuf[1][j + 1] * 0.50f) * snd.amp;
-                                        i++;
-                                        buf[0][i] += (snd.fbuf[0][j] * 0.25f + snd.fbuf[0][j + 1] * 0.75f) * snd.amp;
-                                        buf[1][i] += (snd.fbuf[1][j] * 0.25f + snd.fbuf[1][j + 1] * 0.75f) * snd.amp;
-                                    }
-                                }
-                                else
-                                {
-                                    throw new Exception("フワーッ！！！");
-                                }
-
-                                snd.playingPosition += count / 4;
-                            }
                             else
                             {
-                                throw new Exception("フワーッ！！！");
+                                double jd = snd.playingPosition;
+
+                                if (snd.ChannelsCount == 1)
+                                {
+                                    for (int i = 0; i < count && jd < snd.BufSamplesCount - 1; i++)
+                                    {
+                                        int j0 = (int)jd;
+                                        float t = (float)(jd - j0);
+
+                                        buf[0][i] += ((1 - t) * snd.fbuf[0][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
+                                        buf[1][i] += ((1 - t) * snd.fbuf[0][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
+
+                                        jd += snd.SamplingRate / 44100.0;
+                                    }
+                                }
+                                else if (snd.ChannelsCount == 2)
+                                {
+                                    for (int i = 0; i < count && jd < snd.BufSamplesCount - 1; i++)
+                                    {
+                                        int j0 = (int)jd;
+                                        float t = (float)(jd - j0);
+
+                                        buf[0][i] += ((1 - t) * snd.fbuf[0][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
+                                        buf[1][i] += ((1 - t) * snd.fbuf[1][j0] + t * snd.fbuf[1][j0 + 1]) * snd.amp;
+
+                                        jd += snd.SamplingRate / 44100.0;
+                                    }
+                                }
+                                else
+                                {
+                                    throw new Exception("フワーッ！！！");
+                                }
+
+                                j = (int)jd + 1;
+
+                                snd.playingPosition += count * snd.SamplingRate / 44100.0;
                             }
 
-                            if (j >= snd.BufSamplesCount || (snd.ChannelsCount <= 22050 && j >= snd.BufSamplesCount - 1))
+                            if (j >= snd.BufSamplesCount)
                             {
                                 lock (PlayingSoundList)
                                 {

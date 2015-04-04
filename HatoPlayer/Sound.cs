@@ -23,7 +23,7 @@ namespace HatoPlayer
         internal float amp = 1.0f;
 
         internal float[][] fbuf;
-        internal int playingPosition = 0;
+        internal double playingPosition = 0;
 
         public Sound(HatoPlayerDevice hplayer)
         {
@@ -47,10 +47,7 @@ namespace HatoPlayer
             }
             else
             {
-                if (SamplingRate % 11025 != 0)
-                {
-                    throw new Exception("サンプリングレートが" + SamplingRate + "のwavには対応していません。DirectSoundモードなら読み込めるかもしれません。");
-                }
+                // throw new Exception("サンプリングレートが" + SamplingRate + "のwavには対応していません。DirectSoundモードなら読み込めるかもしれません。");
             }
         }
 
