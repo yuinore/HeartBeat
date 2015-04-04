@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DSPLib = HatoDSPFast;  // 実行時間に差は無し、プロファイラのサンプリング数では22%の高速化。他も移植したらもう少し速くなりそうだけれどそれはまたいつか
 
 namespace HatoDSP
 {
@@ -14,16 +15,12 @@ namespace HatoDSP
 
         Waveform waveform = Waveform.Saw;
 
-        const int MAX_OVERTONE = 100;
-        float[] int_inv;
-        double old = 0;
         int i2 = 0;
 
         double phase = 0;  // 積分を行うような場合には精度を必要とする
 
         public AnalogOscillator()
         {
-            int_inv = Enumerable.Range(0, MAX_OVERTONE).Select(x => x == 0 ? 1f : (float)(1.0 / x)).ToArray();
         }
 
         public override void AssignChildren(CellTree[] children)
@@ -70,8 +67,6 @@ namespace HatoDSP
             double temp = Math.Log((lenv.SamplingRate * 0.5) / 441.0) / Math.Log(2);  // log_2((SamplingRate * 0.5) / 441)
             double temp2 = 1.0 / ((lenv.SamplingRate * 0.5) / 441.0);
 
-            Func<double, int, double> generator = FastMath.Saw;
-
             double freqoctave = 0;
             double freqratio = 0;
             double freq = 0;
@@ -84,7 +79,7 @@ namespace HatoDSP
             {
                 float constpitch = ((ConstantSignal)lenv.Pitch).val;
                 freqoctave = (constpitch + pshift - 60.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
-                freqratio = FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
+                freqratio = DSPLib.FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
                 freq = freqratio * 441;                          // 音声の周波数[Hz]
                 phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]
                 logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
@@ -103,7 +98,7 @@ namespace HatoDSP
                 if (!constantPitch)
                 {
                     freqoctave = (pitch[i] + pshift - 60.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
-                    freqratio = FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
+                    freqratio = DSPLib.FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
                     freq = freqratio * 441;                          // 音声の周波数[Hz]
                     phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]
                     logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
@@ -119,7 +114,7 @@ namespace HatoDSP
                         if (isNotTooLow)
                         {
                             if (isTooHigh) { ret[i] = 0; }
-                            else { ret[i] = (float)(FastMath.Saw(phase, logovertone)); }
+                            else { ret[i] = (float)(DSPLib.FastMath.Saw(phase, logovertone)); }
                         }
                         else
                         {
@@ -134,7 +129,7 @@ namespace HatoDSP
                         if (isNotTooLow)
                         {
                             if (isTooHigh) { ret[i] = 0; }
-                            else { ret[i] = (float)((FastMath.Saw(phase, logovertone) - FastMath.Saw(phase + Math.PI, logovertone))); }
+                            else { ret[i] = (float)((DSPLib.FastMath.Saw(phase, logovertone) - DSPLib.FastMath.Saw(phase + Math.PI, logovertone))); }
                         }
                         else
                         {
@@ -146,7 +141,7 @@ namespace HatoDSP
                         if (isTooHigh) { ret[i] = 0; }
                         else
                         {
-                            ret[i] = (float)(FastMath.Tri(phase, logovertone));
+                            ret[i] = (float)(DSPLib.FastMath.Tri(phase, logovertone));
                         }
                         break;
 
@@ -157,7 +152,7 @@ namespace HatoDSP
                             else
                             {
                                 double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
-                                ret[i] = (float)(FastMath.Impulse(phase, logovertone) * invovertonecount * 10 / Math.PI);  // 音量はLPFを通した後基準で
+                                ret[i] = (float)(DSPLib.FastMath.Impulse(phase, logovertone) * invovertonecount * 10 / Math.PI);  // 音量はLPFを通した後基準で
                             }
                         }
                         else
@@ -176,7 +171,7 @@ namespace HatoDSP
                         }
                         else
                         {
-                            ret[i] = (float)FastMath.Sin(phase);
+                            ret[i] = (float)DSPLib.FastMath.Sin(phase);
                         }
                         break;
                 }

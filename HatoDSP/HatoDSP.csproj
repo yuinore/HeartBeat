@@ -65,6 +65,10 @@
     <Compile Include="Waveform.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HatoDSPFast\HatoDSPFast.vcxproj">
+      <Project>{04121012-b04b-4af8-ad09-4e92674d531f}</Project>
+      <Name>HatoDSPFast</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HatoLib\HatoLib.csproj">
       <Project>{9c573aae-1884-4de0-854f-bc31f1fd65e0}</Project>
       <Name>HatoLib</Name>
