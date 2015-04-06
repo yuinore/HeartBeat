@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace HatoLib.Midi
 {
@@ -66,6 +67,63 @@ namespace HatoLib.Midi
         {
             return "t=" + tick + "\tch=" + (ch + 1) +
                 "\tNote\tn=" + n + "\tv=" + v + "\tq=" + q + "\n";
+        }
+
+        /// <summary>
+        /// mml形式の文字列から単一のmidieventを作成します。
+        /// </summary>
+        public static MidiEventNote NewFromQuery(string query, int timebase)
+        {
+            // v00L00o00x, v00L00_00o00x の形式にとりあえず対応したい
+            LazyMatch lazy = new LazyMatch(query, @"\Av([0-9]+)L([0-9]+)(?:_([0-9]+))?o([0-9])([a-g])(\+|\#|\-)?\Z", RegexOptions.IgnoreCase);
+            Match match;
+            if (lazy.Evaluate(out match))
+            {
+                // ベロシティ
+                int vel = Convert.ToInt32(match.Groups[1].Captures[0].Value);
+                if (vel > 127) throw new Exception("ベロシティが無効です。");
+
+                // 分母 (例:16なら16分音符)
+                int len1 = Convert.ToInt32(match.Groups[2].Captures[0].Value);
+
+                // 分子
+                int len2 = 1; 
+                if (match.Groups[3].Captures.Count >= 1)
+                {
+                    len2 = Convert.ToInt32(match.Groups[3].Captures[0].Value);
+                }
+
+                // オクターブ
+                int oct = Convert.ToInt32(match.Groups[4].Captures[0].Value);
+
+                // c,d,e,f,g,a,b のどれか。それぞれ、ド、レ、ミ、フ、ァ、ソ、ラ、シ。
+                string alphabet = match.Groups[5].Captures[0].Value;
+
+                // #, +, -, または指定なし（null）
+                string sharpflat = null;
+                if (match.Groups[3].Captures.Count >= 1)
+                {
+                    sharpflat = match.Groups[6].Captures[0].Value;
+                }
+
+                int noteNum = "c-d-ef-g-a-b".IndexOf(alphabet.ToLower()[0]) + oct * 12;  // オクターブ 0 の c が noteNum=0
+                noteNum += sharpflat == null ? 0 : sharpflat == "-" ? -1 : +1;
+
+                if (noteNum < 0 || 127 < noteNum) throw new Exception("ノート番号が無効です。");
+
+                return new MidiEventNote()
+                {
+                    ch = 0,
+                    n = noteNum,
+                    tick = 0,
+                    v = vel,
+                    q = (int)(timebase * (long)len2 / len1)
+                };
+            }
+            else
+            {
+                throw new Exception("mmlが無効です");
+            }
         }
     }
 

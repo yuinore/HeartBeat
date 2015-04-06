@@ -201,30 +201,41 @@ namespace HatoPlayer
                     {
                         // シンセ定義だった場合
                         //var match = Regex.Match(fn.Substring(6), @"([0-9]+)\?l([0-9]+)o([0-9]+)[a-gA-G](\+|\-)?");
-                        var match = Regex.Match(fn.Substring(6), @"([0-9]+)\?([0-9]+)");
+                        var match = Regex.Match(fn.Substring(6), @"([0-9]+)\?(.*)");
                         if (match.Success)
                         {
-                            var mixch = Convert.ToInt32(match.Groups[1].Captures[0].Value);
-                            var noteno = Convert.ToInt32(match.Groups[2].Captures[0].Value);
+                            int mixch = Convert.ToInt32(match.Groups[1].Captures[0].Value);
+                            string query = match.Groups[2].Captures[0].Value;
+                            int noteno = 60;
+                            try
+                            {
+                                noteno = HatoLib.Midi.MidiEventNote.NewFromQuery(query, 15360).n;
 
-                            if (MixchToSynth.ContainsKey(mixch))
-                            {
-                                var s = MixchToSynth[mixch];
-                                Task.Run(() =>
+                                if (MixchToSynth.ContainsKey(mixch))
                                 {
-                                    MixchToSynth[mixch].NoteOn(noteno);
-                                });
-                                return true;
+                                    var s = MixchToSynth[mixch];
+                                    Task.Run(() =>
+                                    {
+                                        MixchToSynth[mixch].NoteOn(noteno);  // TODO: ノートオフ
+                                    });
+                                    return true;
+                                }
+                                else
+                                {
+                                    // シンセ定義がただしくされていない場合
+                                    return false;
+                                }
                             }
-                            else
+                            catch
                             {
-                                // シンセ定義がただしくされていない場合
-                                return false;
+                                // シンセmml命令が構文通りではなかった場合
+                                Debug.Assert(false);
                             }
+                            return false;
                         }
                         else
                         {
-                            // シンセmml命令が構文通りではなかった場合
+                            // synth: 定義が構文通りではなかった場合
                             return false;
                         }
                     }

@@ -78,7 +78,7 @@ namespace HatoDSP
             if (constantPitch)
             {
                 float constpitch = ((ConstantSignal)lenv.Pitch).val;
-                freqoctave = (constpitch + pshift - 60.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
+                freqoctave = (constpitch + pshift - 69.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
                 freqratio = DSPLib.FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
                 freq = freqratio * 441;                          // 音声の周波数[Hz]
                 phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]
@@ -97,7 +97,7 @@ namespace HatoDSP
             {
                 if (!constantPitch)
                 {
-                    freqoctave = (pitch[i] + pshift - 60.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
+                    freqoctave = (pitch[i] + pshift - 69.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
                     freqratio = DSPLib.FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
                     freq = freqratio * 441;                          // 音声の周波数[Hz]
                     phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]

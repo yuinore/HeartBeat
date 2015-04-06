@@ -170,46 +170,52 @@ namespace HatoDSPSample
 
             Signal[] sig = dev.Take(20000);
 
-            dev.NoteOn(63);
-
-            Signal[] sig2 = null;
-
-            for (int j = 0; j < 100; j++)
+            for (int k = 0; k < 100; k++)
             {
-                sig2 = dev.Take(200);
+                dev.NoteOn(63);
+
+                Signal[] sig2 = null;
+
+                for (int j = 0; j < 100; j++)
+                {
+                    sig2 = dev.Take(200);
+                    sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+                }
+
+                for (int j = 0; j < 100; j++)
+                {
+                    sig2 = dev.Take(200);
+                    sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+                }
+
+                dev.NoteOn(67);
+
+                for (int j = 0; j < 100; j++)
+                {
+                    sig2 = dev.Take(200);
+                    sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+                }
+
+                dev.NoteOff(67);
+                dev.NoteOn(70);
+
+                sig2 = dev.Take(20000);
                 sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+
+                dev.NoteOff(63);
+                dev.NoteOff(70);
+
+                for (int j = 0; j < 100; j++)
+                {
+                    sig2 = dev.Take(200);
+                    sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
+                }
+
+                if (k == 0)
+                {
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("hatosynthdevice.wav"), sig.Select(x => x.ToArray()).ToArray(), 2, 44100, 32);
+                }
             }
-
-            for (int j = 0; j < 100; j++)
-            {
-                sig2 = dev.Take(200);
-                sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
-            }
-
-            dev.NoteOn(67);
-
-            for (int j = 0; j < 100; j++)
-            {
-                sig2 = dev.Take(200);
-                sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
-            }
-
-            dev.NoteOff(67);
-            dev.NoteOn(70);
-
-            sig2 = dev.Take(20000);
-            sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
-
-            dev.NoteOff(63);
-            dev.NoteOff(70);
-
-            for (int j = 0; j < 100; j++)
-            {
-                sig2 = dev.Take(200);
-                sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
-            }
-
-            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("hatosynthdevice.wav"), sig.Select(x => x.ToArray()).ToArray(), 2, 44100, 32);
 
             s.Stop();
             label1.Text = "" + s.ElapsedMilliseconds;
