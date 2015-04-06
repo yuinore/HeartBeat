@@ -53,8 +53,13 @@
     <Compile Include="DictionaryExtension.cs" />
     <Compile Include="DragDropHandler.cs" />
     <Compile Include="DynamicJson.cs" />
+    <Compile Include="HatoEnc.cs" />
     <Compile Include="HatoPath.cs" />
     <Compile Include="LazyMatch.cs" />
+    <Compile Include="Midi\ImprovedBinaryReader.cs" />
+    <Compile Include="Midi\MidiEvent.cs" />
+    <Compile Include="Midi\MidiStruct.cs" />
+    <Compile Include="Midi\MidiTrack.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rational.cs" />
     <Compile Include="VorbisFileReader.cs" />
@@ -69,6 +74,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
