@@ -101,6 +101,72 @@ namespace HatoDSP
             }
         }
 
+        internal static Signal AddRange(Signal[] signals)
+        {
+            if (signals.Length <= 1)
+            {
+                if (signals.Length == 0) return new ConstantSignal(0f, 0);
+                if (signals.Length == 1) return signals[0];
+            }
+
+            float[] buf = null;
+            float c = 0f;  // 定数分
+            int count = signals[0].Count;
+
+            foreach (var x in signals)
+            {
+                if (count != x.Count) throw new Exception("長さの異なるSignalの和を計算しようとしました。");
+
+                if (x is ConstantSignal)
+                {
+                    c += ((ConstantSignal)x).val;
+                }
+                else if (x is ExactSignal)
+                {
+                    if (buf == null)
+                    {
+                        buf = x.ToArray();
+                    }
+                    else
+                    {
+                        var arr2 = ((ExactSignal)x).array;
+                        var scale = ((ExactSignal)x).scale;
+
+                        for (int i = 0; i < buf.Length; i++)
+                        {
+                            buf[i] += arr2[i] * scale;
+                        }
+                    }
+                }
+                else
+                {
+                    // 一般の場合
+                    if (buf == null)
+                    {
+                        buf = x.ToArray();
+                    }
+                    else
+                    {
+                        var arr2 = x.ToArray();
+                        for (int i = 0; i < buf.Length; i++)
+                        {
+                            buf[i] += arr2[i];
+                        }
+                    }
+                }
+            }
+
+            if (c != 0)
+            {
+                for (int i = 0; i < buf.Length; i++)
+                {
+                    buf[i] += c;
+                }
+            }
+
+            return new ExactSignal(buf, 1.0f, false);
+        }
+
         public static Signal Multiply(Signal x, Signal y)
         {
             // 信号の長さは短い方に合わせられる。これは、信号の末尾に0を外挿した結果です。

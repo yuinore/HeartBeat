@@ -61,9 +61,10 @@ namespace HatoDSP
             double _2pi_rate = 2.0 * Math.PI / lenv.SamplingRate;
             double inv_2pi = 1.0 / (2.0 * Math.PI);
             double inv_pi = 1.0 / Math.PI;
+            double _2_pi = 2.0 / Math.PI;
             double inv_12 = 1.0 / 12.0;
 
-            // これらの中間変数自体に物理的な意味は恐らく無いと思います。441は真ん中のラの音の周波数です。
+            // これらの中間変数自体に物理的な意味は恐らく無いと思います。441は真ん中のラの音(n=69)の周波数です。
             double temp = Math.Log((lenv.SamplingRate * 0.5) / 441.0) / Math.Log(2);  // log_2((SamplingRate * 0.5) / 441)
             double temp2 = 1.0 / ((lenv.SamplingRate * 0.5) / 441.0);
 
@@ -73,7 +74,7 @@ namespace HatoDSP
             double phasedelta = 0;
             double logovertonefloat = 0;
             int logovertone = 0;
-            bool isNotTooLow = false, isTooHigh = false;
+            bool isNotTooLow = false, isTooHigh = false, isVeryHigh = false, isInRange = false;
 
             if (constantPitch)
             {
@@ -87,6 +88,8 @@ namespace HatoDSP
                 logovertone = (int)logovertonefloat;             // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
                 isNotTooLow = logovertone < 8;                   // 音が低すぎないかどうかを表すbool変数
                 isTooHigh = phasedelta >= Math.PI;               // 音が高すぎるかどうかを表すbool変数
+                isVeryHigh = logovertone <= 1;                   // 音が高く、単一のsin波で信号を表せるかどうかを表す
+                isInRange = isNotTooLow && !isVeryHigh;
             }
             else
             {
@@ -106,16 +109,16 @@ namespace HatoDSP
                     logovertone = (int)logovertonefloat;             // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
                     isNotTooLow = logovertone < 8;                   // 音が低すぎないかどうかを表すbool変数
                     isTooHigh = phasedelta >= Math.PI;               // 音が高すぎるかどうかを表すbool変数
+                    isVeryHigh = logovertone <= 0;                   // 音が高く、単一のsin波で信号を表せるかどうかを表す
+                    isInRange = isNotTooLow && !isVeryHigh;
                 }
 
                 switch (waveform)
                 {
                     case Waveform.Saw:
-                        if (isNotTooLow)
-                        {
-                            if (isTooHigh) { ret[i] = 0; }
-                            else { ret[i] = (float)(DSPLib.FastMath.Saw(phase, logovertone)); }
-                        }
+                        if (isInRange) { ret[i] = (float)(DSPLib.FastMath.Saw(phase, logovertone)); }
+                        else if (isTooHigh) { ret[i] = 0; }
+                        else if (isVeryHigh) { ret[i] = (float)(DSPLib.FastMath.Sin(phase) * _2_pi); }
                         else
                         {
                             var normphase = phase * inv_2pi;

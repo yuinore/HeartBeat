@@ -37,7 +37,7 @@ namespace HatoDSPSample
                 {
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),
-                    Pitch = new ConstantSignal(60, 100000),
+                    Pitch = new ConstantSignal(69, 100000),
                     Gate = new ConstantSignal(1, 100000),
                     Locals = null
                 });
@@ -67,7 +67,7 @@ namespace HatoDSPSample
                 {
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),
-                    Pitch = new ConstantSignal(60, 100000),
+                    Pitch = new ConstantSignal(69, 100000),
                     Gate = new ConstantSignal(1, 100000),
                     Locals = null
                 });
@@ -80,7 +80,7 @@ namespace HatoDSPSample
                 {
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 2000000),
-                    Pitch = new ExactSignal(Enumerable.Range(0, 2000000).Select(i => (float)(-12 + i / 10000.0)).ToArray()),
+                    Pitch = new ExactSignal(Enumerable.Range(0, 2000000).Select(i => (float)(-3 + i / 10000.0)).ToArray()),
                     Gate = new ConstantSignal(1, 2000000),
                     Locals = null
                 };
@@ -146,7 +146,7 @@ namespace HatoDSPSample
             {
                 SamplingRate = 44100,
                 Freq = new ConstantSignal(441, 200000),
-                Pitch = new ConstantSignal(60, 200000),
+                Pitch = new ConstantSignal(69, 200000),
                 Gate = new ConstantSignal(1, 200000),
                 Locals = null
             };
@@ -172,7 +172,7 @@ namespace HatoDSPSample
 
             for (int k = 0; k < 100; k++)
             {
-                dev.NoteOn(63);
+                dev.NoteOn(63 + 9);
 
                 Signal[] sig2 = null;
 
@@ -188,7 +188,7 @@ namespace HatoDSPSample
                     sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
                 }
 
-                dev.NoteOn(67);
+                dev.NoteOn(67 + 9);
 
                 for (int j = 0; j < 100; j++)
                 {
@@ -196,14 +196,14 @@ namespace HatoDSPSample
                     sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
                 }
 
-                dev.NoteOff(67);
-                dev.NoteOn(70);
+                dev.NoteOff(67 + 9);
+                dev.NoteOn(70 + 9);
 
                 sig2 = dev.Take(20000);
                 sig = Enumerable.Range(0, 2).Select(i => Signal.Concat(sig[i], sig2[i])).ToArray();
 
-                dev.NoteOff(63);
-                dev.NoteOff(70);
+                dev.NoteOff(63 + 9);
+                dev.NoteOff(70 + 9);
 
                 for (int j = 0; j < 100; j++)
                 {

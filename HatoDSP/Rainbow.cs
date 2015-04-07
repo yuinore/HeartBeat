@@ -46,7 +46,8 @@ namespace HatoDSP
 
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
-            Signal[] sum = new Signal[] { new ConstantSignal(0, count), new ConstantSignal(0, count) };
+            Signal[] sumL = new Signal[list.Count];
+            Signal[] sumR = new Signal[list.Count];
             Signal originalPitch = lenv.Pitch;
 
             for (int j = 0; j < list.Count; j++)
@@ -58,11 +59,6 @@ namespace HatoDSP
                 lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.2f * (j - (rainbowN - 1.0f) / 2 + (rand[j] - 0.5f) * 1.0f) / ((rainbowN - 1.0f) / 2), count));
 
                 var sig = x.Take(count, lenv);
-                if (sum == null)
-                {
-                    //sum = (new Signal[sig.Length]).Select(nil => new ConstantSignal(0, count)).ToArray();  // ArrayTypeMismatchException
-                    sum = (new Signal[sig.Length]).Select(nil => (Signal)(new ConstantSignal(0, count))).ToArray();
-                }
 
                 float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
                 var panL = new ConstantSignal(1 - 1.0f * ((j - width) / width), count);
@@ -78,13 +74,13 @@ namespace HatoDSP
 
                 if (sig.Length == 1)
                 {
-                    sum[0] = Signal.Add(sum[0], Signal.Multiply(sig[0], panL));
-                    sum[1] = Signal.Add(sum[1], Signal.Multiply(sig[0], panR));
+                    sumL[j] = Signal.Multiply(sig[0], panL);
+                    sumR[j] = Signal.Multiply(sig[0], panR);
                 }
                 else if (sig.Length == 2)
                 {
-                    sum[0] = Signal.Add(sum[0], Signal.Multiply(sig[0], panL));
-                    sum[1] = Signal.Add(sum[1], Signal.Multiply(sig[1], panR));
+                    sumL[j] = Signal.Multiply(sig[0], panL);
+                    sumR[j] = Signal.Multiply(sig[1], panR);
                 }
                 else
                 {
@@ -93,7 +89,10 @@ namespace HatoDSP
                 }
             }
 
-            return sum;
+            return new Signal[] {
+                Signal.AddRange(sumL),
+                Signal.AddRange(sumR)
+            };
         }
     }
 }

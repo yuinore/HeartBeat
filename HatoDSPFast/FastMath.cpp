@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "FastMath.h"
 #include <stdlib.h>
+#include <string.h>
 
 namespace HatoDSPFast {
     using namespace System;
@@ -12,17 +13,25 @@ namespace HatoDSPFast {
     // いくら必要になるまで呼ばれないからといって静的コンストラクタで重い処理をさせるのは良くないと思います。
     static FastMath::FastMath()
     {
+        WT_SIZE = (int*)calloc(WT_N, sizeof(int));
+        WT_SIZE_2PI = (double*)calloc(WT_N, sizeof(double));
+        WT_MASK = (int*)calloc(WT_N, sizeof(int));
+        
+        int temp[WT_N] = { 512, 512, 512, 512, 1024, 1024, 2048, 2048, 4096, 4096 };
+        // N_SAW換算で   { 512, 256, 128, 64,  64,   32,   32,   16,   16,   8 };  // 最高周波数の倍音1周期あたりに割かれるサンプル数
+
+        for (int j = 0; j < WT_N; j++) {
+            WT_SIZE[j] = temp[j];
+            WT_SIZE_2PI[j] = temp[j] / (2.0 * Math::PI);
+            WT_MASK[j] = temp[j] - 1;
+        }
+
         f0 = (float*)calloc(N / 2, sizeof(float));
         f1 = (float*)calloc(N / 2, sizeof(float));
         f2 = (float*)calloc(N / 2, sizeof(float));
         pow2_0 = (float*)calloc(N, sizeof(float));
         pow2_1 = (float*)calloc(N, sizeof(float));
         pow2_2 = (float*)calloc(N, sizeof(float));
-
-        double _2pi_N = 2 * Math::PI / N;
-        double log2_N = Math::Log(2.0) / N;
-        INV_2PI = 1.0 / (2 * Math::PI);
-        N_2pi = (1.0 / _2pi_N);
 
         for (int i = 0; i < N / 2; i++)
         {
@@ -50,7 +59,7 @@ namespace HatoDSPFast {
 
         for (int j = 0; j < WT_N; j++)
         {
-            int N2 = N_SAW << j;
+            int N2 = WT_SIZE[j];
 
             saw0[j] = (float*)calloc(N2, sizeof(float));  // 配列の内容は0で初期化される
             saw1[j] = (float*)calloc(N2, sizeof(float));
@@ -91,10 +100,10 @@ namespace HatoDSPFast {
     {
         if (x < 0) x = -x;
         double xr = x * N_2pi;
-        int a = ((int)xr) & Mask;
+        int a = ((Int64)xr) & Mask;
         if (a < N / 2)
         {
-            double d = xr - (int)xr - 0.5;
+            double d = xr - (Int64)xr - 0.5;
 
             return f0[a] + d * (f1[a] + d * f2[a]);
         }
@@ -102,7 +111,7 @@ namespace HatoDSPFast {
         {
             a = a & (N / 2 - 1);
 
-            double d = xr - (int)xr - 0.5;
+            double d = xr - (Int64)xr - 0.5;
 
             return -(f0[a] + d * (f1[a] + d * f2[a]));
         }
@@ -136,18 +145,18 @@ namespace HatoDSPFast {
         }
     }
 
-    double FastMath::Saw(double x, int logovertone)
+    double FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・
     {
-        if (logovertone >= WT_N) logovertone = WT_N - 1;
-        if (logovertone < 0) logovertone = 0;
+        if (logovertone >= WT_N) logovertone = WT_N - 1;  // あくまで保険
+        if (logovertone < 0) logovertone = 0;  // あくまで保険
 
-        int N2 = N_SAW << logovertone;
-        int mask = N2 - 1;
+        double N2_2PI = WT_SIZE_2PI[logovertone];
+        int mask = WT_MASK[logovertone];
 
-        if (x < 0) x = -x;  // Fixme:
-        double xr = x * N2 * INV_2PI;
-        int a = ((int)xr) & mask;
-        double d = xr - (int)xr - 0.5;
+        if (x < 0) x = -x;  // Fixme: xが負の場合
+        double xr = x * N2_2PI;
+        int a = (int)(((Int64)xr) & mask);
+        double d = xr - (Int64)xr - 0.5;
 
         return saw0[logovertone][a] + d * (saw1[logovertone][a] + d * saw2[logovertone][a]);
     }
@@ -157,13 +166,13 @@ namespace HatoDSPFast {
         if (logovertone >= WT_N) logovertone = WT_N - 1;
         if (logovertone < 0) logovertone = 0;
 
-        int N2 = N_SAW << logovertone;
-        int mask = N2 - 1;
+        double N2_2PI = WT_SIZE_2PI[logovertone];
+        int mask = WT_MASK[logovertone];
 
-        if (x < 0) x = -x;  // Fixme:
-        double xr = x * N2 * INV_2PI;
-        int a = ((int)xr) & mask;
-        double d = xr - (int)xr - 0.5;
+        if (x < 0) x = -x;
+        double xr = x * N2_2PI;
+        int a = (int)(((Int64)xr) & mask);
+        double d = xr - (Int64)xr - 0.5;
 
         return tri0[logovertone][a] + d * (tri1[logovertone][a] + d * tri2[logovertone][a]);
     }
@@ -173,13 +182,13 @@ namespace HatoDSPFast {
         if (logovertone >= WT_N) logovertone = WT_N - 1;
         if (logovertone < 0) logovertone = 0;
 
-        int N2 = N_SAW << logovertone;
-        int mask = N2 - 1;
+        double N2_2PI = WT_SIZE_2PI[logovertone];
+        int mask = WT_MASK[logovertone];
 
-        if (x < 0) x = -x;  // Fixme:
-        double xr = x * N2 * INV_2PI;  // TODO:除算の削除
-        int a = ((int)xr) & mask;
-        double d = xr - (int)xr - 0.5;
+        if (x < 0) x = -x;
+        double xr = x * N2_2PI;
+        int a = (int)(((Int64)xr) & mask);
+        double d = xr - (Int64)xr - 0.5;
 
         return imp0[logovertone][a] + d * (imp1[logovertone][a] + d * imp2[logovertone][a]);
     }

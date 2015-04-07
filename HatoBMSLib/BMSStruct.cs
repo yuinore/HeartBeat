@@ -82,6 +82,8 @@ namespace HatoBMSLib
 
         public string ToFullPath(string filename)
         {
+            if (filename.ToLower().StartsWith("synth:")) return filename;
+
             if (DirectoryName == null) throw new Exception("Directoryメンバが設定されていません。");
             return Path.Combine(DirectoryName, filename);
         }

@@ -140,7 +140,10 @@ namespace HeartBeatCore
 
         private void TraceMessage(string text, bool cons = true)
         {
-            ConsoleMessage.Insert(0, text + "\n");
+            lock (ConsoleMessage)
+            {
+                ConsoleMessage.Insert(0, text + "\n");
+            }
 
             if (cons)
             {
@@ -149,7 +152,10 @@ namespace HeartBeatCore
         }
         private void TraceWarning(string text, bool cons = true)
         {
-            ConsoleMessage.Insert(0, text + "\n");
+            lock (ConsoleMessage)
+            {
+                ConsoleMessage.Insert(0, text + "\n");
+            }
 
             if (cons)
             {
@@ -211,7 +217,12 @@ namespace HeartBeatCore
 
                    try
                    {
-                       rt.DrawText(font, LineMessage + ConsoleMessage.ToString(), 4, 4);  // tostringいらない！？
+                       string str;
+                       lock (ConsoleMessage)
+                       {
+                           str = ConsoleMessage.ToString();
+                       }
+                       rt.DrawText(font, LineMessage + str, 4, 4);  // tostringいらない！？
                    }
                    catch
                    {

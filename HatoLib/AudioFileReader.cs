@@ -90,6 +90,8 @@ namespace HatoLib
 
         public static bool FileExists(string filename)
         {
+            if (filename.ToLower().StartsWith("synth:")) return false;
+
             return File.Exists(filename)
                 || File.Exists(Path.ChangeExtension(filename, ".wav"))
                 || File.Exists(Path.ChangeExtension(filename, ".ogg"));
@@ -97,6 +99,8 @@ namespace HatoLib
 
         public static string FileName(string filename)
         {
+            if (filename.ToLower().StartsWith("synth:")) return null;
+
             if (File.Exists(filename))
             {
                 return filename;

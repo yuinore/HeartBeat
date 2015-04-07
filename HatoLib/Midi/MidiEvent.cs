@@ -75,7 +75,7 @@ namespace HatoLib.Midi
         public static MidiEventNote NewFromQuery(string query, int timebase)
         {
             // v00L00o00x, v00L00_00o00x の形式にとりあえず対応したい
-            LazyMatch lazy = new LazyMatch(query, @"\Av([0-9]+)L([0-9]+)(?:_([0-9]+))?o([0-9])([a-g])(\+|\#|\-)?\Z", RegexOptions.IgnoreCase);
+            LazyMatch lazy = new LazyMatch(query, @"\Av([0-9]+)L([0-9]+)(?:_([0-9]+))?o([0-9])([a-g])(\+|\#|p|\-)?\Z", RegexOptions.IgnoreCase);
             Match match;
             if (lazy.Evaluate(out match))
             {
@@ -101,7 +101,7 @@ namespace HatoLib.Midi
 
                 // #, +, -, または指定なし（null）
                 string sharpflat = null;
-                if (match.Groups[3].Captures.Count >= 1)
+                if (match.Groups[6].Captures.Count >= 1)
                 {
                     sharpflat = match.Groups[6].Captures[0].Value;
                 }
