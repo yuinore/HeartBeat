@@ -33,6 +33,8 @@ namespace HatoDSPFast{
         static float** imp1;
         static float** imp2;
 
+        static bool initialized = false;
+
     public:
         static const int WT_N = 10;  // wavetable n, sawのwavetableの分割数。メモリ量は O(2^n) に比例。この値を変更する場合は、WT_SIZEの値も必ず修正すること。
 
@@ -54,6 +56,7 @@ namespace HatoDSPFast{
         static const double log2_N = Math::Log(2.0) / N;
 
         static FastMath();
+        static void Initialize();
 
     public:
         static const double INV_2PI = 1.0 / (2 * Math::PI);

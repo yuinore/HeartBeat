@@ -341,7 +341,6 @@ namespace HatoPlayer
                     if (bufcountL < PrefetchCount || bufcountR < PrefetchCount)
                     {
                         int count = 256;  // 一度に取得しに行くサンプル数 256sample ≒ 5.8ms
-                        // ↑必ず4の倍数にすること
 
                         float[][] buf = new float[2][] { new float[count], new float[count] };
 
@@ -472,7 +471,7 @@ namespace HatoPlayer
                     }
                     else
                     {
-                        await Task.Delay(5);
+                        await Task.Delay(1);  // 一度Delayすると、15ミリ秒くらいは処理が返ってこないらしい・・・
                     }
                 }
             });

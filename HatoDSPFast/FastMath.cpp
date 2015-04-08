@@ -13,10 +13,18 @@ namespace HatoDSPFast {
     // いくら必要になるまで呼ばれないからといって静的コンストラクタで重い処理をさせるのは良くないと思います。
     static FastMath::FastMath()
     {
+        // デリゲートとメソッドグループ（メソッド定義）の違いとは
+        Task::Factory->StartNew(gcnew Action(Initialize));
+
+        // Delegateの細かいこと - 奇想曲 in C# - はてなダイアリー
+        // http://d.hatena.ne.jp/toshi_m/20100717/1279368502
+    }
+
+    void FastMath::Initialize() {
         WT_SIZE = (int*)calloc(WT_N, sizeof(int));
         WT_SIZE_2PI = (double*)calloc(WT_N, sizeof(double));
         WT_MASK = (int*)calloc(WT_N, sizeof(int));
-        
+
         int temp[WT_N] = { 8, 512, 512, 512, 1024, 1024, 2048, 2048, 4096, 4096 };  // あえてわかりやすくするために temp[0]=8 で
         // N_SAW換算で   { 8, 256, 128, 64,  64,   32,   32,   16,   16,   8 };  // 最高周波数の倍音1周期あたりに割かれるサンプル数
 
@@ -100,10 +108,15 @@ namespace HatoDSPFast {
                 }
             }
         }
+
+        // 私、ちゃんとメモリバリアしてるかな・・・？
+        System::Threading::Volatile::Write(initialized, true);
     }
 
     double FastMath::Sin(double x)
     {
+        if (!initialized) return 0;
+
         if (x < 0) x = -x;  // Fixme: xが負の場合
         double xr = x * N_2pi;
         int a = ((Int64)xr) & Mask;
@@ -125,6 +138,8 @@ namespace HatoDSPFast {
 
     double FastMath::Pow2(double x)
     {
+        if (!initialized) return 0;
+
         //int integPart = (int)(x - ((int)x - 1)) + ((int)x - 1);  // floor(x) ← おまけ
 
         if (x >= 0)
@@ -162,6 +177,8 @@ namespace HatoDSPFast {
 
     double inline FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・(2^50 くらいまではOK)
     {
+        if (!initialized) return 0;
+
         if (logovertone >= WT_N) logovertone = WT_N - 1;  // あくまで保険
         if (logovertone < 0) logovertone = 0;  // あくまで保険
 
@@ -178,6 +195,8 @@ namespace HatoDSPFast {
 
     double FastMath::Tri(double x, int logovertone)
     {
+        if (!initialized) return 0;
+
         if (logovertone >= WT_N) logovertone = WT_N - 1;
         if (logovertone < 0) logovertone = 0;
 
@@ -194,6 +213,8 @@ namespace HatoDSPFast {
 
     double FastMath::Impulse(double x, int logovertone)
     {
+        if (!initialized) return 0;
+
         if (logovertone >= WT_N) logovertone = WT_N - 1;
         if (logovertone < 0) logovertone = 0;
 
