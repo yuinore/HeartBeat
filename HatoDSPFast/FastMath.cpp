@@ -17,8 +17,8 @@ namespace HatoDSPFast {
         WT_SIZE_2PI = (double*)calloc(WT_N, sizeof(double));
         WT_MASK = (int*)calloc(WT_N, sizeof(int));
         
-        int temp[WT_N] = { 512, 512, 512, 512, 1024, 1024, 2048, 2048, 4096, 4096 };
-        // N_SAW換算で   { 512, 256, 128, 64,  64,   32,   32,   16,   16,   8 };  // 最高周波数の倍音1周期あたりに割かれるサンプル数
+        int temp[WT_N] = { 8, 512, 512, 512, 1024, 1024, 2048, 2048, 4096, 4096 };  // あえてわかりやすくするために temp[0]=8 で
+        // N_SAW換算で   { 8, 256, 128, 64,  64,   32,   32,   16,   16,   8 };  // 最高周波数の倍音1周期あたりに割かれるサンプル数
 
         for (int j = 0; j < WT_N; j++) {
             WT_SIZE[j] = temp[j];

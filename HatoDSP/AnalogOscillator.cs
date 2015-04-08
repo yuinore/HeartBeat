@@ -119,7 +119,7 @@ namespace HatoDSP
                     case Waveform.Saw:
                         if (isInRange) { ret[i] = (float)(DSPLib.FastMath.Saw(phase, logovertone)); }
                         else if (isTooHigh) { ret[i] = 0; }
-                        else if (isVeryHigh) { ret[i] = (float)(DSPLib.FastMath.Sin(phase) * _2_pi); }
+                        else if (isVeryHigh) { ret[i] = (float)(DSPLib.FastMath.Sin(phase) * _2_pi); }  // この周波数帯は、出力前LPF(名前忘れた)を掛けると消えてしまう。
                         else
                         {
                             var normphase = phase * inv_2pi;
@@ -130,11 +130,9 @@ namespace HatoDSP
                         break;
 
                     case Waveform.Square:
-                        if (isNotTooLow)
-                        {
-                            if (isTooHigh) { ret[i] = 0; }
-                            else { ret[i] = (float)((DSPLib.FastMath.Saw(phase, logovertone) - DSPLib.FastMath.Saw(phase + Math.PI, logovertone))); }
-                        }
+                        if (isInRange) { ret[i] =  (float)((DSPLib.FastMath.Saw(phase, logovertone) - DSPLib.FastMath.Saw(phase + Math.PI, logovertone))); }
+                        else if (isTooHigh) { ret[i] = 0; }
+                        else if (isVeryHigh) { ret[i] = (float)(DSPLib.FastMath.Sin(phase) * _2_pi * 2); }
                         else
                         {
                             ret[i] += (float)(((int)(phase * inv_pi) & 1) * (-2) + 1);  // FIXME: phaseが負の時の処理
@@ -142,22 +140,27 @@ namespace HatoDSP
                         break;
 
                     case Waveform.Tri:
-                        if (isTooHigh) { ret[i] = 0; }
+                        if (isInRange) { ret[i] = (float)(DSPLib.FastMath.Tri(phase, logovertone)); }
+                        else if (isTooHigh) { ret[i] = 0; }
+                        else if (isVeryHigh) { ret[i] = (float)(Math.Cos(phase) * (8 / (Math.PI * Math.PI))); }
                         else
                         {
-                            ret[i] = (float)(DSPLib.FastMath.Tri(phase, logovertone));
+                            // 不連続点を含まず収束が速いため、最適化を行わない（計算量的には最適化した方が良いかも（要検証））
+                            ret[i] = (float)(DSPLib.FastMath.Tri(phase, HatoDSPFast.FastMath.WT_N - 1));  // 第2引数はlogovertoneのままでもよい
                         }
                         break;
 
                     case Waveform.Impulse:
-                        if (isNotTooLow)
+                        if (isInRange)
                         {
-                            if (isTooHigh) { ret[i] = 0; }
-                            else
-                            {
-                                double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
-                                ret[i] = (float)(DSPLib.FastMath.Impulse(phase, logovertone) * invovertonecount * 2);  // 音量はLPFを通した後基準で
-                            }
+                            double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
+                            ret[i] = (float)(DSPLib.FastMath.Impulse(phase, logovertone) * invovertonecount * 2);  // 音量はLPFを通した後基準で
+                        }
+                        else if (isTooHigh) { ret[i] = 0; }
+                        else if (isVeryHigh)
+                        {
+                            double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
+                            ret[i] = (float)(Math.Cos(phase) * 2 * invovertonecount); 
                         }
                         else
                         {
