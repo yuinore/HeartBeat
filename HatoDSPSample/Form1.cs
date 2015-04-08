@@ -220,5 +220,56 @@ namespace HatoDSPSample
             s.Stop();
             label1.Text = "" + s.ElapsedMilliseconds;
         }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            Stopwatch s = new Stopwatch();
+            s.Start();
+
+            int cnt = 1000000;  // 片側カウント
+            float[] arr;
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)Math.Pow(2.0, i * 96.0 / cnt)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("math_pow.wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Pow2(i * 96.0 / cnt)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_pow2.wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Saw(i * 4 * Math.PI / cnt, 9)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_saw(n,9).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Saw(i * 4 * Math.PI / cnt, 4)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_saw(n,4).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Saw(i * 4 * Math.PI / cnt, 1)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_saw(n,1).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Tri(i * 4 * Math.PI / cnt, 9)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_tri(n,9).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Tri(i * 4 * Math.PI / cnt, 4)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_tri(n,4).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Tri(i * 4 * Math.PI / cnt, 1)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_tri(n,1).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Impulse(i * 4 * Math.PI / cnt, 9)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_imp(n,9).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Impulse(i * 4 * Math.PI / cnt, 4)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_imp(n,4).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Impulse(i * 4 * Math.PI / cnt, 1)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_imp(n,1).wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)Math.Sin(i * 4 * Math.PI / cnt)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("math_sin.wav"), new[] { arr }, 1, 44100, 32);
+
+            arr = Enumerable.Range(-cnt, 2 * cnt).Select(i => (float)HatoDSPFast.FastMath.Sin(i * 4 * Math.PI / cnt)).ToArray();
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("fastmath_sin.wav"), new[] { arr }, 1, 44100, 32);
+
+            s.Stop();
+            label1.Text = "" + s.ElapsedMilliseconds;
+        }
     }
 }

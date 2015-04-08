@@ -79,17 +79,17 @@ namespace HatoDSP
             if (constantPitch)
             {
                 float constpitch = ((ConstantSignal)lenv.Pitch).val;
-                freqoctave = (constpitch + pshift - 69.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
-                freqratio = DSPLib.FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
-                freq = freqratio * 441;                          // 音声の周波数[Hz]
-                phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]
-                logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
+                freqoctave = (constpitch + pshift - 69.0) * inv_12;    // 441HzのAの音からのオクターブ差[oct]
+                freqratio = DSPLib.FastMath.Pow2(freqoctave);          // 441HzのAの音からの音声の周波数比
+                freq = freqratio * 441;                                // 音声の周波数[Hz]
+                phasedelta = freq * _2pi_rate;                         // 音声の角周波数；基音の位相の増分[rad]
+                logovertonefloat = temp - freqoctave + overtoneBias;   // 倍音(基音を含む)の数の、底を2とする対数
                 // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
-                logovertone = (int)logovertonefloat;             // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
-                isNotTooLow = logovertone < 8;                   // 音が低すぎないかどうかを表すbool変数
-                isTooHigh = phasedelta >= Math.PI;               // 音が高すぎるかどうかを表すbool変数
-                isVeryHigh = logovertone <= 1;                   // 音が高く、単一のsin波で信号を表せるかどうかを表す
-                isInRange = isNotTooLow && !isVeryHigh;
+                logovertone = (int)logovertonefloat;                   // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                isNotTooLow = logovertone < HatoDSPFast.FastMath.WT_N; // 音が低すぎないかどうかを表すbool変数
+                isTooHigh = phasedelta >= Math.PI;                     // 音が高すぎるかどうかを表すbool変数
+                isVeryHigh = logovertone <= 0;                         // 音が高く、単一のsin波で信号を表せるかどうかを表す
+                isInRange = isNotTooLow && !isVeryHigh;                // 上の3条件をまとめた一時変数
             }
             else
             {
@@ -100,17 +100,18 @@ namespace HatoDSP
             {
                 if (!constantPitch)
                 {
-                    freqoctave = (pitch[i] + pshift - 69.0) * inv_12;  // 441HzのAの音からのオクターブ差[oct]
-                    freqratio = DSPLib.FastMath.Pow2(freqoctave);             // 441HzのAの音からの音声の周波数比
-                    freq = freqratio * 441;                          // 音声の周波数[Hz]
-                    phasedelta = freq * _2pi_rate;                   // 音声の角周波数；基音の位相の増分[rad]
-                    logovertonefloat = temp - freqoctave + overtoneBias;  // 倍音(基音を含む)の数の、底を2とする対数
+                    // TODO: Tri, Sinでは使用されない変数があるため最適化
+                    freqoctave = (pitch[i] + pshift - 69.0) * inv_12;      // 441HzのAの音からのオクターブ差[oct]
+                    freqratio = DSPLib.FastMath.Pow2(freqoctave);          // 441HzのAの音からの音声の周波数比
+                    freq = freqratio * 441;                                // 音声の周波数[Hz]
+                    phasedelta = freq * _2pi_rate;                         // 音声の角周波数；基音の位相の増分[rad]
+                    logovertonefloat = temp - freqoctave + overtoneBias;   // 倍音(基音を含む)の数の、底を2とする対数
                     // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
-                    logovertone = (int)logovertonefloat;             // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
-                    isNotTooLow = logovertone < 8;                   // 音が低すぎないかどうかを表すbool変数
-                    isTooHigh = phasedelta >= Math.PI;               // 音が高すぎるかどうかを表すbool変数
-                    isVeryHigh = logovertone <= 0;                   // 音が高く、単一のsin波で信号を表せるかどうかを表す
-                    isInRange = isNotTooLow && !isVeryHigh;
+                    logovertone = (int)logovertonefloat;                   // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
+                    isNotTooLow = logovertone < HatoDSPFast.FastMath.WT_N; // 音が低すぎないかどうかを表すbool変数
+                    isTooHigh = phasedelta >= Math.PI;                     // 音が高すぎるかどうかを表すbool変数
+                    isVeryHigh = logovertone <= 0;                         // 音が高く、単一のsin波で信号を表せるかどうかを表す
+                    isInRange = isNotTooLow && !isVeryHigh;                // 上の3条件をまとめた一時変数
                 }
 
                 switch (waveform)
@@ -155,13 +156,13 @@ namespace HatoDSP
                             else
                             {
                                 double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
-                                ret[i] = (float)(DSPLib.FastMath.Impulse(phase, logovertone) * invovertonecount * 10 / Math.PI);  // 音量はLPFを通した後基準で
+                                ret[i] = (float)(DSPLib.FastMath.Impulse(phase, logovertone) * invovertonecount * 2);  // 音量はLPFを通した後基準で
                             }
                         }
                         else
                         {
-                            int lastval = (int)((phase - phasedelta) * inv_pi) & 1;
-                            int currval = (int)(phase * inv_pi) & 1;
+                            int lastval = (int)(phase * inv_pi) & 1;
+                            int currval = (int)((phase + phasedelta) * inv_pi) & 1;
 
                             ret[i] += (float)((lastval & (1 ^ currval)) << 1);  // lastval == 1 && currentval == 0 ? 2 : 0
                         }

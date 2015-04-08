@@ -32,6 +32,9 @@ namespace HatoDSPFast {
         pow2_0 = (float*)calloc(N, sizeof(float));
         pow2_1 = (float*)calloc(N, sizeof(float));
         pow2_2 = (float*)calloc(N, sizeof(float));
+        ipw2_0 = (float*)calloc(N, sizeof(float));
+        ipw2_1 = (float*)calloc(N, sizeof(float));
+        ipw2_2 = (float*)calloc(N, sizeof(float));
 
         for (int i = 0; i < N / 2; i++)
         {
@@ -45,6 +48,9 @@ namespace HatoDSPFast {
             pow2_0[i] = (float)Math::Pow(2, (i + 0.5) / N);
             pow2_1[i] = (float)(log2_N * Math::Pow(2, (i + 0.5) / N));
             pow2_2[i] = (float)(log2_N * log2_N * Math::Pow(2, (i + 0.5) / N) / 2);
+            ipw2_0[i] = (float)Math::Pow(2, -(i + 0.5) / N);
+            ipw2_1[i] = (float)(-log2_N * Math::Pow(2, -(i + 0.5) / N));
+            ipw2_2[i] = (float)(log2_N * log2_N * Math::Pow(2, -(i + 0.5) / N) / 2);
         }
 
         saw0 = (float**)calloc(WT_N, sizeof(float*));
@@ -81,9 +87,9 @@ namespace HatoDSPFast {
                     saw1[j][i] += (float)(_2pi_N2 * n * Math::Cos(2 * Math::PI * n * (i + 0.5) / N2) / (n * Math::PI / 2));
                     saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math::Sin(2 * Math::PI * n * (i + 0.5) / N2) / (2 * n * Math::PI / 2));
 
-                    imp0[j][i] += (float)(Math::Cos(2 * Math::PI * n * (i + 0.5) / N2) / (Math::PI / 2));
-                    imp1[j][i] += (float)(-_2pi_N2 * n * Math::Sin(2 * Math::PI * n * (i + 0.5) / N2) / (Math::PI / 2));
-                    imp2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math::Cos(2 * Math::PI * n * (i + 0.5) / N2) / (2 * Math::PI / 2));
+                    imp0[j][i] += (float)(Math::Cos(2 * Math::PI * n * (i + 0.5) / N2));
+                    imp1[j][i] += (float)(-_2pi_N2 * n * Math::Sin(2 * Math::PI * n * (i + 0.5) / N2));
+                    imp2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math::Cos(2 * Math::PI * n * (i + 0.5) / N2) / 2);
 
                     if (n % 2 == 1)
                     {
@@ -98,7 +104,7 @@ namespace HatoDSPFast {
 
     double FastMath::Sin(double x)
     {
-        if (x < 0) x = -x;
+        if (x < 0) x = -x;  // Fixme: xが負の場合
         double xr = x * N_2pi;
         int a = ((Int64)xr) & Mask;
         if (a < N / 2)
@@ -125,27 +131,36 @@ namespace HatoDSPFast {
         {
             double absx = x;
             int integPart = (int)absx;  // floor(x)
+
+            if (integPart >= 63) return Math::Exp(Log2 * x);
+
             double xr = (absx - integPart) * N;
             int a = (int)xr;  // 0 ～ N-1
 
             double d = xr - a - 0.5;  // テイラー展開の基準点からの差
 
-            return (pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * (1 << integPart);
+            //return (pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * ((Int64)1 << integPart);
+            return (pow2_0[a] + d * pow2_1[a]) * ((Int64)1 << integPart);  // 指数関数はとても滑らか（ |f''(x)| / |f(x)| << 1 という意味で）
         }
         else
         {
             double absx = -x;
             int integPart = (int)absx;  // floor(x)
+
+            if (integPart >= 63) return Math::Exp(Log2 * x);
+
             double xr = (absx - integPart) * N;
             int a = (int)xr;  // 0 ～ N-1
 
             double d = xr - a - 0.5;  // テイラー展開の基準点からの差
 
-            return 1.0f / ((pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * (1 << integPart));  // 逆数を返す（ちょっと遅い）
+            //return (ipw2_0[a] + d * (ipw2_1[a] + d * ipw2_2[a])) * (0x4000000000000000L >> integPart) * INV_0x4000000000000000L;
+            return (ipw2_0[a] + d * ipw2_1[a]) * ((0x4000000000000000L >> integPart) * INV_0x4000000000000000L);
+            // うーん見た目が微妙だ・・・
         }
     }
 
-    double FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・
+    double inline FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・(2^50 くらいまではOK)
     {
         if (logovertone >= WT_N) logovertone = WT_N - 1;  // あくまで保険
         if (logovertone < 0) logovertone = 0;  // あくまで保険
