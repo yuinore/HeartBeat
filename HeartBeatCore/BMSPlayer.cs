@@ -778,13 +778,14 @@ namespace HeartBeatCore
                                 {
                                     try
                                     {
-                                        string[] staticimageExt = { ".bmp", ".png", ".gif", ".tiff", ".jpg" };  // 動画ファイルが除外できれば何でもいい
+                                        string[] staticimageExt = { ".bmp", ".png", ".gif", ".tiff", ".jpg", ".jpe", ".jpeg", ".ico", ".hdp", ".wdp" };  // 動画ファイルが除外できれば何でもいい
 
                                         string ext = Path.GetExtension(fn).ToLower();
 
                                         if (staticimageExt.Contains(ext))
                                         {
-                                            sbuf = new BitmapData(hdraw.HatoRenderTarget, b.ToFullPath(fn));
+                                            uint black = 0x000000u;
+                                            sbuf = new BitmapData(hdraw.HatoRenderTarget, b.ToFullPath(fn), black);
 
                                             lock (dictbmp)
                                             {
