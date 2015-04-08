@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -14,7 +15,6 @@ namespace HeartBeatBeta
 {
     static class Program
     {
-        static Form form;
         static BMSPlayer player;
         static int startmeasure = 0;
         static string filename = null;
@@ -138,73 +138,88 @@ namespace HeartBeatBeta
                 }
             }
 
-            player = new BMSPlayer();
-
-            form = player.OpenForm();
-
-            // ファイルのドロップ設定
-            var c = new DragDropHandler(form);
-            c.OnDropFiles += form_DropFiles;
-
-            if (filename != null)
+            using (var player_ = new BMSPlayer())
             {
-                if ((Control.ModifierKeys & Keys.Shift) != 0) player.autoplay = false;  // 2曲目移行でShiftが押されていなければ、現在のモードのまま
-                player.Playside2P = playside2p;
-                player.autoplay = autoplay;
-                player.Fast = fast;
-                player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;
-                player.LoadAndPlay(filename, startmeasure);
-            }
+                player = player_;
 
-            form.KeyDown += (o, e) =>
-            {
-                if (e.KeyCode == Keys.P && e.Control)
+                try
                 {
-                    playside2p = !playside2p;
-                }
-                if (e.KeyCode == Keys.A && e.Control)
-                {
-                    autoplay = !autoplay;
-                }
-                if (e.KeyCode == Keys.F && e.Control)
-                {
-                    fast = !fast;
-                }
-                if (e.KeyCode == Keys.Oemplus && e.Control || e.KeyCode == Keys.Add)
-                {
-                    if (player != null)
+                    using (Form form = player.OpenForm())
                     {
-                        player.UserHiSpeed += 0.1;
-                    }
-                }
-                if (e.KeyCode == Keys.OemMinus && e.Control || e.KeyCode == Keys.Subtract)
-                {
-                    if (player != null)
-                    {
-                        player.UserHiSpeed -= 0.1;
-                    }
-                }
-                if (e.KeyCode == Keys.R && e.Control)
-                {
-                    if (RingShowingPeriodByMeasure == 2.0f)
-                    {
-                        RingShowingPeriodByMeasure = 1.0f;
-                    }
-                    else if (RingShowingPeriodByMeasure == 1.0f)
-                    {
-                        RingShowingPeriodByMeasure = 0.5f;
-                    }
-                    else if (RingShowingPeriodByMeasure == 0.5f)
-                    {
-                        RingShowingPeriodByMeasure = 2.0f;
-                    }
-                }
-            };
 
-            player.Run();
+                        // ファイルのドロップ設定
+                        var c = new DragDropHandler(form);
+                        c.OnDropFiles += form_DropFiles;
 
-            player.Dispose();
-            form.Dispose();
+                        if (filename != null)
+                        {
+                            if ((Control.ModifierKeys & Keys.Shift) != 0) player.autoplay = false;  // 2曲目移行でShiftが押されていなければ、現在のモードのまま
+                            player.Playside2P = playside2p;
+                            player.autoplay = autoplay;
+                            player.Fast = fast;
+                            player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;
+                            player.LoadAndPlay(filename, startmeasure);
+                        }
+
+                        form.KeyDown += (o, e) =>
+                        {
+                            if (e.KeyCode == Keys.P && e.Control)
+                            {
+                                playside2p = !playside2p;
+                            }
+                            if (e.KeyCode == Keys.A && e.Control)
+                            {
+                                autoplay = !autoplay;
+                            }
+                            if (e.KeyCode == Keys.F && e.Control)
+                            {
+                                fast = !fast;
+                            }
+                            if (e.KeyCode == Keys.Oemplus && e.Control || e.KeyCode == Keys.Add)
+                            {
+                                if (player != null)
+                                {
+                                    player.UserHiSpeed += 0.1;
+                                }
+                            }
+                            if (e.KeyCode == Keys.OemMinus && e.Control || e.KeyCode == Keys.Subtract)
+                            {
+                                if (player != null)
+                                {
+                                    player.UserHiSpeed -= 0.1;
+                                }
+                            }
+                            if (e.KeyCode == Keys.R && e.Control)
+                            {
+                                if (RingShowingPeriodByMeasure == 2.0f)
+                                {
+                                    RingShowingPeriodByMeasure = 1.0f;
+                                }
+                                else if (RingShowingPeriodByMeasure == 1.0f)
+                                {
+                                    RingShowingPeriodByMeasure = 0.5f;
+                                }
+                                else if (RingShowingPeriodByMeasure == 0.5f)
+                                {
+                                    RingShowingPeriodByMeasure = 2.0f;
+                                }
+                            }
+                        };
+
+                        player.Run();
+
+                        // 疑問点1：playerがDisposeされても、ASIO Callbackが呼ばれ続ける
+                        //          というかASIOがちゃんとDisoseされてない
+                        // 疑問点2： その原因として、 await Task.Delayが永遠に終了しない
+
+                        player.Stop();
+                    } // form disposed here
+                }
+                finally
+                {
+                    player = null;
+                }
+            } // player disposed here
         }
 
         // C#(.net)で他のプロセスのメインウィンドウハンドルを取得する
@@ -248,12 +263,16 @@ namespace HeartBeatBeta
                 Console.WriteLine(files[0]);
 
                 startmeasure = 0;
-                player.autoplay = ((Control.ModifierKeys & Keys.Shift) == 0);
-                player.Fast = fast;
-                player.Playside2P = playside2p;
-                player.autoplay = autoplay;
-                player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;
-                player.LoadAndPlay(files[0], startmeasure);
+
+                if (player != null)
+                {
+                    player.autoplay = ((Control.ModifierKeys & Keys.Shift) == 0);
+                    player.Fast = fast;
+                    player.Playside2P = playside2p;
+                    player.autoplay = autoplay;
+                    player.RingShowingPeriodByMeasure = RingShowingPeriodByMeasure;
+                    player.LoadAndPlay(files[0], startmeasure);
+                }
             }
         }
     }

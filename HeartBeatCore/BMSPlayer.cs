@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using HatoPlayer;
 using HatoPainter;
+using System.Threading;
 
 namespace HeartBeatCore
 {
@@ -135,6 +136,8 @@ namespace HeartBeatCore
 
         Stopwatch s = new Stopwatch();
 
+        bool Stopped = false;
+
         StringBuilder ConsoleMessage = new StringBuilder("Waiting...\n");
         string LineMessage = "\n";
 
@@ -250,6 +253,11 @@ namespace HeartBeatCore
         /// BMSファイルを読み込んで、直ちに再生します。
         /// Run()より前に呼んでも後に呼んでも構いませんが、
         /// どちらにしてもRun()を呼び出す必要があります多分。
+        /// 
+        /// LoadAndPlayから処理が返るまではDisposeしないでください・・・
+        /// （LoadAndPlayを非同期で開始しないでください）
+        /// と思ったけど、これasyncメソッドですね・・・
+        /// FIXME: LoadAndPlayが完了する前にDisposeが呼ばれた時の対策
         /// </summary>
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
@@ -270,6 +278,8 @@ namespace HeartBeatCore
             ih = new InputHandler(this, form);
             ih.KeyDown += (o, keyid) =>
             {
+                if (Stopped) return;  // FIXME: イベントハンドラを追加し続けるとメモリリークする
+
                 int wavid;
 
                 if (keysoundReady && keysound.TryGetValue(keyid, out wavid))
@@ -451,264 +461,264 @@ namespace HeartBeatCore
                     skin.Load(rt, b);
                 }
                 onPaint = (rt) =>
-                   {
-                       BMTime current = new BMTime
-                       {
-                           Seconds = CurrentSongPosition(),
-                           Measure = 0
-                       };
-                       current.Beat = b.transp.SecondsToBeat(current.Seconds);
-                       current.Disp = b.transp.BeatToDisplacement(current.Beat);
+                {
+                    BMTime current = new BMTime
+                    {
+                        Seconds = CurrentSongPosition(),
+                        Measure = 0
+                    };
+                    current.Beat = b.transp.SecondsToBeat(current.Seconds);
+                    current.Disp = b.transp.BeatToDisplacement(current.Beat);
 
-                       // PlayingStateの設定
-                       ps.Current = current;
-                       ps.LastKeyDownEvent = ih.LastKeyDownEvent;
+                    // PlayingStateの設定
+                    ps.Current = current;
+                    ps.LastKeyDownEvent = ih.LastKeyDownEvent;
 
-                       double AppearDisplacement = current.Disp + 4.0;
+                    double AppearDisplacement = current.Disp + 4.0;
 
-                       #region オブジェ範囲の更新
-                       for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
-                       {
-                           var x = b.PlayableBMObjects[left];
-                           if (x.Disp >= current.Disp - skin.EyesightDisplacementAfter) break;
-                       }
+                    #region オブジェ範囲の更新
+                    for (; left < b.PlayableBMObjects.Count; left++)  // 視界から消える箇所、left <= right
+                    {
+                        var x = b.PlayableBMObjects[left];
+                        if (x.Disp >= current.Disp - skin.EyesightDisplacementAfter) break;
+                    }
 
-                       for (; right < b.PlayableBMObjects.Count; right++)  // 視界に出現する箇所、left <= right
-                       {
-                           var x = b.PlayableBMObjects[right];
-                           if (x.Disp >= current.Disp + skin.EyesightDisplacementBefore) break;
-                       }
+                    for (; right < b.PlayableBMObjects.Count; right++)  // 視界に出現する箇所、left <= right
+                    {
+                        var x = b.PlayableBMObjects[right];
+                        if (x.Disp >= current.Disp + skin.EyesightDisplacementBefore) break;
+                    }
 
-                       for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 判定ゾーンから消える箇所、left <= right
-                       {
-                           var x = b.PlayableBMObjects[hitzoneLeft];
-                           if (x.Seconds + regulation.JudgementWindowSize >= current.Seconds) break;
-                           else
-                           {
-                               lock (x)
-                               {
-                                   // 判定ゾーンから外にオブジェクトが出ます
-                                   if (x.Broken == false)
-                                   {
-                                       x.Broken = true;
-                                       x.Judge = Judgement.None;
-                                       x.BrokeAt = CurrentSongPosition();
+                    for (; hitzoneLeft < b.PlayableBMObjects.Count; hitzoneLeft++)  // 判定ゾーンから消える箇所、left <= right
+                    {
+                        var x = b.PlayableBMObjects[hitzoneLeft];
+                        if (x.Seconds + regulation.JudgementWindowSize >= current.Seconds) break;
+                        else
+                        {
+                            lock (x)
+                            {
+                                // 判定ゾーンから外にオブジェクトが出ます
+                                if (x.Broken == false)
+                                {
+                                    x.Broken = true;
+                                    x.Judge = Judgement.None;
+                                    x.BrokeAt = CurrentSongPosition();
 
-                                       ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                       ps.CurrentMaximumAcceptance += 1;
+                                    ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                    ps.CurrentMaximumAcceptance += 1;
 
-                                       if (x.Terminal != null)
-                                       {
-                                           lock (x.Terminal)
-                                           {
-                                               // LNつながりません
-                                               x.Terminal.Broken = true;
-                                               x.Terminal.Judge = Judgement.None;
-                                               x.Terminal.BrokeAt = CurrentSongPosition();
-                                           }
-                                       }
-                                   }
-                               }
-                           }
-                       }
+                                    if (x.Terminal != null)
+                                    {
+                                        lock (x.Terminal)
+                                        {
+                                            // LNつながりません
+                                            x.Terminal.Broken = true;
+                                            x.Terminal.Judge = Judgement.None;
+                                            x.Terminal.BrokeAt = CurrentSongPosition();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
 
-                       for (; hitzoneRight < b.PlayableBMObjects.Count; hitzoneRight++)  // 判定ゾーンに突入する箇所、left <= right
-                       {
-                           var x = b.PlayableBMObjects[hitzoneRight];
-                           if (x.Seconds - regulation.JudgementWindowSize >= current.Seconds) break;
-                       }
+                    for (; hitzoneRight < b.PlayableBMObjects.Count; hitzoneRight++)  // 判定ゾーンに突入する箇所、left <= right
+                    {
+                        var x = b.PlayableBMObjects[hitzoneRight];
+                        if (x.Seconds - regulation.JudgementWindowSize >= current.Seconds) break;
+                    }
 
-                       // TODO: もし曲の最初から最後までの長さがあるLNがあった場合は？？
-                       for (; bombzoneLeft < b.PlayableBMObjects.Count; bombzoneLeft++)  // ボム・キーフラッシュが消える箇所
-                       {
-                           var x = b.PlayableBMObjects[bombzoneLeft];
-                           if ((x.Terminal ?? x).Seconds + (regulation.JudgementWindowSize + skin.BombDuration) >= current.Seconds) break;
-                       }
-                       #endregion
+                    // TODO: もし曲の最初から最後までの長さがあるLNがあった場合は？？
+                    for (; bombzoneLeft < b.PlayableBMObjects.Count; bombzoneLeft++)  // ボム・キーフラッシュが消える箇所
+                    {
+                        var x = b.PlayableBMObjects[bombzoneLeft];
+                        if ((x.Terminal ?? x).Seconds + (regulation.JudgementWindowSize + skin.BombDuration) >= current.Seconds) break;
+                    }
+                    #endregion
 
-                       #region LN終端判定
-                       lock (holdingObject)
-                       {
-                           List<int> removeList = new List<int>();
-                           foreach (var x in holdingObject)
-                           {
-                               if (x.Value.Terminal.Seconds <= current.Seconds)
-                               {
-                                   lock (x.Value.Terminal)
-                                   {
-                                       if (x.Value.Terminal.Broken)
-                                       {
-                                           Console.WriteLine("おかしいぞ？");
-                                       }
-                                       x.Value.Terminal.Broken = true;
-                                       x.Value.Terminal.Judge = Judgement.Perfect;
-                                       x.Value.Terminal.BrokeAt = x.Value.Terminal.Seconds;
+                    #region LN終端判定
+                    lock (holdingObject)
+                    {
+                        List<int> removeList = new List<int>();
+                        foreach (var x in holdingObject)
+                        {
+                            if (x.Value.Terminal.Seconds <= current.Seconds)
+                            {
+                                lock (x.Value.Terminal)
+                                {
+                                    if (x.Value.Terminal.Broken)
+                                    {
+                                        Console.WriteLine("おかしいぞ？");
+                                    }
+                                    x.Value.Terminal.Broken = true;
+                                    x.Value.Terminal.Judge = Judgement.Perfect;
+                                    x.Value.Terminal.BrokeAt = x.Value.Terminal.Seconds;
 
-                                       ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                       ps.TotalExScore += regulation.JudgementToScore(x.Value.Judge);
+                                    ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                    ps.TotalExScore += regulation.JudgementToScore(x.Value.Judge);
 
-                                       ps.CurrentMaximumAcceptance += 1;
-                                       ps.TotalAcceptance += ((x.Value.Judge >= Judgement.Good) ? 1 : 0);  // 常に1を返す
+                                    ps.CurrentMaximumAcceptance += 1;
+                                    ps.TotalAcceptance += ((x.Value.Judge >= Judgement.Good) ? 1 : 0);  // 常に1を返す
 
-                                       removeList.Add(x.Key);
-                                   }
-                               }
-                           }
+                                    removeList.Add(x.Key);
+                                }
+                            }
+                        }
 
-                           foreach (var x in removeList)
-                           {
-                               holdingObject.Remove(x);
-                           }
-                       }
-                       #endregion
+                        foreach (var x in removeList)
+                        {
+                            holdingObject.Remove(x);
+                        }
+                    }
+                    #endregion
 
-                       // キー入力キューの消化は描画処理じゃないと思うんですがそれは・・・
-                       // 　→判定処理は、オブジェに時間幅があるので、ここで処理するのが良い。
-                       #region キー入力キュー(ih.KeyEventList)の消化試合
-                       // キー入力に最近のオブジェを探す
-                       // 当たり判定があった場合はいろいろする
-                       lock (ih.KeyEventList)
-                       {
-                           while (ih.KeyEventList.Count != 0)
-                           {
-                               var kvpair = ih.KeyEventList.Dequeue();
-                               double min = double.MaxValue;  // 最短距離
-                               BMObject minAt = null;  // 最短距離にあるオブジェ
+                    // キー入力キューの消化は描画処理じゃないと思うんですがそれは・・・
+                    // 　→判定処理は、オブジェに時間幅があるので、ここで処理するのが良い。
+                    #region キー入力キュー(ih.KeyEventList)の消化試合
+                    // キー入力に最近のオブジェを探す
+                    // 当たり判定があった場合はいろいろする
+                    lock (ih.KeyEventList)
+                    {
+                        while (ih.KeyEventList.Count != 0)
+                        {
+                            var kvpair = ih.KeyEventList.Dequeue();
+                            double min = double.MaxValue;  // 最短距離
+                            BMObject minAt = null;  // 最短距離にあるオブジェ
 
-                               if (kvpair.IsKeyUp == false)
-                               {
-                                   // キーダウン
-                                   for (int i = hitzoneLeft; i < hitzoneRight; i++)
-                                   {
-                                       var obj = b.PlayableBMObjects[i];
-                                       var dif = Math.Abs(obj.Seconds - kvpair.seconds);
-                                       if (dif < min &&
-                                           obj.Broken == false &&
-                                           obj.Keyid == kvpair.keyid)
-                                       {
-                                           min = dif;
-                                           minAt = b.PlayableBMObjects[i];
-                                       }
-                                   }
+                            if (kvpair.IsKeyUp == false)
+                            {
+                                // キーダウン
+                                for (int i = hitzoneLeft; i < hitzoneRight; i++)
+                                {
+                                    var obj = b.PlayableBMObjects[i];
+                                    var dif = Math.Abs(obj.Seconds - kvpair.seconds);
+                                    if (dif < min &&
+                                        obj.Broken == false &&
+                                        obj.Keyid == kvpair.keyid)
+                                    {
+                                        min = dif;
+                                        minAt = b.PlayableBMObjects[i];
+                                    }
+                                }
 
-                                   // オブジェの破壊が起きた
-                                   if (minAt != null)
-                                   {
-                                       lock (minAt)
-                                       {
-                                           Judgement judge = regulation.SecondsToJudgement(min);
-                                           if (judge != Judgement.None)  // 判定無しでなければ
-                                           {
-                                               minAt.Broken = true;
-                                               minAt.Judge = regulation.SecondsToJudgement(min);
-                                               minAt.BrokeAt = kvpair.seconds;
+                                // オブジェの破壊が起きた
+                                if (minAt != null)
+                                {
+                                    lock (minAt)
+                                    {
+                                        Judgement judge = regulation.SecondsToJudgement(min);
+                                        if (judge != Judgement.None)  // 判定無しでなければ
+                                        {
+                                            minAt.Broken = true;
+                                            minAt.Judge = regulation.SecondsToJudgement(min);
+                                            minAt.BrokeAt = kvpair.seconds;
 
-                                               if (minAt.Terminal == null)
-                                               {
-                                                   // LNではないなら
-                                                   ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                                   ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
+                                            if (minAt.Terminal == null)
+                                            {
+                                                // LNではないなら
+                                                ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                                ps.TotalExScore += regulation.JudgementToScore(minAt.Judge);
 
-                                                   ps.CurrentMaximumAcceptance += 1;
-                                                   ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
-                                               }
-                                               else
-                                               {
-                                                   // LNなら
+                                                ps.CurrentMaximumAcceptance += 1;
+                                                ps.TotalAcceptance += ((minAt.Judge >= Judgement.Good) ? 1 : 0);
+                                            }
+                                            else
+                                            {
+                                                // LNなら
 
-                                                   if (minAt.Judge >= Judgement.Good)
-                                                   {
-                                                       // LNが繋がりそう
-                                                       // FIXME: 既にLN押してる状態だと例外が出そう
-                                                       holdingObject.Add(minAt.Keyid, minAt);
-                                                   }
-                                                   else
-                                                   {
-                                                       lock (minAt.Terminal)
-                                                       {
-                                                           // LNつながりません
-                                                           minAt.Terminal.Broken = true;
-                                                           minAt.Terminal.Judge = Judgement.None;
-                                                           minAt.Terminal.BrokeAt = kvpair.seconds;
+                                                if (minAt.Judge >= Judgement.Good)
+                                                {
+                                                    // LNが繋がりそう
+                                                    // FIXME: 既にLN押してる状態だと例外が出そう
+                                                    holdingObject.Add(minAt.Keyid, minAt);
+                                                }
+                                                else
+                                                {
+                                                    lock (minAt.Terminal)
+                                                    {
+                                                        // LNつながりません
+                                                        minAt.Terminal.Broken = true;
+                                                        minAt.Terminal.Judge = Judgement.None;
+                                                        minAt.Terminal.BrokeAt = kvpair.seconds;
 
-                                                           ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                                           ps.CurrentMaximumAcceptance += 1;
-                                                       }
-                                                   }
-                                               }
-                                           }
-                                       }
-                                   }
-                               }
-                               else
-                               {
-                                   // キーアップ
-                                   if (holdingObject.ContainsKey(kvpair.keyid))
-                                   {
-                                       var begin = holdingObject[kvpair.keyid];
-                                       var term = begin.Terminal;
+                                                        ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                                        ps.CurrentMaximumAcceptance += 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // キーアップ
+                                if (holdingObject.ContainsKey(kvpair.keyid))
+                                {
+                                    var begin = holdingObject[kvpair.keyid];
+                                    var term = begin.Terminal;
 
-                                       lock (term)
-                                       {
-                                           bool OK = term.Seconds - LNTerminalJudgeSeconds <= kvpair.seconds;  // LN繋いだ？
+                                    lock (term)
+                                    {
+                                        bool OK = term.Seconds - LNTerminalJudgeSeconds <= kvpair.seconds;  // LN繋いだ？
 
-                                           term.Broken = true;
-                                           term.Judge = OK ? Judgement.Perfect : Judgement.None;
-                                           term.BrokeAt = kvpair.seconds;
+                                        term.Broken = true;
+                                        term.Judge = OK ? Judgement.Perfect : Judgement.None;
+                                        term.BrokeAt = kvpair.seconds;
 
-                                           ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
-                                           ps.TotalExScore += regulation.JudgementToScore(OK ? begin.Judge : Judgement.None);
+                                        ps.CurrentMaximumExScore += regulation.MaxScorePerObject;
+                                        ps.TotalExScore += regulation.JudgementToScore(OK ? begin.Judge : Judgement.None);
 
-                                           ps.CurrentMaximumAcceptance += 1;
-                                           ps.TotalAcceptance += OK ? 1 : 0;  // LN切ってしまった
+                                        ps.CurrentMaximumAcceptance += 1;
+                                        ps.TotalAcceptance += OK ? 1 : 0;  // LN切ってしまった
 
-                                           holdingObject.Remove(kvpair.keyid);
-                                       }
-                                   }
-                               }
-                           }
-                       }
-                       #endregion
+                                        holdingObject.Remove(kvpair.keyid);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    #endregion
 
-                       #region Skinクラスを使用した描画
-                       // 背景・初期化処理
-                       skin.DrawBack(rt, b, ps);
+                    #region Skinクラスを使用した描画
+                    // 背景・初期化処理
+                    skin.DrawBack(rt, b, ps);
 
-                       // キーフラッシュ
-                       lock (ih.LastKeyDownEventDict)
-                       {
-                           foreach (var x in ih.LastKeyDownEventDict)  // 例外：コレクションが変更されました。列挙操作は実行されない可能性があります。
-                           {
-                               skin.DrawKeyFlash(rt, b, ps,
-                                   new KeyEvent { keyid = x.Key, seconds = x.Value });
-                           }
-                       }
+                    // キーフラッシュ
+                    lock (ih.LastKeyDownEventDict)
+                    {
+                        foreach (var x in ih.LastKeyDownEventDict)  // 例外：コレクションが変更されました。列挙操作は実行されない可能性があります。
+                        {
+                            skin.DrawKeyFlash(rt, b, ps,
+                                new KeyEvent { keyid = x.Key, seconds = x.Value });
+                        }
+                    }
 
-                       // 音符
-                       for (int i = bombzoneLeft; i < right; i++)
-                       {
-                           var x = b.PlayableBMObjects[i];
-                           if (x.Seconds >= PlayFrom)
-                           {
-                               skin.DrawNote(rt, b, ps, x);
-                           }
-                       }
+                    // 音符
+                    for (int i = bombzoneLeft; i < right; i++)
+                    {
+                        var x = b.PlayableBMObjects[i];
+                        if (x.Seconds >= PlayFrom)
+                        {
+                            skin.DrawNote(rt, b, ps, x);
+                        }
+                    }
 
-                       // 前景・終了処理
-                       skin.DrawFront(rt, b, ps);
-                       #endregion
+                    // 前景・終了処理
+                    skin.DrawFront(rt, b, ps);
+                    #endregion
 
-                       #region BGA表示
-                       if (bga_back != null)
-                       {
-                           rt.DrawBitmap(bga_back, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_back.Height);
-                       }
-                       if (bga_front != null)
-                       {
-                           rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
-                       }
-                       #endregion
-                   };
+                    #region BGA表示
+                    if (bga_back != null)
+                    {
+                        rt.DrawBitmap(bga_back, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_back.Height);
+                    }
+                    if (bga_front != null)
+                    {
+                        rt.DrawBitmap(bga_front, 853f - 256f - 10f, 10f, 1.0f, 256f / bga_front.Height);
+                    }
+                    #endregion
+                };
             }
             #endregion
 
@@ -724,6 +734,8 @@ namespace HeartBeatCore
                         {
                             await Task.Delay(100);
                         }
+
+                        if (Stopped) return;
 
                         if (x.Seconds >= PlayFrom)
                         {
@@ -743,6 +755,8 @@ namespace HeartBeatCore
                         {
                             await Task.Delay(100);
                         }
+
+                        if (Stopped) return;
 
                         if (x.Seconds >= PlayFrom)
                         {
@@ -805,6 +819,8 @@ namespace HeartBeatCore
                             await Task.Delay(50);
                         }
 
+                        if (Stopped) return;
+
                         if (x.Seconds >= PlayFrom && (x.IsPlayable() || x.IsInvisible()))  // autoplayかどうかによらない、また、非表示でもOK
                         {
                             keysound[x.Keyid] = x.Wavid;
@@ -821,6 +837,8 @@ namespace HeartBeatCore
                             // TaskSchedulerException・・・？？
                             await Task.Delay(5);
                         }
+
+                        if (Stopped) return;
 
                         if (x.Seconds >= PlayFrom)
                         {
@@ -850,6 +868,8 @@ namespace HeartBeatCore
                         {
                             await Task.Delay(10);
                         }
+
+                        if (Stopped) return;
 
                         if (x.Seconds >= PlayFrom)
                         {
@@ -892,6 +912,7 @@ namespace HeartBeatCore
                         while (x.Seconds - 0.0025 >= CurrentSongPosition())
                         {
                             await Task.Delay(10);
+                            if (Stopped) return;
                         }
 
                         if (x.Seconds >= PlayFrom && autoplay && !x.IsLandmine())
@@ -924,6 +945,7 @@ namespace HeartBeatCore
 
         public void Stop()
         {
+            Stopped = true;
         }
 
         #region implementation of IDisposable
@@ -942,8 +964,15 @@ namespace HeartBeatCore
         {
             if (disposed)
                 return;
-            
+
+            Stopped = true;
+
             System.Diagnostics.Debug.Assert(disposing, "激おこ");
+
+            {
+                // 200ミリ秒の間、GCに処理を返さずに待機する（せめてもの優しさ）
+                Thread.Sleep(200);  // await Task.Delayにしてはならない（重要）
+            }
 
             if (disposing)
             {

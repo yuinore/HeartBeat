@@ -13,7 +13,7 @@ namespace HatoPlayer
     /// </summary>
     public class Sound
     {
-        HatoPlayerDevice hplayer;
+        HatoPlayerDevice hplayer;  // FIXME: hplayerはDisposeされているかもしれない
         SecondaryBuffer sbuf;
 
         public int SamplingRate;
@@ -44,10 +44,6 @@ namespace HatoPlayer
                 sbuf = new SecondaryBuffer(hplayer.hsound, fbuf, BufSamplesCount, ChannelsCount, SamplingRate);
 
                 fbuf = null;  // ガベージコレクタに回収させる（超重要）
-            }
-            else
-            {
-                // throw new Exception("サンプリングレートが" + SamplingRate + "のwavには対応していません。DirectSoundモードなら読み込めるかもしれません。");
             }
         }
 

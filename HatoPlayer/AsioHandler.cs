@@ -74,7 +74,7 @@ namespace HatoPlayer
             }
 
             // Free any unmanaged objects here.
-            asiomain(Callback);  // dispose時にもう一度呼ぶのを忘れないで
+            asiomain(Callback);  // Dispose時にもう一度呼ぶことでASIOを停止する
 
             disposed = true;
         }

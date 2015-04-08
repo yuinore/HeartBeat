@@ -66,7 +66,11 @@ namespace HatoPlayer
         public HatoPlayerDevice(Form form, BMSStruct b)
         {
             this.b = b;
-            hsound = new HatoSoundDevice(form);
+
+            if (PlaybackDevice == PlaybackDeviceType.DirectSound)
+            {
+                hsound = new HatoSoundDevice(form);
+            }
 
             defkey = new Sound(this, HatoPath.FromAppDir("key.ogg"));
         }

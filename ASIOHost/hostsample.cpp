@@ -474,12 +474,15 @@ extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
     if (initialized) {
         goto callcc;  // TODO: gotoを使わないフローにする
     }
+    initialized = true;
 
     printf("begin\r\n");
+    fflush(stdout);
 
     asioCallback = asio_callback;
 
     printf("continue\r\n");
+    fflush(stdout);
 
 	// load the driver, this will setup all the necessary internal data structures
 	if (loadAsioDriver (ASIO_DRIVER_NAME))
@@ -492,7 +495,8 @@ extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
 					"Name:          %s\n"
 					"ErrorMessage:  %s\n",
 					asioDriverInfo.driverInfo.asioVersion, asioDriverInfo.driverInfo.driverVersion,
-					asioDriverInfo.driverInfo.name, asioDriverInfo.driverInfo.errorMessage);
+                    asioDriverInfo.driverInfo.name, asioDriverInfo.driverInfo.errorMessage);
+            fflush(stdout);
 			if (init_asio_static_data (&asioDriverInfo) == 0)
 			{
 				// ASIOControlPanel();  // you might want to check wether the ASIOControlPanel() can open
@@ -509,7 +513,7 @@ extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
 						// Now all is up and running
                         // やっと音声の再生が開始された
                         fprintf(stdout, "\r\nASIO Driver started succefully.\r\n\r\n");
-                        initialized = true;
+                        fflush(stdout);
                         return 1;
 
                         // 参考になるかもしれない変数
@@ -530,13 +534,16 @@ extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
         }
         else {
             fprintf(stdout, "init failed.\r\n");
+            fflush(stdout);
         }
 		asioDrivers->removeCurrentDriver();
     }
     else {
         fprintf(stdout, "load failed.\r\n");
+        fflush(stdout);
     }
     fprintf(stdout, "end\r\n");
+    fflush(stdout);
     initialized = disposed = true;
 	return 0;
 }
