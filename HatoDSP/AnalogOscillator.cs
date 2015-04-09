@@ -122,20 +122,35 @@ namespace HatoDSP
                         else if (isVeryHigh) { ret[i] = (float)(DSPLib.FastMath.Sin(phase) * _2_pi); }  // この周波数帯は、出力前LPF(名前忘れた)を掛けると消えてしまう。
                         else
                         {
-                            var normphase = phase * inv_2pi;
+                            double normphase = phase * inv_2pi;
                             //ret[i] += (float)((0.5 - normphase % 1) * 2);  // FIXME: phaseが負の時の処理
-                            var temp3 = normphase - (int)normphase;  // 剰余演算。"temp3 = normphase % 1;" を表す。
+                            double temp3 = normphase - (Int64)normphase;  // 剰余演算。"temp3 = normphase % 1;" を表す。
                             ret[i] += (float)((0.5 - temp3) * 2);  // FIXME: phaseが負の時の処理
                         }
                         break;
 
                     case Waveform.Square:
-                        if (isInRange) { ret[i] =  (float)((DSPLib.FastMath.Saw(phase, logovertone) - DSPLib.FastMath.Saw(phase + Math.PI, logovertone))); }
+                        if (isInRange) { ret[i] = (float)((DSPLib.FastMath.Saw(phase, logovertone) - DSPLib.FastMath.Saw(phase + Math.PI, logovertone))); }
                         else if (isTooHigh) { ret[i] = 0; }
                         else if (isVeryHigh) { ret[i] = (float)(DSPLib.FastMath.Sin(phase) * _2_pi * 2); }
                         else
                         {
-                            ret[i] += (float)(((int)(phase * inv_pi) & 1) * (-2) + 1);  // FIXME: phaseが負の時の処理
+                            ret[i] += (float)(((Int64)(phase * inv_pi) & 1) * (-2) + 1);  // (phase * inv_pi) % 2 == 0 ? 1 : -1
+                            // FIXME: phaseが負の時の処理
+                        }
+                        break;
+
+                    case Waveform.Pulse:
+                        if (isInRange) { ret[i] = (float)((DSPLib.FastMath.Saw(phase, logovertone) - DSPLib.FastMath.Saw(phase + (1 - op1) * (2 * Math.PI), logovertone))); }
+                        else if (isTooHigh) { ret[i] = 0; }
+                        else if (isVeryHigh) { ret[i] = (float)((DSPLib.FastMath.Sin(phase) - DSPLib.FastMath.Sin(phase + (1 - op1) * (2 * Math.PI))) * _2_pi); }
+                        else
+                        {
+                            // FIXME: phaseが負の時の処理
+                            double x = phase * inv_pi * 0.5;  // 0～1で1周期
+                            double decimalPart = x - (Int64)x;  // 小数部分
+
+                            ret[i] += (decimalPart < op1 ? 1 - op1 : -op1) * 2;
                         }
                         break;
 
@@ -164,8 +179,8 @@ namespace HatoDSP
                         }
                         else
                         {
-                            int lastval = (int)(phase * inv_pi) & 1;
-                            int currval = (int)((phase + phasedelta) * inv_pi) & 1;
+                            int lastval = (int)((Int64)(phase * inv_pi) & 1L);
+                            int currval = (int)((Int64)((phase + phasedelta) * inv_pi) & 1L);
 
                             ret[i] += (float)((lastval & (1 ^ currval)) << 1);  // lastval == 1 && currentval == 0 ? 2 : 0
                         }

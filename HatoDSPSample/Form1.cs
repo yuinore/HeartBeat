@@ -22,6 +22,11 @@ namespace HatoDSPSample
 
         private void button1_Click(object sender, EventArgs e)
         {
+            while (!HatoDSPFast.FastMath.Initialized)
+            {
+                System.Threading.Thread.Sleep(100);
+            }
+
             Stopwatch s = new Stopwatch();
             s.Start();
             {
@@ -123,6 +128,18 @@ namespace HatoDSPSample
                     var sig5 = osc1.Generate().Take(2000000, lenv);
                     WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_impulse.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
+                {
+                    var osc1 = new CellTree(() => new AnalogOscillator());
+                    osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Pulse, 0.125f });
+                    var sig5 = osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_pulse125.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                }
+                {
+                    var osc1 = new CellTree(() => new AnalogOscillator());
+                    osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Pulse, 0.25f });
+                    var sig5 = osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_pulse25.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                }
             }
 
             WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test3.wav"), new float[][] { Enumerable.Range(0, 1048576).Select(x => (float)Math.Sin(8 * Math.PI * x / 1048576)).ToArray() }, 1, 44100, 32);
@@ -134,6 +151,11 @@ namespace HatoDSPSample
 
         private void button2_Click(object sender, EventArgs e)
         {
+            while (!HatoDSPFast.FastMath.Initialized)
+            {
+                System.Threading.Thread.Sleep(100);
+            }
+
             Stopwatch s = new Stopwatch();
             s.Start();
 
@@ -161,6 +183,11 @@ namespace HatoDSPSample
 
         private void button3_Click(object sender, EventArgs e)
         {
+            while (!HatoDSPFast.FastMath.Initialized)
+            {
+                System.Threading.Thread.Sleep(100);
+            }
+
             Stopwatch s = new Stopwatch();
             s.Start();
 

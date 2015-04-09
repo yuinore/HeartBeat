@@ -37,6 +37,12 @@ namespace HatoDSPFast{
 
     public:
         static const int WT_N = 10;  // wavetable n, sawのwavetableの分割数。メモリ量は O(2^n) に比例。この値を変更する場合は、WT_SIZEの値も必ず修正すること。
+        static property bool Initialized{
+    public:
+            bool get(){
+                return initialized;
+            }
+        };
 
     private:
         //static const int N_SAW = 64;  // wavetableの基準サイズ(個)。2のべき乗でなければならない
