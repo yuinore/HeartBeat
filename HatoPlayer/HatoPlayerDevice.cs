@@ -472,6 +472,7 @@ namespace HatoPlayer
                     else
                     {
                         await Task.Delay(1);  // 一度Delayすると、15ミリ秒くらいは処理が返ってこないらしい・・・
+                        //Thread.Sleep(1);  // 新しくスレッドを作成したほうが、11ミリ秒くらいになり、若干マシな気がします・・・。
                     }
                 }
             });

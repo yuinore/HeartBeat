@@ -325,7 +325,7 @@ namespace HeartBeatCore
                 str = b.Title; if (str != null) TraceMessage(str);
                 str = b.Genre; if (str != null) TraceMessage("GENRE: " + str);
                 TraceMessage("INIT BPM: " + b.BPM);
-                TraceMessage("2/3 BPM: " + b.CalcTempoMedian(0.67));
+                TraceMessage("2/3 BPM: " + b.CalcTempoMedian(0.667));
                 TraceMessage("PLAYLEVEL: " + b.Playlevel);
                 TraceMessage("DIFFICULTY: " + b.Difficulty);
                 TraceMessage("NOTES COUNT: " + b.PlayableBMObjects.Where(x => x.IsPlayable() && !x.IsLongNoteTerminal && !x.IsLandmine()).Count());
@@ -377,14 +377,14 @@ namespace HeartBeatCore
             #region HatoPlayerの初期化とシンセの初期化
             if (hplayer == null)  // ←？？？？？
             {
-                hplayer = new HatoPlayerDevice(form, b);  // thisでもいいのか？
+                hplayer = new HatoPlayerDevice(form, b);  // （注：DirectSoundデバイスを作成するため、Formと同じスレッドから呼ぶ必要があるかもしれない）
             }
 
             hplayer.b = b;
 
             foreach (var kvpair in b.SynthDefinitionList)
             {
-                hplayer.PrepareSynth(kvpair.Key, kvpair.Value);
+                await Task.Run(() => hplayer.PrepareSynth(kvpair.Key, kvpair.Value));
             }
 
             //hplayer.Run();
@@ -442,7 +442,7 @@ namespace HeartBeatCore
 
             TraceMessage("    Loading Time: " + loadingTime.ElapsedMilliseconds + "ms");
 
-            hplayer.Run();  // ASIOデバイスを起動して再生する
+            hplayer.Run();  // ASIOデバイスを起動して再生する（注：ASIOデバイスを作成するため、Formと同じスレッドから呼ぶ必要があるかもしれない）
 
             s.Start();  // 内部タイマーの作動
 
@@ -724,7 +724,8 @@ namespace HeartBeatCore
 
             // ↓約200行
             #region wav/bmpの読み込み・再生
-            //await Task.Run(() => // それぞれのラムダ式の中のTask.Delayにawaitが付いていることで、非同期に実行できる。
+            // それぞれのラムダ式の中のTask.Delayにawaitが付いていることで、非同期に実行できる。
+            // つまり、Parallel.Invoke は (ほぼ)直ちに終了するし、それに伴ってLoadAndPlayから呼び出し元に処理が返る。
             Parallel.Invoke(
                 async () =>  // wavの読み込み
                 {
@@ -739,11 +740,9 @@ namespace HeartBeatCore
 
                         if (x.Seconds >= PlayFrom)
                         {
-                            // awaitしない！！ するな！！
-                            // って思ったけど、awaitしなきゃいけない程重要な処理じゃないんですよね・・・
+                            // awaitを付けることで、wav読み込みが全CPUを占有するのを防ぐ。
                             // できればスレッドの優先度をBMPも含めて下げたい
                             await Task.Run(() => hplayer.PrepareSound(x.Wavid));
-                            // Parallel.Invoke(async () => await Task.Run(() => hplayer.PrepareSound(x.Wavid)));
                         }
                     }
                 },
