@@ -1,5 +1,6 @@
 ﻿using HatoBMSLib;
 using HatoLib;
+using Sanford.Multimedia.Midi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +44,8 @@ namespace HeartBeatCore
         // キーが押されている状態かどうかを示すbool変数
         Dictionary<int, bool> isKeyDown = new Dictionary<int, bool>();
 
+        InputDevice midiInDev;
+
         public InputHandler(BMSPlayer player, Form form)
         {
             this.form = form;
@@ -50,6 +53,23 @@ namespace HeartBeatCore
 
             form.KeyDown += form_KeyDown;
             form.KeyUp += form_KeyUp;
+
+            // Midi入力デバイスの列挙
+            for (int i = 0; i < InputDevice.DeviceCount; i++)
+            {
+                var dev = InputDevice.GetDeviceCapabilities(i);
+
+                Console.WriteLine("in " + i + " : " + dev.name);
+            }
+
+            // midi入力の初期化
+            if(InputDevice.DeviceCount >= 9) {
+                midiInDev = new InputDevice(8);  // Windowsからmidiデバイスを開く
+                midiInDev.ChannelMessageReceived += midiInDev_ChannelMessageReceived;  // コールバック関数の指定
+                midiInDev.StartRecording();  // 入力の開始
+            }
+            // TODO: midiデバイスの解放
+
         }
 
         void form_KeyUp(object sender, KeyEventArgs ev)
@@ -116,6 +136,23 @@ namespace HeartBeatCore
                 }
 
                 KeyDown(sender, (int)keyid);
+            }
+        }
+
+        void midiInDev_ChannelMessageReceived(object sender, ChannelMessageEventArgs ev)
+        {
+            ChannelCommand cmd = ev.Message.Command;
+            int n = ev.Message.Data1;  // ノート番号
+            int vel = ev.Message.Data2;  // ベロシティ（ノートオン時のみ）
+
+            switch (cmd)
+            {
+                case ChannelCommand.NoteOn:
+                    Console.WriteLine("  NoteOn: " + n + ", " + vel);
+                    break;
+                case ChannelCommand.NoteOff:
+                    Console.WriteLine("  NoteOff" + n);
+                    break;
             }
         }
 

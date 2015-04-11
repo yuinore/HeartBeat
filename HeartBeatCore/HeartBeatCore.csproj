@@ -31,6 +31,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Sanford.Collections">
+      <HintPath>..\packages\Sanford.MidiToolkit.5.0.2\lib\net40\Sanford.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="Sanford.Multimedia">
+      <HintPath>..\packages\Sanford.MidiToolkit.5.0.2\lib\net40\Sanford.Multimedia.dll</HintPath>
+    </Reference>
+    <Reference Include="Sanford.Multimedia.Midi">
+      <HintPath>..\packages\Sanford.MidiToolkit.5.0.2\lib\net40\Sanford.Multimedia.Midi.dll</HintPath>
+    </Reference>
+    <Reference Include="Sanford.Multimedia.Timers">
+      <HintPath>..\packages\Sanford.MidiToolkit.5.0.2\lib\net40\Sanford.Multimedia.Timers.dll</HintPath>
+    </Reference>
+    <Reference Include="Sanford.Threading">
+      <HintPath>..\packages\Sanford.MidiToolkit.5.0.2\lib\net40\Sanford.Threading.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />
@@ -103,6 +118,9 @@
       <Project>{94b5907d-6278-4d22-b95c-5d58dd5bed4f}</Project>
       <Name>HatoPlayer</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
