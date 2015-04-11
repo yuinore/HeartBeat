@@ -982,6 +982,12 @@ namespace HeartBeatCore
                     hplayer.Dispose();
                     hplayer = null;
                 }
+
+                if (ih != null)
+                {
+                    ih.Dispose();
+                    ih = null;
+                }
             }
 
             // Free any unmanaged objects here.

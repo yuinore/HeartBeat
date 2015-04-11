@@ -10,12 +10,13 @@ using System.Windows.Forms;
 
 namespace HeartBeatCore
 {
-    internal class InputHandler
+    internal class InputHandler : IDisposable
     {
         /// <summary>
         /// キーが押されたときに発生します。第２引数は対応するkeyidです。
         /// このイベントは、キーが押したままにされていても１度しか発生しません。
         /// このイベントの中で、キー音の再生を行います。
+        /// あまり重い処理をここに書かない方がいいかもしれません。
         /// </summary>
         public EventHandler<int> KeyDown;  // キー音の再生等を行う
 
@@ -51,6 +52,7 @@ namespace HeartBeatCore
             this.form = form;
             this.player = player;
 
+            // フォームへのイベントハンドラの登録
             form.KeyDown += form_KeyDown;
             form.KeyUp += form_KeyUp;
 
@@ -68,8 +70,74 @@ namespace HeartBeatCore
                 midiInDev.ChannelMessageReceived += midiInDev_ChannelMessageReceived;  // コールバック関数の指定
                 midiInDev.StartRecording();  // 入力の開始
             }
-            // TODO: midiデバイスの解放
+        }
 
+        #region 一般のキー入力処理
+        /// <summary>
+        /// 一般のキーダウンが発生した場合に呼び出します。
+        /// </summary>
+        void AnyKeyDown(object sender, int keyid)
+        {
+            // TODO: midiキーとPCキーボードが同時に押されてもイベントを重複して発生させない
+
+            double CSP = player.CurrentSongPosition();
+
+            LastKeyDownEvent = new KeyEvent
+            {
+                keyid = (int)keyid,
+                seconds = CSP
+            };
+            lock (LastKeyDownEventDict)
+            {
+                LastKeyDownEventDict[(int)keyid] = CSP;
+            }
+
+            lock (KeyEventList)
+            {
+                KeyEventList.Enqueue(LastKeyDownEvent);
+            }
+
+            KeyDown(sender, (int)keyid);
+        }
+
+        /// <summary>
+        /// 一般のキーアップが発生した場合に呼び出します。
+        /// </summary>
+        void AnyKeyUp(object sender, int keyid)
+        {
+            lock (KeyEventList)
+            {
+                KeyEventList.Enqueue(new KeyEvent
+                {
+                    IsKeyUp = true,
+                    keyid = (int)keyid,
+                    seconds = player.CurrentSongPosition()
+                });
+            }
+
+            KeyUp(sender, (int)keyid);
+        }
+        #endregion
+
+        #region PCキーボード入力のイベントハンドラ
+        void form_KeyDown(object sender, KeyEventArgs ev)
+        {
+            int? keyid = KeyCodeToKeyid(ev.KeyCode);
+            bool cond = false;
+
+            lock (isKeyDown)  // デッドロックに注意
+            {
+                if (keyid != null && isKeyDown.GetValueOrDefault((int)keyid) == false)
+                {
+                    isKeyDown[(int)keyid] = true;
+                    cond = true;
+                }
+            }
+
+            if (cond)
+            {
+                AnyKeyDown(sender, (int)keyid);
+            }
         }
 
         void form_KeyUp(object sender, KeyEventArgs ev)
@@ -88,74 +156,13 @@ namespace HeartBeatCore
 
             if (cond)
             {
-                lock (KeyEventList)
-                {
-                    KeyEventList.Enqueue(new KeyEvent
-                    {
-                        IsKeyUp = true,
-                        keyid = (int)keyid,
-                        seconds = player.CurrentSongPosition()
-                    });
-                }
-
-                KeyUp(sender, (int)keyid);
+                AnyKeyUp(sender, (int)keyid);
             }
         }
 
-        void form_KeyDown(object sender, KeyEventArgs ev)
-        {
-            int? keyid = KeyCodeToKeyid(ev.KeyCode);
-            bool cond = false;
-
-            lock (isKeyDown)  // デッドロックに注意
-            {
-                if (keyid != null && isKeyDown.GetValueOrDefault((int)keyid) == false)
-                {
-                    isKeyDown[(int)keyid] = true;
-                    cond = true;
-                }
-            }
-
-            if (cond)
-            {
-                double CSP = player.CurrentSongPosition();
-
-                LastKeyDownEvent = new KeyEvent
-                {
-                    keyid = (int)keyid,
-                    seconds = CSP
-                };
-                lock (LastKeyDownEventDict)
-                {
-                    LastKeyDownEventDict[(int)keyid] = CSP;
-                }
-
-                lock (KeyEventList)
-                {
-                    KeyEventList.Enqueue(LastKeyDownEvent);
-                }
-
-                KeyDown(sender, (int)keyid);
-            }
-        }
-
-        void midiInDev_ChannelMessageReceived(object sender, ChannelMessageEventArgs ev)
-        {
-            ChannelCommand cmd = ev.Message.Command;
-            int n = ev.Message.Data1;  // ノート番号
-            int vel = ev.Message.Data2;  // ベロシティ（ノートオン時のみ）
-
-            switch (cmd)
-            {
-                case ChannelCommand.NoteOn:
-                    Console.WriteLine("  NoteOn: " + n + ", " + vel);
-                    break;
-                case ChannelCommand.NoteOff:
-                    Console.WriteLine("  NoteOff" + n);
-                    break;
-            }
-        }
-
+        /// <summary>
+        /// KeyCodeをkeyidに変換します。
+        /// </summary>
         int? KeyCodeToKeyid(Keys KeyCode)  // 現状だと1つのキーに複数のkeyidを割り当てることは出来ない（出来なくていいと思うけど）
         {
             int? keyid = null;
@@ -178,5 +185,69 @@ namespace HeartBeatCore
 
             return keyid;
         }
+        #endregion
+
+        #region Midi入力のイベントハンドラ
+        void midiInDev_ChannelMessageReceived(object sender, ChannelMessageEventArgs ev)
+        {
+            ChannelCommand cmd = ev.Message.Command;
+            int n = ev.Message.Data1;  // ノート番号
+            int vel = ev.Message.Data2;  // ベロシティ（ノートオン時のみ）
+
+            switch (cmd)
+            {
+                case ChannelCommand.NoteOn:
+                    AnyKeyDown(sender, MidiNoteNumberToKeyid(n));
+                    break;
+                case ChannelCommand.NoteOff:
+                    AnyKeyUp(sender, MidiNoteNumberToKeyid(n));
+                    break;
+            }
+        }
+
+        int MidiNoteNumberToKeyid(int n)  // 現状だと1つのキーに複数のkeyidを割り当てることは出来ない（出来なくていいと思うけど）
+        {
+            return (new[] { 1, 6, 3, 6, 5, 9, 2, 6, 4, 6, 8, 6, 6 })[n % 12];
+        }
+        #endregion
+
+        #region implementation of IDisposable
+        // Flag: Has Dispose already been called?
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            
+            System.Diagnostics.Debug.Assert(disposing, "激おこ @ " + this.GetType().ToString());
+
+            if (disposing)
+            {
+                // Free any other managed objects here.
+                midiInDev.StopRecording();
+                midiInDev.Close();
+                midiInDev.Dispose();  // 不要かも?
+                midiInDev = null;
+            }
+
+            // Free any unmanaged objects here.
+
+            disposed = true;
+        }
+        
+        ~InputHandler()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }
