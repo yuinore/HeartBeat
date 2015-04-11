@@ -117,7 +117,7 @@ namespace HatoLib.Midi
                     n = noteNum,
                     tick = 0,
                     v = vel,
-                    q = (int)(timebase * (long)len2 / len1)
+                    q = (int)(timebase * 4 * (long)len2 / len1)
                 };
             }
             else

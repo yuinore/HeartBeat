@@ -210,23 +210,28 @@ namespace HatoPlayer
                         {
                             int mixch = Convert.ToInt32(match.Groups[1].Captures[0].Value);
                             string query = match.Groups[2].Captures[0].Value;
-                            int noteno = 60;
                             try
                             {
-                                noteno = HatoLib.Midi.MidiEventNote.NewFromQuery(query, 15360).n;
+                                HatoLib.Midi.MidiEventNote mev = HatoLib.Midi.MidiEventNote.NewFromQuery(query, 15360);
+                                int noteno = mev.n;
+                                double duration = (mev.q / 15360.0) / (112.0 / 60.0);
 
                                 if (MixchToSynth.ContainsKey(mixch))
                                 {
                                     var s = MixchToSynth[mixch];
-                                    Task.Run(() =>
+                                    Task.Run(async () =>
                                     {
-                                        MixchToSynth[mixch].NoteOn(noteno);  // TODO: ノートオフ
+                                        MixchToSynth[mixch].NoteOn(noteno);
+
+                                        await Task.Delay((int)(duration * 1000));
+
+                                        MixchToSynth[mixch].NoteOff(noteno);  // TODO: もうちょっと真面目にノートオン/オフを書く
                                     });
                                     return true;
                                 }
                                 else
                                 {
-                                    // シンセ定義がただしくされていない場合
+                                    // シンセ定義が正しくされていない場合
                                     return false;
                                 }
                             }

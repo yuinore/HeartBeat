@@ -2,6 +2,8 @@
 #include "FastMath.h"
 #include <stdlib.h>
 #include <string.h>
+#include <xmmintrin.h>
+#include <immintrin.h>
 
 namespace HatoDSPFast {
     using namespace System;
@@ -189,6 +191,10 @@ namespace HatoDSPFast {
         double xr = x * N2_2PI;
         int a = (int)(((Int64)xr) & mask);
         double d = xr - (Int64)xr - 0.5;
+
+        //float* aa = new __declspec(align(32)) float[8];  // メモ：アラインメント
+        // gcc : __attribute__
+        //__m256 w = _mm256_load_ps(aa);
 
         return saw0[logovertone][a] + d * (saw1[logovertone][a] + d * saw2[logovertone][a]);
     }
