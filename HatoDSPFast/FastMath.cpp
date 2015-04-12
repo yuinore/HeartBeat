@@ -149,7 +149,7 @@ namespace HatoDSPFast {
             double absx = x;
             int integPart = (int)absx;  // floor(x)
 
-            if (integPart >= 63) return Math::Exp(Log2 * x);
+            if (integPart >= 63) return Math::Exp(LOG2 * x);
 
             double xr = (absx - integPart) * N;
             int a = (int)xr;  // 0 Å` N-1
@@ -164,7 +164,7 @@ namespace HatoDSPFast {
             double absx = -x;
             int integPart = (int)absx;  // floor(x)
 
-            if (integPart >= 63) return Math::Exp(Log2 * x);
+            if (integPart >= 63) return Math::Exp(LOG2 * x);
 
             double xr = (absx - integPart) * N;
             int a = (int)xr;  // 0 Å` N-1

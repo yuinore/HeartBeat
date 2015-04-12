@@ -36,7 +36,18 @@ namespace HatoDSPFast{
         static bool initialized = false;
 
     public:
-        static const int WT_N = 10;  // wavetable n, sawのwavetableの分割数。メモリ量は O(2^n) に比例。この値を変更する場合は、WT_SIZEの値も必ず修正すること。
+        // メモ：literal ではなく static const にすると、 C# からは普通の static 変数に見えてしまう。
+        // 　そのため、public にするならば literal を付けたほうがよい。
+        // 　　　　constとliteralの違い http://blogs.konuma.org/blog/2007/07/constliteral_65e2/
+        //
+        // 　abstract sealed なクラスには literal フィールドは持てないって書いてありますがそんなことはないですね・・・。
+        // 　　　　C++/CLIでの定数の定義 改 http://schima.hatenablog.com/entry/20090311/1236740102
+        // 　　　　abstract sealed & literal http://bytes.com/topic/net/answers/603702-abstract-sealed-literal
+        //
+        // 　あっ昔のC++/CLIのバグでしたか・・・
+        // 　　　　C++/CLI static class and literal http://bytes.com/topic/net/answers/712514-c-cli-static-class-literal
+        // 　　　　C++/CLI literal keyword bug http://blog.tosh.me/2012/02/ccli-literal-keyword-bug.html
+        literal int WT_N = 10;  // wavetable n, sawのwavetableの分割数。メモリ量は O(2^n) に比例。この値を変更する場合は、WT_SIZEの値も必ず修正すること。
         static property bool Initialized{
     public:
             bool get(){
@@ -45,29 +56,30 @@ namespace HatoDSPFast{
         };
 
     private:
-        //static const int N_SAW = 64;  // wavetableの基準サイズ(個)。2のべき乗でなければならない
+        //literal int N_SAW = 64;  // wavetableの基準サイズ(個)。2のべき乗でなければならない
         static int* WT_SIZE;  // wavetableのサイズ(個)。添字にlogovertoneを取り、この配列の長さはWT_Nである。すべて2のべき乗でなければならない。
         static double* WT_SIZE_2PI;  // == WT_SIZE / (2.0 * PI)
         static int* WT_MASK;  // == WT_SIZE.Select(x => x - 1)
         // ↑具体的な定義は都合によりコンストラクタで。
 
         // N = 512 で十分なサイズだと思います（積分しないなら）
-        static const int N = 512;
-        static const int Mask = N - 1;
-        static const double INV_0x4000000000000000L = 1.0 / (double)0x4000000000000000L;
+        literal int N = 512;
+        literal int Mask = N - 1;
+        literal double INV_0x4000000000000000L = 1.0 / (double)0x4000000000000000L;
 
         // 各種一時変数
-        static const double _2pi_N = 2.0 * Math::PI / N;
-        static const double N_2pi = N / (2.0 * Math::PI);
-        static const double log2_N = Math::Log(2.0) / N;
+    public:
+        literal double LOG2 = 0.69314718055994530941723212145818;  // ←これ多分4倍精度
+        literal double INV_2PI = 1.0 / (2 * Math::PI);
+    private:
+        literal double _2pi_N = 2.0 * Math::PI / N;
+        literal double N_2pi = N / (2.0 * Math::PI);
+        literal double log2_N = LOG2 / N;
 
         static FastMath();
         static void Initialize();
 
     public:
-        static const double INV_2PI = 1.0 / (2 * Math::PI);
-        static const double Log2 = Math::Log(2.0);
-
         static double Sin(double x); 
         static double Pow2(double x);
         static double Saw(double x, int logovertone);
