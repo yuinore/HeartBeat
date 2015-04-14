@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -273,6 +274,12 @@ namespace HatoSynthGUI
                 splitContainer1 = spc;
             }
 
+            // 画像ファイルを高速に読み込むには？［2.0のみ、C#、VB］
+            // http://www.atmarkit.co.jp/fdotnet/dotnettips/597fastloadimg/fastloadimg.html
+
+            // ←読み込みが驚くほど速くなった
+            // （と思ったけれど ImageLocation を使ってたのが遅かったっぽい）
+
             {
                 var size = CellMargin * 2;
 
@@ -280,7 +287,9 @@ namespace HatoSynthGUI
                 {
                     // 水平方向（左右向き）の矢印
                     var p = new PictureBox();
-                    p.ImageLocation = @"cells\arrow_00000.png";
+                    //p.Image = Image.FromFile(@"cells\arrow_00000.png");
+                    //p.ImageLocation = @"cells\arrow_00000.png";
+                    p.Image = Image.FromStream(File.OpenRead(@"cells\arrow_00000.png"), false, false);
                     p.Name = "ArrowX_" + arrowId;
                     p.Left = (arrowId % (TableSize.Width - 1) + 1) * CellTableInterval - CellMargin;
                     p.Top = arrowId / (TableSize.Width - 1) * CellTableInterval + CellTableInterval / 2 - CellMargin;
@@ -298,7 +307,9 @@ namespace HatoSynthGUI
                 {
                     // 垂直方向（左右向き）の矢印
                     var p = new PictureBox();
-                    p.ImageLocation = @"cells\arrow_00000.png";
+                    //p.Image = Image.FromFile(@"cells\arrow_00000.png");
+                    //p.ImageLocation = @"cells\arrow_00000.png";
+                    p.Image = Image.FromStream(File.OpenRead(@"cells\arrow_00000.png"), false, false);
                     p.Name = "ArrowY_" + arrowId;
                     p.Left = arrowId % TableSize.Width * CellTableInterval + CellTableInterval / 2 - CellMargin;
                     p.Top = (arrowId / TableSize.Width + 1) * CellTableInterval - CellMargin;
@@ -317,7 +328,9 @@ namespace HatoSynthGUI
             for (int cellId = 0; cellId < TableSize.Width * TableSize.Height; cellId++)
             {
                 var p = new PictureBox();
-                p.ImageLocation = @"cells\cell_00000.png";
+                //p.Image = Image.FromFile(@"cells\cell_00000.png");
+                //p.ImageLocation = @"cells\cell_00000.png";
+                p.Image = Image.FromStream(File.OpenRead(@"cells\cell_00000.png"), false, false);
                 p.Left = cellId % TableSize.Width * CellTableInterval + CellMargin;
                 p.Top = cellId / TableSize.Width * CellTableInterval + CellMargin;
                 p.Size = new System.Drawing.Size(CellSize, CellSize);
@@ -331,8 +344,9 @@ namespace HatoSynthGUI
             for (int cellId = 0; cellId < 9; cellId++)
             {
                 var p = new PictureBox();
-                //p.Image = Image.FromFile(@"cells\cell_0000" + cellId + ".png");
-                p.ImageLocation = @"cells\cell_0000" + (cellId + 1) + ".png";
+                //p.Image = Image.FromFile(@"cells\cell_0000" + (cellId + 1) + ".png");
+                //p.ImageLocation = @"cells\cell_0000" + (cellId + 1) + ".png";
+                p.Image = Image.FromStream(File.OpenRead(@"cells\cell_0000" + (cellId + 1) + ".png"), false, false);
                 p.Left = cellId % 2 * 40 + 4;
                 p.Top = cellId / 2 * 40 + 4;
                 p.Size = new System.Drawing.Size(32, 32);
