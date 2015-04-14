@@ -12,11 +12,11 @@ namespace HatoDSP
         public string Name;  // must be unique
         public int Port;  // connection type, 0, 1, ...
         CellTree[] children;
-        Controller[] ctrl;
+        CellParameterValue[] ctrl;
         
         public CellTree(Func<Cell> generator)
         {
-            this.generator = generator;
+            this.generator = generator;  // CellTree<T> where T:Cell にして new T() しても良かったかもしれないですね・・・。
         }
 
         public CellTree(string name, string module)
@@ -47,14 +47,14 @@ namespace HatoDSP
             this.children = children;  // カプセル化は？？
         }
 
-        public void AssignControllers(Controller[] ctrl)
+        public void AssignControllers(CellParameterValue[] ctrl)
         {
             this.ctrl = ctrl;  // カプセル化は？？
         }
 
         public void AssignControllers(float[] ctrl)  // 便宜的に
         {
-            this.ctrl = ctrl.Select(x => new Controller("Unknown", x)).ToArray();
+            this.ctrl = ctrl.Select(x => new CellParameterValue(x)).ToArray();
         }
 
         public Cell Generate()

@@ -6,23 +6,24 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class Controller  // セルに付いているツマミやスイッチを表す
+    /// <summary>
+    /// セルに付いているツマミやスイッチに指定されている値を表す
+    /// </summary>
+    public class CellParameterValue
     {
         public string Expression;
 
         public float Value;
-
-        public readonly string Name;
 
         public bool ExpressionEnabled
         {
             get { return Expression != null; }
         }
 
-        public Controller(string name, float value)
+        public CellParameterValue(float value)
         {
-            Name = name;
             Value = value;
+            Expression = null;
         }
     }
 }

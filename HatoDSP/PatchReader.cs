@@ -72,7 +72,7 @@ namespace HatoDSP
 
                 foreach (var x in ctrl)
                 {
-                    cells[x.Key].AssignControllers(x.Value.Select(y => new Controller("unknown", (float)y)).ToArray());
+                    cells[x.Key].AssignControllers(x.Value.Select(y => new CellParameterValue((float)y)).ToArray());
                 }
 
                 if (root == null) throw new PatchFormatException();

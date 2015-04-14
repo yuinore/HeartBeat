@@ -12,8 +12,10 @@ namespace HatoDSP
         public abstract void AssignChildren(CellTree[] children);  // paramsは厄介なのでやめましょう
 
         // ↓必ず呼ばれるとは限らない
-        public abstract void AssignControllers(Controller[] ctrl);
+        public abstract void AssignControllers(CellParameterValue[] ctrl);
 
         public abstract Signal[] Take(int count, LocalEnvironment lenv);
+
+        public abstract CellParameter[] ParamsList { get; }
     }
 }

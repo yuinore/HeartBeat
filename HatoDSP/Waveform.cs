@@ -13,6 +13,7 @@ namespace HatoDSP
         Sin,
         Tri,
         Pulse,
-        Impulse
+        Impulse,
+        Count
     }
 }

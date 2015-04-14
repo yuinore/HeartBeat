@@ -31,9 +31,18 @@ namespace HatoDSP
             }
         }
 
-        public override void AssignControllers(Controller[] ctrl)
+        public override void AssignControllers(CellParameterValue[] ctrl)
         {
             // TODO:
+        }
+
+        public override CellParameter[] ParamsList
+        {
+            get
+            {
+                return new CellParameter[]{
+                };
+            }
         }
 
         public override Signal[] Take(int count, LocalEnvironment lenv)
