@@ -23,7 +23,7 @@ namespace HatoDSP
         {
             Name = name;
 
-            switch (module)
+            switch (module.ToLower())
             {
                 case "analog filter":
                     generator = () => new BiquadFilter();
@@ -31,7 +31,7 @@ namespace HatoDSP
                 case "analog osc":
                     generator = () => new AnalogOscillator();
                     break;
-                case "ADSR":
+                case "adsr":
                     generator = () => new ADSR();
                     break;
                 case "rainbow":

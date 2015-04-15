@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HatoDSP;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -35,16 +36,30 @@ namespace HatoSynthGUI
 
         Form form;
         SplitContainer splitContainer1;
+        BlockPresetLibrary library;
 
         /// <summary>
         /// PictureBox と、その位置の組
         /// </summary>
         private class CellBlock
         {
-            public int uniqueId;
             public PictureBox pBox;
+            public BlockPresetLibrary.BlockPreset preset;
             public int y;
             public int x;
+        }
+
+        public enum ArrowDirection
+        {
+            None = 0,
+            Up,
+            Right,
+            Down,
+            Left,
+            UpAlt,
+            RightAlt,
+            DownAlt,
+            LeftAlt
         }
 
         /// <summary>
@@ -52,6 +67,7 @@ namespace HatoSynthGUI
         /// 【注意】添字は y, x の順
         /// </summary>
         CellBlock[,] table;
+        ArrowDirection[,] arrowX, arrowY;
         
         /// <summary>
         /// tableをPictureBoxで逆引きします。
@@ -89,6 +105,9 @@ namespace HatoSynthGUI
             this.form = form;
 
             table = new CellBlock[TableSize.Height, TableSize.Width];
+            arrowX = new ArrowDirection[TableSize.Height, TableSize.Width - 1];
+            arrowY = new ArrowDirection[TableSize.Height, TableSize.Width];
+            library = new BlockPresetLibrary();
 
             this.Load();
         }
@@ -186,6 +205,13 @@ namespace HatoSynthGUI
 
             break1:
 
+            string sendername = ((PictureBox)sender).Name;
+            if (sendername.StartsWith("CellPreset_"))
+            {
+                int presetId = Int32.Parse(sendername.Substring(11));
+                cb.preset = library.Presets[presetId];
+            }
+
             var p = new PictureBox();
             //p.Image = (Image)((PictureBox)sender).Image.Clone();
             p.Image = ((PictureBox)sender).Image;
@@ -200,7 +226,6 @@ namespace HatoSynthGUI
             p.MouseMove += pictureBox1_MouseMove;
             p.MouseUp += pictureBox1_MouseUp;
 
-            cb.uniqueId = 0;
             cb.pBox = p;
             cb.x = x;
             cb.y = y;
@@ -212,50 +237,74 @@ namespace HatoSynthGUI
         private void arrowX_Click(object sender, EventArgs e)
         {
             var p = (PictureBox)sender;
-            if (p.ImageLocation == @"cells\arrow_00000.png")
+            int y = 0, x = 0;
+            if (p.Name.StartsWith("ArrowX_"))
+            {
+                int arrowId = Int32.Parse(p.Name.Substring(7));
+                x = arrowId % (TableSize.Width - 1);
+                y = arrowId / (TableSize.Width - 1);
+            }
+            if (p.ImageLocation == @"cells\arrow_00000.png" || p.ImageLocation == null)
             {
                 p.ImageLocation = @"cells\arrow_00002.png";
+                arrowX[y, x] = ArrowDirection.Right;
             }
             else if (p.ImageLocation == @"cells\arrow_00002.png")
             {
                 p.ImageLocation = @"cells\arrow_00004.png";
+                arrowX[y, x] = ArrowDirection.Left;
             }
             else if (p.ImageLocation == @"cells\arrow_00004.png")
             {
                 p.ImageLocation = @"cells\arrow_00006.png";
+                arrowX[y, x] = ArrowDirection.RightAlt;
             }
             else if (p.ImageLocation == @"cells\arrow_00006.png")
             {
                 p.ImageLocation = @"cells\arrow_00008.png";
+                arrowX[y, x] = ArrowDirection.LeftAlt;
             }
             else
             {
                 p.ImageLocation = @"cells\arrow_00000.png";
+                arrowX[y, x] = ArrowDirection.None;
             }
         }
 
         private void arrowY_Click(object sender, EventArgs e)
         {
             var p = (PictureBox)sender;
-            if (p.ImageLocation == @"cells\arrow_00000.png")
+            int y = 0, x = 0;
+            if (p.Name.StartsWith("ArrowY_"))
             {
-                p.ImageLocation = @"cells\arrow_00001.png";
+                int arrowId = Int32.Parse(p.Name.Substring(7));
+                x = arrowId % TableSize.Width;
+                y = arrowId / TableSize.Width;
             }
-            else if (p.ImageLocation == @"cells\arrow_00001.png")
+            if (p.ImageLocation == @"cells\arrow_00000.png" || p.ImageLocation == null)
             {
                 p.ImageLocation = @"cells\arrow_00003.png";
+                arrowY[y, x] = ArrowDirection.Down;
             }
             else if (p.ImageLocation == @"cells\arrow_00003.png")
             {
-                p.ImageLocation = @"cells\arrow_00005.png";
+                p.ImageLocation = @"cells\arrow_00001.png";
+                arrowY[y, x] = ArrowDirection.Up;
             }
-            else if (p.ImageLocation == @"cells\arrow_00005.png")
+            else if (p.ImageLocation == @"cells\arrow_00001.png")
             {
                 p.ImageLocation = @"cells\arrow_00007.png";
+                arrowY[y, x] = ArrowDirection.DownAlt;
+            }
+            else if (p.ImageLocation == @"cells\arrow_00007.png")
+            {
+                p.ImageLocation = @"cells\arrow_00005.png";
+                arrowY[y, x] = ArrowDirection.UpAlt;
             }
             else
             {
                 p.ImageLocation = @"cells\arrow_00000.png";
+                arrowY[y, x] = ArrowDirection.None;
             }
         }
 
@@ -273,6 +322,11 @@ namespace HatoSynthGUI
 
                 splitContainer1 = spc;
             }
+
+            //form.KeyDown += form_KeyDown;
+            //splitContainer1.KeyDown += form_KeyDown;
+            splitContainer1.KeyDown += form_KeyDown;
+            //splitContainer1.Panel1.KeyDown += form_KeyDown;
 
             // 画像ファイルを高速に読み込むには？［2.0のみ、C#、VB］
             // http://www.atmarkit.co.jp/fdotnet/dotnettips/597fastloadimg/fastloadimg.html
@@ -341,12 +395,13 @@ namespace HatoSynthGUI
             }
 
             // 画面右のセル一覧
-            for (int cellId = 0; cellId < 9; cellId++)
+            for (int cellId = 0; cellId < library.Presets.Count; cellId++)
             {
                 var p = new PictureBox();
                 //p.Image = Image.FromFile(@"cells\cell_0000" + (cellId + 1) + ".png");
                 //p.ImageLocation = @"cells\cell_0000" + (cellId + 1) + ".png";
-                p.Image = Image.FromStream(File.OpenRead(@"cells\cell_0000" + (cellId + 1) + ".png"), false, false);
+                p.Image = Image.FromStream(File.OpenRead(@"cells\cell_0000" + library.Presets[cellId].GraphicId + ".png"), false, false);
+                p.Name = "CellPreset_" + cellId;
                 p.Left = cellId % 2 * 40 + 4;
                 p.Top = cellId / 2 * 40 + 4;
                 p.Size = new System.Drawing.Size(32, 32);
@@ -357,6 +412,113 @@ namespace HatoSynthGUI
                 p.DoubleClick += pictureBox2_DoubleClick;
 
                 splitContainer1.Panel2.Controls.Add(p);
+            }
+        }
+
+        void form_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.P && e.Control)
+            {
+                CellTree[,] cells = new CellTree[TableSize.Height, TableSize.Width];
+                for (int y = 0; y < TableSize.Height; y++)
+                {
+                    for (int x = 0; x < TableSize.Width; x++)
+                    {
+                        if (table[y, x] != null)
+                        {
+                            /*var preset = table[y, x].preset;
+                            cells[y, x] = new CellTree(preset.DefaultName, preset.ModuleName);
+                            if (preset.Ctrl != null)
+                            {
+                                cells[y, x].AssignControllers(preset.Ctrl);
+                            }*/
+                            // ******** TODO
+                        }
+                    }
+                }
+
+                // 横向きの矢印について
+                for (int y = 0; y < TableSize.Height; y++)
+                {
+                    for (int x = 0; x < TableSize.Width - 1; x++)
+                    {
+                        // [y,x] と [y,x+1] の間を結ぶ
+                        CellTree src = null, dst = null;
+                        switch (arrowX[y, x])
+                        {
+                            case ArrowDirection.Right:
+                                src = cells[y, x];
+                                dst = cells[y, x + 1];
+                                break;
+                            case ArrowDirection.Left:
+                                src = cells[y, x + 1];
+                                dst = cells[y, x];
+                                break;
+                            case ArrowDirection.RightAlt:  // TODO: Alt指定
+                                src = cells[y, x];
+                                dst = cells[y, x + 1];
+                                break;
+                            case ArrowDirection.LeftAlt:
+                                src = cells[y, x + 1];
+                                dst = cells[y, x];
+                                break;
+                        }
+
+                        if (src != null)
+                        {
+                            //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
+                            // ******** TODO
+                        }
+                    }
+                }
+
+                // 縦向きの矢印について
+                for (int y = 0; y < TableSize.Height - 1; y++)
+                {
+                    for (int x = 0; x < TableSize.Width; x++)
+                    {
+                        // [y,x] と [y+1,x] の間を結ぶ
+                        CellTree src = null, dst = null;
+                        switch (arrowY[y, x])
+                        {
+                            case ArrowDirection.Down:
+                                src = cells[y, x];
+                                dst = cells[y + 1, x];
+                                break;
+                            case ArrowDirection.Up:
+                                src = cells[y + 1, x];
+                                dst = cells[y, x];
+                                break;
+                            case ArrowDirection.DownAlt:  // TODO: Alt指定
+                                src = cells[y, x];
+                                dst = cells[y + 1, x];
+                                break;
+                            case ArrowDirection.UpAlt:
+                                src = cells[y + 1, x];
+                                dst = cells[y, x];
+                                break;
+                        }
+
+                        if (src != null)
+                        {
+                            //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
+                            // ******** TODO
+                        }
+                    }
+                }
+
+                CellTree start = null;
+
+                {
+                    int y = TableSize.Height - 1;
+                    for (int x = 0; x < TableSize.Width; x++)
+                    {
+                        if ((arrowY[y, x] == ArrowDirection.Down || arrowY[y, x] == ArrowDirection.DownAlt) && cells[y, x] != null)
+                        {
+                            start = cells[y, x];  // [y,x] がスタート地点（複数あるかも）
+                        }
+                    }
+                }
             }
         }
     }
