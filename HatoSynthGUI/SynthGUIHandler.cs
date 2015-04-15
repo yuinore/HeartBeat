@@ -1,4 +1,5 @@
-﻿using HatoDSP;
+﻿using Codeplex.Data;
+using HatoDSP;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -415,24 +416,61 @@ namespace HatoSynthGUI
             }
         }
 
+        class AAAA
+        {
+            public string name;
+            public string module;
+            public float[] ctrl;
+            public string[] children;
+        }
+
         void form_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.P && e.Control)
             {
-                CellTree[,] cells = new CellTree[TableSize.Height, TableSize.Width];
+                dynamic json = DynamicJson.Parse("[]");
+
+                dynamic[,] cells = new dynamic[TableSize.Height, TableSize.Width];
                 for (int y = 0; y < TableSize.Height; y++)
                 {
                     for (int x = 0; x < TableSize.Width; x++)
                     {
                         if (table[y, x] != null)
                         {
-                            /*var preset = table[y, x].preset;
-                            cells[y, x] = new CellTree(preset.DefaultName, preset.ModuleName);
+                            var preset = table[y, x].preset;
+                            /*cells[y, x] = new CellTree(preset.DefaultName, preset.ModuleName);
                             if (preset.Ctrl != null)
                             {
                                 cells[y, x].AssignControllers(preset.Ctrl);
                             }*/
                             // ******** TODO
+                            /*dynamic cell = new DynamicJson();  // 入れ子のDynamicJsonは正しくシリアライズされない
+                            cell.name = preset.DefaultName;
+                            cell.module = preset.ModuleName;*/
+
+                            // DynamicJsonを編集しようかと思ったけど難しすぎる・・・
+                            /*dynamic cell = new AAAA();  // 匿名でないクラスも正しくシリアライズされない
+                            cell.name = preset.DefaultName;
+                            cell.module = preset.ModuleName;
+                            cell.ctrl = new float[0] { };  // 後から追加できない・・・
+                            cell.children = new string[0] { };
+                            */
+
+                            dynamic cell = new
+                            {
+                                name = preset.DefaultName,
+                                module = preset.ModuleName,
+                                ctrl = new float[0] { },  // 後から追加できない・・・
+                                children = new string[0] { }
+                            };
+
+                            if (preset.Ctrl != null)
+                            {
+                                /////////////////////////////////////////////////////cell.ctrl = preset.Ctrl;
+                            }
+
+                            cells[y, x] = cell;
+                            json[((dynamic[])json).Length] = cell;
                         }
                     }
                 }
@@ -443,7 +481,7 @@ namespace HatoSynthGUI
                     for (int x = 0; x < TableSize.Width - 1; x++)
                     {
                         // [y,x] と [y,x+1] の間を結ぶ
-                        CellTree src = null, dst = null;
+                        dynamic src = null, dst = null;
                         switch (arrowX[y, x])
                         {
                             case ArrowDirection.Right:
@@ -468,6 +506,7 @@ namespace HatoSynthGUI
                         {
                             //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
                             // ******** TODO
+                            /////////////////////////////////////////////////////dst.children = new string[] { src.name };
                         }
                     }
                 }
@@ -478,7 +517,7 @@ namespace HatoSynthGUI
                     for (int x = 0; x < TableSize.Width; x++)
                     {
                         // [y,x] と [y+1,x] の間を結ぶ
-                        CellTree src = null, dst = null;
+                        dynamic src = null, dst = null;
                         switch (arrowY[y, x])
                         {
                             case ArrowDirection.Down:
@@ -503,11 +542,12 @@ namespace HatoSynthGUI
                         {
                             //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
                             // ******** TODO
+                            /////////////////////////////////////////////////////dst.children = new string[] { src.name };
                         }
                     }
                 }
 
-                CellTree start = null;
+                dynamic start = null;
 
                 {
                     int y = TableSize.Height - 1;
@@ -515,10 +555,25 @@ namespace HatoSynthGUI
                     {
                         if ((arrowY[y, x] == ArrowDirection.Down || arrowY[y, x] == ArrowDirection.DownAlt) && cells[y, x] != null)
                         {
-                            start = cells[y, x];  // [y,x] がスタート地点（複数あるかも）
+                            //start = cells[y, x];  // [y,x] がスタート地点（複数あるかも）
+                            start = new 
+                            {
+                                name = "$synth",
+                                module = "",
+                                children = new string[] { cells[y, x].name },
+                                ctrl = new float[0] { }
+                            };
                         }
                     }
                 }
+
+                if (start != null)
+                {
+                    json[((dynamic[])json).Length] = start;
+                }
+
+                string str = json.ToString();
+                //string str = DynamicJson.Serialize(json);
             }
         }
     }
