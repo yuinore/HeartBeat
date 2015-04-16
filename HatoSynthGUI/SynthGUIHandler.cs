@@ -428,8 +428,6 @@ namespace HatoSynthGUI
         {
             if (e.KeyCode == Keys.P && e.Control)
             {
-                dynamic json = DynamicJson.Parse("[]");
-
                 dynamic[,] cells = new dynamic[TableSize.Height, TableSize.Width];
                 for (int y = 0; y < TableSize.Height; y++)
                 {
@@ -458,7 +456,7 @@ namespace HatoSynthGUI
 
                             dynamic cell = new AAAA
                             {
-                                name = preset.DefaultName,
+                                name = preset.DefaultName,  // FIXME: デフォルト名からユニークな名前に変更
                                 module = preset.ModuleName,
                                 ctrl = new float[0] { },  // 後から追加できない・・・
                                 children = new string[0] { }
@@ -471,7 +469,6 @@ namespace HatoSynthGUI
                             }
 
                             cells[y, x] = cell;
-                            json[((dynamic[])json).Length] = cell;  // 【オブジェクトはこの時点でシリアライズされてしまう（遅延評価ではない）】
                         }
                     }
                 }
@@ -567,6 +564,17 @@ namespace HatoSynthGUI
                                 ctrl = new float[0] { }
                             };
                         }
+                    }
+                }
+
+                dynamic json = DynamicJson.Parse("[]");
+
+                // jsonに追加
+                foreach (var cell in cells)
+                {
+                    if (cell != null)
+                    {
+                        json[((dynamic[])json).Length] = cell;  // 【オブジェクトはこの時点でシリアライズされてしまう（遅延評価ではない）】
                     }
                 }
 
