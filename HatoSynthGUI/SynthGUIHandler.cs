@@ -418,10 +418,10 @@ namespace HatoSynthGUI
 
         class AAAA
         {
-            public string name;
-            public string module;
-            public float[] ctrl;
-            public string[] children;
+            public string name { get; set; }
+            public string module { get; set; }
+            public float[] ctrl { get; set; }
+            public string[] children { get; set; }
         }
 
         void form_KeyDown(object sender, KeyEventArgs e)
@@ -456,7 +456,7 @@ namespace HatoSynthGUI
                             cell.children = new string[0] { };
                             */
 
-                            dynamic cell = new
+                            dynamic cell = new AAAA
                             {
                                 name = preset.DefaultName,
                                 module = preset.ModuleName,
@@ -466,11 +466,12 @@ namespace HatoSynthGUI
 
                             if (preset.Ctrl != null)
                             {
-                                /////////////////////////////////////////////////////cell.ctrl = preset.Ctrl;
+                                /////////////////////////////////////////////////////
+                                cell.ctrl = preset.Ctrl;
                             }
 
                             cells[y, x] = cell;
-                            json[((dynamic[])json).Length] = cell;
+                            json[((dynamic[])json).Length] = cell;  // 【オブジェクトはこの時点でシリアライズされてしまう（遅延評価ではない）】
                         }
                     }
                 }
@@ -506,7 +507,8 @@ namespace HatoSynthGUI
                         {
                             //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
                             // ******** TODO
-                            /////////////////////////////////////////////////////dst.children = new string[] { src.name };
+                            /////////////////////////////////////////////////////
+                            dst.children = new string[] { src.name };
                         }
                     }
                 }
@@ -542,7 +544,8 @@ namespace HatoSynthGUI
                         {
                             //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
                             // ******** TODO
-                            /////////////////////////////////////////////////////dst.children = new string[] { src.name };
+                            /////////////////////////////////////////////////////
+                            dst.children = new string[] { src.name };
                         }
                     }
                 }
@@ -556,7 +559,7 @@ namespace HatoSynthGUI
                         if ((arrowY[y, x] == ArrowDirection.Down || arrowY[y, x] == ArrowDirection.DownAlt) && cells[y, x] != null)
                         {
                             //start = cells[y, x];  // [y,x] がスタート地点（複数あるかも）
-                            start = new 
+                            start = new AAAA
                             {
                                 name = "$synth",
                                 module = "",

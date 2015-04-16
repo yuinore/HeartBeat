@@ -117,7 +117,7 @@ namespace Codeplex.Data
                 case TypeCode.Byte:
                     return JsonType.number;
                 case TypeCode.Object:
-                    return (obj is IEnumerable) ? JsonType.array : JsonType.@object;
+                    return (obj is IEnumerable) ? JsonType.array : JsonType.@object;  // including user-defined class
                 case TypeCode.DBNull:
                 case TypeCode.Empty:
                 default:
@@ -158,6 +158,8 @@ namespace Codeplex.Data
 
         private static IEnumerable<XStreamingElement> CreateXObject(object obj)
         {
+            // 注意：オブジェクトに含まれるフィールドはシリアライズされない。
+            // 　　　匿名クラスは要素がすべてgetアクセサを持つプロパティで実装されるので、シリアライズされる。
             return obj.GetType()
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Select(pi => new { Name = pi.Name, Value = pi.GetValue(obj, null) })
