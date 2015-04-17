@@ -25,8 +25,10 @@ namespace HatoDSP
 
         public override void AssignChildren(CellTree[] children)
         {
-            this.child0 = children[0];
-            cell = child0.Generate();
+            if (children.Length >= 1) {
+                this.child0 = children[0];
+                cell = child0.Generate();
+            }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)

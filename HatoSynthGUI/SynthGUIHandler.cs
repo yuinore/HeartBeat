@@ -1,5 +1,6 @@
 ﻿using Codeplex.Data;
 using HatoDSP;
+using HatoPlayer;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -585,7 +586,43 @@ namespace HatoSynthGUI
 
                 string str = json.ToString();
                 //string str = DynamicJson.Serialize(json);
+
+                RunAsio(str);
             }
+        }
+
+
+        unsafe void RunAsio(string patch)
+        {
+            HatoSynthDevice synth = new HatoSynthDevice(patch);
+            synth.NoteOn(60);
+            synth.NoteOn(64);
+            synth.NoteOn(67);
+            AsioHandler asio = new AsioHandler();  // 再生が停止するまで解放しないように・・・
+            asio.Run((IntPtr buf, int chIdx, int count) =>
+            {
+                if (chIdx != 2) return;  // FIXME: AsioHandlerの修正・右チャンネルからも音が出るようにする
+
+                var buf2 = synth.Take(count).Select(x => x.ToArray()).ToArray();
+                short* p = (short*)buf;
+                for (int i = 0; i < count; i++)
+                {
+                    if (chIdx == 2)
+                    {
+                        *(p++) = 0;
+                        *(p++) = (short)(buf2[0][i] * 3276.7);  // FIXME:音割れに注意・・・
+                    }
+                    else if (chIdx == 3)
+                    {
+                        *(p++) = 0;
+                        *(p++) = (short)(buf2[1][i] * 3276.7);
+                    }
+                }
+            });
+
+            System.Threading.Thread.Sleep(10000);
+
+            asio.Dispose();
         }
     }
 }

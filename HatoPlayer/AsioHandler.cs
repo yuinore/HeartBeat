@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace HatoPlayer
 {
-    internal class AsioHandler : IDisposable
+    public class AsioHandler : IDisposable  // TODO: unsafeを使わずにもう少しマシにAsioHandlerを呼び出せるようにする
     {
-        internal delegate void D_AsioCallback(IntPtr buf, int chIdx, int count);
+        public delegate void D_AsioCallback(IntPtr buf, int chIdx, int count);
 
         // DragDropHandlerを参考にして書いた
         //
