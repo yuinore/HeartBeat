@@ -43,8 +43,8 @@ namespace HatoSynthGUI
             new BlockPreset("Rainbow",       "Rainbow",        5, new float[] {}),
             new BlockPreset("Rainbow",       "Uni",            6, new float[] {}),  // Not Implemented
             new BlockPreset("Analog Filter", "Lowpass Filter", 7, new float[] {}),
-            new BlockPreset("ADSR",          "AD",             8, new float[] {0.01f, 0.5f, 0.0f, 0.5f}),  // Not Implemented
-            new BlockPreset("ADSR",          "ASDR",           9, new float[] {0.01f, 0.1f, 0.5f, 0.01f}),
+            new BlockPreset("ADSR",          "AD",             8, new float[] {0.001f, 0.10f, 0.0f, 0.01f}),  // Not Implemented
+            new BlockPreset("ADSR",          "ASDR",           9, new float[] {0.001f, 0.10f, 0.5f, 0.01f}),
         };
     }
 }

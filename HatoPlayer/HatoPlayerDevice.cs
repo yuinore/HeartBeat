@@ -272,20 +272,14 @@ namespace HatoPlayer
         AsioHandler asio;
         //readonly int BufferSamples = 2048;
 
-        Queue<float> bufqueueL = new Queue<float>();
+        Queue<float> bufqueueL = new Queue<float>();  // lock にはすべて bufqueueL のみを用いる
         Queue<float> bufqueueR = new Queue<float>();
         int bufcountL = 0;
         int bufcountR = 0;
 
-        int chLeft = 2;
-        int chRight = 3;
-
-        private unsafe void AsioCallback(IntPtr buf, int chIdx, int count)
+        private unsafe void AsioCallback(AsioHandler.AsioBuffer aBuf)
         {
-            if (chIdx != chLeft && chIdx != chRight) return;
-            //Console.WriteLine("Callback");
-
-            if ((chIdx == chLeft ? bufcountL : bufcountR) < count)
+            if (bufcountL < aBuf.SampleCount || bufcountR < aBuf.SampleCount)
             {
                 Console.WriteLine("Not Enough Buffer... ＞＜ " + DateTime.Now.Millisecond);
             }
@@ -293,23 +287,12 @@ namespace HatoPlayer
             {
                 lock (bufqueueL)
                 {
-                    short* p = (short*)buf;
-                    for (int i = 0; i < count; i++)
+                    for (int i = 0; i < aBuf.SampleCount; i++)
                     {
-                        if (chIdx == chLeft)
-                        {
-                            var sample = bufqueueL.Dequeue();
-                            *(p++) = 0;
-                            *(p++) = (short)(sample * 32767);
-                            bufcountL--;
-                        }
-                        else if (chIdx == chRight)
-                        {
-                            var sample = bufqueueR.Dequeue();
-                            *(p++) = 0;
-                            *(p++) = (short)(sample * 32767);
-                            bufcountR--;
-                        }
+                        aBuf.Buffer[0][i] = bufqueueL.Dequeue();
+                        bufcountL--;
+                        aBuf.Buffer[1][i] = bufqueueR.Dequeue();
+                        bufcountR--;
                     }
                 }
             }

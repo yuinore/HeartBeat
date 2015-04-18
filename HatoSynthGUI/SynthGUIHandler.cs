@@ -591,29 +591,32 @@ namespace HatoSynthGUI
             }
         }
 
-        unsafe void RunAsio(string patch)
+        void RunAsio(string patch)
         {
             HatoSynthDevice synth = new HatoSynthDevice(patch);
             synth.NoteOn(60);
             synth.NoteOn(64);
             synth.NoteOn(67);
-            AsioHandler asio = new AsioHandler();  // 再生が停止するまで解放しないように・・・
-            asio.Run(aBuf =>
+            using (AsioHandler asio = new AsioHandler())
             {
-                var buf2 = synth.Take(aBuf.SampleCount).Select(x => x.ToArray()).ToArray();  // 同じスレッドで処理しちゃったてへっ
-
-                for (int ch = 0; ch < aBuf.ChannelCount; ch++)
+                // 再生が停止するまで AsioHandler を解放しないように・・・
+                asio.Run(aBuf =>
                 {
-                    for (int i = 0; i < aBuf.SampleCount; i++)
+                    var buf2 = synth.Take(aBuf.SampleCount).Select(x => x.ToArray()).ToArray();  // 同じスレッドで処理しちゃったてへっ
+
+                    for (int ch = 0; ch < aBuf.ChannelCount; ch++)
                     {
-                        aBuf.Buffer[ch][i] = buf2[ch][i];
+                        for (int i = 0; i < aBuf.SampleCount; i++)
+                        {
+                            aBuf.Buffer[ch][i] = buf2[ch][i];
+                        }
                     }
-                }
-            });
+                });
 
-            System.Threading.Thread.Sleep(10000);
+                System.Threading.Thread.Sleep(10000);
 
-            asio.Dispose();
+                asio.Stop();
+            }
         }
     }
 }

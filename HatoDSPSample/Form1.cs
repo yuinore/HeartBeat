@@ -140,6 +140,12 @@ namespace HatoDSPSample
                     var sig5 = osc1.Generate().Take(2000000, lenv);
                     WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_pulse25.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
+                {
+                    var osc1 = new CellTree(() => new ADSR());
+                    osc1.AssignControllers(new float[] { 0.1f, 1.0f, 0.5f, 0.1f });
+                    var sig5 = osc1.Generate().Take(80000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_adsr_1.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                }
             }
 
             WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test3.wav"), new float[][] { Enumerable.Range(0, 1048576).Select(x => (float)Math.Sin(8 * Math.PI * x / 1048576)).ToArray() }, 1, 44100, 32);

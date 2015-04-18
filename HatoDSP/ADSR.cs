@@ -44,8 +44,11 @@ namespace HatoDSP
 
         public override void AssignChildren(CellTree[] children)
         {
-            this.child0 = children[0];
-            cell = child0.Generate();
+            if (children.Length >= 1)
+            {
+                this.child0 = children[0];
+                cell = child0.Generate();
+            }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
@@ -86,8 +89,13 @@ namespace HatoDSP
                     else if (time < A + D)
                     {
                         //double rate = Math.Pow(0.00001, (time - A) / D);
-                        double rate = FastMath.Pow2(log2a * (time - A) / D); // 0dB to -100dB
-                        lastgain = ret[i] = (float)((1.0f - S) * rate + S);
+                        //double rate = FastMath.Pow2(log2a * (time - A) / D); // 0dB to -100dB
+                        //lastgain = ret[i] = (float)((1.0f - S) * rate + S);
+                        
+                        // (0.01)^t * (0.5+0.5*cos(3.1415*t))
+                        // ↑エンベロープにはこれが良いと思う
+                        double t = (time - A) / D;
+                        lastgain = ret[i] = (float)((1.0f - S) * Math.Pow(0.01, t) * (0.5 + 0.5 * Math.Cos(Math.PI * t)) + S);  // -40dB
                     }
                     else
                     {

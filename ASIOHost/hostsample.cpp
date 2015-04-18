@@ -105,7 +105,7 @@ void sampleRateChanged(ASIOSampleRate sRate);
 long asioMessages(long selector, long value, void* message, double* opt);
 
 
-void(__stdcall *asioCallback)(float* buf, int chIdx, int count);  // C#のコールバック関数へのポインタ
+void(__stdcall *asioCallback)(void* buf, int chIdx, int count, int asioSampleType);  // C#のコールバック関数へのポインタ
 
 
 //----------------------------------------------------------------------------------
@@ -234,13 +234,6 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 				break;
 			case ASIOSTInt32LSB:
                 memset(asioDriverInfo.bufferInfos[i].buffers[index], 0, buffSize * 4);
-                /*{
-                    float* ptr = (float*)asioDriverInfo.bufferInfos[i].buffers[index];
-                    for (int j = 0; j < buffSize; j++) {
-                        ptr[j] = (j % 16) * 0.01f;
-                    }
-                }*/
-                asioCallback((float*)(asioDriverInfo.bufferInfos[i].buffers[index]), i, buffSize); 
 				break;
 			case ASIOSTFloat32LSB:		// IEEE 754 32 bit float, as found on Intel x86 architecture
 				memset (asioDriverInfo.bufferInfos[i].buffers[index], 0, buffSize * 4);
@@ -282,7 +275,9 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 			case ASIOSTInt32MSB24:		// 32 bit data with 24 bit alignment
 				memset (asioDriverInfo.bufferInfos[i].buffers[index], 0, buffSize * 4);
 				break;
-			}
+            }
+
+            asioCallback((void*)(asioDriverInfo.bufferInfos[i].buffers[index]), i, buffSize, (int)asioDriverInfo.channelInfos[i].type);
 		}
 	}
 
@@ -460,11 +455,12 @@ ASIOError create_asio_buffers (DriverInfo *asioDriverInfo)
 }
 
 // ↓この __stdcall というのが重要なのカッ！？
-extern int __stdcall asiomain(void(__stdcall *asio_callback)(float*, int, int))
+extern int __stdcall asiomain(void(__stdcall *asio_callback)(void*, int, int, int))
 {
     // 1回目の呼び出し → ASIOの初期化
     // 2回目の呼び出し → ASIOの停止
     // 3回目以降の呼び出し → 何もしない
+    // TODO: もう少し分かりやすいフローにする（プログラムの1回の実行内で、2回ASIOデバイスを作成することを許可するなど）
 
     static bool initialized = false;
     static bool disposed = false;

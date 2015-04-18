@@ -10,7 +10,7 @@ namespace HatoPlayer
 {
     public class AsioHandler : IDisposable  // TODO: unsafeを使わずにもう少しマシにAsioHandlerを呼び出せるようにする
     {
-        internal enum AsioSampleType
+        private enum AsioSampleType
         {
             ASIOSTInt16MSB = 0,
             ASIOSTInt24MSB = 1,		// used for 20 bits as well
@@ -64,7 +64,7 @@ namespace HatoPlayer
             }
         }
 
-        internal delegate void D_UnsafeAsioCallback(IntPtr buf, int chIdx, int count);
+        private delegate void D_UnsafeAsioCallback(IntPtr buf, int chIdx, int count, int asioSampleType);
         //public delegate void D_AsioCallback(float[][] buf, int channelCount, int sampleCount);
         // メモ：channelsCountではなくchannelCountの方が英語として良さそう
 
@@ -85,21 +85,27 @@ namespace HatoPlayer
                 new float[1024],
                 new float[1024],
         };
+        short[] sbuf = new short[1024];
 
         bool LeftRemains = false;  // ASIOに送信していない左チャンネルのデータがbufferにまだ残っているか？
         bool RightRemains = false;  // ASIOに送信していない右チャンネルのデータがbufferにまだ残っているか？
         int chLeft = 2;  // TODO: チャンネル番号の設定
         int chRight = 3;
 
-        private unsafe void UnsafeAsioCallback(IntPtr buf, int chIdx, int count)
+        private unsafe void UnsafeAsioCallback(IntPtr buf, int chIdx, int count, int asioSampleType)
         {
-            if (buffer.Length < count)
+            // asioSampleType によって buf の大きさが異なるので真面目に注意。
+            // ゼロクリアは既にしてあるという設定です。
+
+            if (buffer[0].Length < count)
             {
                 // マネージド配列の長さが足りない場合
                 buffer = new float[2][] {
                     new float[count],
                     new float[count]
                 };  // 要素数は適当(count以上ならなんでもよい)、チャンネル数は2固定（5.1サラウンドなんて無かった）
+
+                sbuf = new short[count];
             }
 
             if (chIdx != chLeft && chIdx != chRight) return;  // データを書き込むべきチャンネルでなければ何もしない
@@ -125,17 +131,71 @@ namespace HatoPlayer
                 RightRemains = false;
             }
 
-            //*** ASIOバッファへのコピー
-            // FIXME: AsioSampleTypeによるswitch
-            short* p = (short*)buf;
+            //*** クリッピング処理と、shortへの変換
             for (int i = 0; i < count; i++)
             {
-                double fsample = currChBuf[i] * 3276.7;  // FIXME:音量調整
+                double fsample = currChBuf[i] * 3276.7;  // FIXME:ここで音量調整しない
                 short ssample = (short)fsample;
                 if(fsample > 32767.0) ssample = 32767;
                 if(fsample < -32768.0) ssample = -32768;
-                *(p++) = 0;
-                *(p++) = ssample;
+                sbuf[i] = ssample;
+            }
+
+            //*** ASIOバッファへのコピー
+            int* ip = (int*)buf;
+            short* p = (short*)buf;
+            byte* bp = (byte*)buf;
+            float* fp = (float*)buf;
+            double* dp = (double*)buf;
+            switch ((AsioSampleType)asioSampleType)
+            {
+                case AsioSampleType.ASIOSTInt16LSB:  // LL HH
+                    for (int i = 0; i < count; i++) { *(p++) = sbuf[i]; }
+                    break;
+                case AsioSampleType.ASIOSTInt24LSB:  // 00 LL HH
+                    for (int i = 0; i < count; i++) { *(bp++) = 0; *((short*)bp) = sbuf[i]; bp+= 2; }  // FIXME: byte* を short* にキャストして良いんですか・・・？？
+                    break;
+                case AsioSampleType.ASIOSTInt32LSB:  // 00 00 LL HH
+                    for (int i = 0; i < count; i++) { *(p++) = 0; *(p++) = sbuf[i]; }
+                    break;
+                case AsioSampleType.ASIOSTFloat32LSB:  // float
+                    for (int i = 0; i < count; i++) { *(fp++) = currChBuf[i]; }
+                    break;
+                case AsioSampleType.ASIOSTFloat64LSB:  // double? なのでしょうか・・・？
+                    for (int i = 0; i < count; i++) { *(dp++) = (double)currChBuf[i]; }
+                    break;
+
+                // 以下はあまり使用されないフォーマット
+                // ゼロ拡張なのか符号拡張なのかどちらでもいいのか良く分からないけど気にしない
+                // 誰か分かる人お願い
+                case AsioSampleType.ASIOSTInt32LSB16:  // LL HH 00 00
+                    for (int i = 0; i < count; i++) { *(ip++) = (int)sbuf[i]; }
+                    break;
+                case AsioSampleType.ASIOSTInt32LSB18:  // LLLLLL00 HHHHHHLL 000000HH 00000000 (in binary)
+                    for (int i = 0; i < count; i++) { *(ip++) = (int)(sbuf[i] << 2); }
+                    break;
+                case AsioSampleType.ASIOSTInt32LSB20:  // LLLL0000 HHHHLLLL 0000HHHH 00000000 (in binary)
+                    for (int i = 0; i < count; i++) { *(ip++) = (int)(sbuf[i] << 4); }
+                    break;
+                case AsioSampleType.ASIOSTInt32LSB24:  // 00 LL HH 00
+                    for (int i = 0; i < count; i++) { *(ip++) = (int)(sbuf[i] << 8); }
+                    break;
+
+                case AsioSampleType.ASIOSTInt16MSB:
+                case AsioSampleType.ASIOSTInt24MSB:  // used for 20 bits as well
+                case AsioSampleType.ASIOSTInt32MSB:
+                case AsioSampleType.ASIOSTFloat32MSB:  // IEEE 754 32 bit float, as found on Intel x86 architecture
+                case AsioSampleType.ASIOSTFloat64MSB:  // IEEE 754 64 bit double float, as found on Intel x86 architecture
+
+                // 以下はさらにあまり使用されないフォーマット
+                case AsioSampleType.ASIOSTInt32MSB16:  // 32 bit data with 18 bit alignment
+                case AsioSampleType.ASIOSTInt32MSB18:  // 32 bit data with 18 bit alignment
+                case AsioSampleType.ASIOSTInt32MSB20:  // 32 bit data with 20 bit alignment
+                case AsioSampleType.ASIOSTInt32MSB24:  // 32 bit data with 24 bit alignment
+                default:
+                    Console.WriteLine("Sample Type of " + asioSampleType.ToString() + " is Not Supported.");
+                    // do nothing
+                    break;
             }
         }
 
@@ -156,7 +216,7 @@ namespace HatoPlayer
         /// コールバック関数を指定して、ASIOサウンドドライバを立ち上げます。
         /// 可能ならばこの関数は使用せず、代わりに void AsioHandler.Run(Action&lt;AsioBuffer&gt; callback) を使用して下さい。
         /// </summary>
-        internal void Run(D_UnsafeAsioCallback callback)  // TODO:最終的にはinternalをprivateにする
+        private void Run(D_UnsafeAsioCallback callback)  // TODO:最終的にはinternalをprivateにする
         {
             UnsafeCallback = callback;
 
@@ -169,6 +229,14 @@ namespace HatoPlayer
                 System.Windows.Forms.MessageBox.Show("ASIOの初期化に失敗しました。");
                 //throw new Exception("ASIOの初期化に失敗しました。");
             }
+        }
+
+        /// <summary>
+        /// This is equivalent to Dispose()
+        /// </summary>
+        public void Stop()
+        {
+            Dispose();
         }
 
         #region implementation of IDisposable

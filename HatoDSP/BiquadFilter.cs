@@ -24,7 +24,10 @@ namespace HatoDSP
 
         public override void AssignChildren(CellTree[] children)
         {
-            waveCell = children[0].Generate();
+            if (children.Length >= 1)
+            {
+                waveCell = children[0].Generate();
+            }
             if (children.Length >= 2)
             {
                 cutoffCell = children[1].Generate();
