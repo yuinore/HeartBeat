@@ -15,8 +15,8 @@ namespace HatoSound
     {
         static List<int> LockObject = new List<int>();
         public int SamplingRate;
-        public int BufSamplesCount;
-        public int ChannelsCount;
+        public int BufSampleCount;
+        public int ChannelCount;
 
         int writtenPosition;
 
@@ -27,13 +27,13 @@ namespace HatoSound
         /// </summary>
         /// <param name="hsound"></param>
         /// <param name="bufcount"></param>
-        public SecondaryBuffer(HatoSoundDevice hsound, int bufSamplesCount, int channelsCount = 2, int samplingRate = 44100)
+        public SecondaryBuffer(HatoSoundDevice hsound, int bufSampleCount, int channelCount = 2, int samplingRate = 44100)
         {
             SamplingRate = samplingRate;
-            BufSamplesCount = bufSamplesCount;
-            ChannelsCount = channelsCount;
+            BufSampleCount = bufSampleCount;
+            ChannelCount = channelCount;
 
-            float[][] fbuf = (new[] { 0, 0 }).Select((x) => new float[bufSamplesCount]).ToArray();
+            float[][] fbuf = (new[] { 0, 0 }).Select((x) => new float[bufSampleCount]).ToArray();
 
             CreateBuffer(hsound);
         }
@@ -43,10 +43,10 @@ namespace HatoSound
         /// </summary>
         /// <param name="hsound"></param>
         /// <param name="filename"></param>
-        public SecondaryBuffer(HatoSoundDevice hsound, float[][] fbuf, int bufSamplesCount, int channelsCount = 2, int samplingRate = 44100)
+        public SecondaryBuffer(HatoSoundDevice hsound, float[][] fbuf, int bufSampleCount, int channelCount = 2, int samplingRate = 44100)
         {
-            this.BufSamplesCount = bufSamplesCount;
-            this.ChannelsCount = channelsCount;
+            this.BufSampleCount = bufSampleCount;
+            this.ChannelCount = channelCount;
             this.SamplingRate = samplingRate;
 
             CreateBuffer(hsound);
@@ -59,8 +59,8 @@ namespace HatoSound
         public SecondaryBuffer(HatoSoundDevice hsound)
         {
             float[][] fbuf = new float[][] { new float[] { 0 } };
-            BufSamplesCount = 1;
-            ChannelsCount = 1;
+            BufSampleCount = 1;
+            ChannelCount = 1;
             SamplingRate = 44100;
 
             CreateBuffer(hsound);
@@ -69,7 +69,7 @@ namespace HatoSound
 
         /// <summary>
         /// コンストラクタから一度だけ呼ばれ、DirectSoundデバイスを作成します。
-        /// BufSamplesCountなどのフィールドを参照するため、それらを設定してから呼ぶ必要があります。
+        /// BufSampleCountなどのフィールドを参照するため、それらを設定してから呼ぶ必要があります。
         /// </summary>
         /// <param name="hsound"></param>
         /// <param name="filename"></param>
@@ -77,7 +77,7 @@ namespace HatoSound
         {
             lock (LockObject)  // これでどう？？？？
             {
-                var waveFormat = new SharpDX.Multimedia.WaveFormat(SamplingRate, 16, ChannelsCount);
+                var waveFormat = new SharpDX.Multimedia.WaveFormat(SamplingRate, 16, ChannelCount);
 
                 dsSecondaryBuffer = new SecondarySoundBuffer(hsound.dsound, new SoundBufferDescription()
                 {
@@ -87,7 +87,7 @@ namespace HatoSound
                         BufferFlags.GlobalFocus |
                         BufferFlags.ControlVolume |
                         BufferFlags.StickyFocus,
-                    BufferBytes = (BufSamplesCount * 16 / 8) * ChannelsCount,
+                    BufferBytes = (BufSampleCount * 16 / 8) * ChannelCount,
                     Format = waveFormat,
                     AlgorithmFor3D = Guid.Empty
                 });
@@ -123,18 +123,18 @@ namespace HatoSound
             // Lock the buffer
             DataStream dataPart2;
             var dataPart1 = dsSecondaryBuffer.Lock(
-                (dstPositionInSample % BufSamplesCount) * ChannelsCount * (16 / 8),
-                count * ChannelsCount * (16 / 8),
+                (dstPositionInSample % BufSampleCount) * ChannelCount * (16 / 8),
+                count * ChannelCount * (16 / 8),
                 LockFlags.None,
                 out dataPart2);
 
             // Fill the buffer with some sound
-            //int numberOfSamples = (int)BufSamplesCount * ChannelsCount;
+            //int numberOfSamples = (int)BufSampleCount * ChannelCount;
             for (int i = 0; i < count; i++)
             {
-                for (int j = 0; j < ChannelsCount; j++)
+                for (int j = 0; j < ChannelCount; j++)
                 {
-                    if ((dstPositionInSample + i) < BufSamplesCount)
+                    if ((dstPositionInSample + i) < BufSampleCount)
                     {
                         dataPart1.Write((short)sdata[j][i]);
                     }
@@ -177,20 +177,20 @@ namespace HatoSound
         /// <param name="eventhandler">float[] の0番目から int 個のデータを入れて下さい。</param>
         public void PlayLoop(Action<float[][],int> eventhandler)
         {
-            float[][] fbuf = (new float[ChannelsCount][]).Select(x => new float[BufSamplesCount]).ToArray();
+            float[][] fbuf = (new float[ChannelCount][]).Select(x => new float[BufSampleCount]).ToArray();
 
             int playCursor;
             int writeCursor;
             writtenPosition = 0;
 
             {
-                int range = BufSamplesCount;
+                int range = BufSampleCount;
 
                 eventhandler(fbuf, range);
 
                 WriteSamples(fbuf, writtenPosition, range);
 
-                writtenPosition = (writtenPosition + range) % BufSamplesCount;
+                writtenPosition = (writtenPosition + range) % BufSampleCount;
             }
 
             dsSecondaryBuffer.Play(0, PlayFlags.Looping);
@@ -200,16 +200,16 @@ namespace HatoSound
                 while (true)
                 {
                     dsSecondaryBuffer.GetCurrentPosition(out playCursor, out writeCursor);
-                    playCursor /= (ChannelsCount * 16 / 8);
-                    //playCursor = (playCursor - 1000 + BufSamplesCount) % BufSamplesCount;//適当
-                    writeCursor /= (ChannelsCount * 16 / 8);
+                    playCursor /= (ChannelCount * 16 / 8);
+                    //playCursor = (playCursor - 1000 + BufSampleCount) % BufSampleCount;//適当
+                    writeCursor /= (ChannelCount * 16 / 8);
 
-                    //Console.WriteLine("writtenPosition=" + writtenPosition + ", playCursor=" + playCursor + ", writeCursor=" + writeCursor + "; BufSamplesCount=" + BufSamplesCount);
+                    //Console.WriteLine("writtenPosition=" + writtenPosition + ", playCursor=" + playCursor + ", writeCursor=" + writeCursor + "; BufSampleCount=" + BufSampleCount);
 
-                    int range = (playCursor - writtenPosition + BufSamplesCount) % BufSamplesCount;  // ←OK
-                    //int range = (writtenPosition - writeCursor + BufSamplesCount) % BufSamplesCount - 512;
+                    int range = (playCursor - writtenPosition + BufSampleCount) % BufSampleCount;  // ←OK
+                    //int range = (writtenPosition - writeCursor + BufSampleCount) % BufSampleCount - 512;
 
-                    //Console.WriteLine(range + " in " + BufSamplesCount);
+                    //Console.WriteLine(range + " in " + BufSampleCount);
 
                     //if (range < 0) range = 0;
                     range = Math.Min(range, 256);
@@ -220,7 +220,7 @@ namespace HatoSound
 
                         WriteSamples(fbuf, writtenPosition, range, true);
 
-                        writtenPosition = (writtenPosition + range) % BufSamplesCount;
+                        writtenPosition = (writtenPosition + range) % BufSampleCount;
                     }
                     else
                     {

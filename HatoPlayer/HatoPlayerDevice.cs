@@ -374,17 +374,17 @@ namespace HatoPlayer
                             {
                                 j = (int)snd.playingPosition;
 
-                                if (snd.ChannelsCount == 1)
+                                if (snd.ChannelCount == 1)
                                 {
-                                    for (int i = 0; i < count && j < snd.BufSamplesCount; i++, j++)
+                                    for (int i = 0; i < count && j < snd.BufSampleCount; i++, j++)
                                     {
                                         buf[0][i] += snd.fbuf[0][j] * snd.amp;
                                         buf[1][i] += snd.fbuf[0][j] * snd.amp;
                                     }
                                 }
-                                else if (snd.ChannelsCount == 2)
+                                else if (snd.ChannelCount == 2)
                                 {
-                                    for (int i = 0; i < count && j < snd.BufSamplesCount; i++, j++)
+                                    for (int i = 0; i < count && j < snd.BufSampleCount; i++, j++)
                                     {
                                         buf[0][i] += snd.fbuf[0][j] * snd.amp;
                                         buf[1][i] += snd.fbuf[1][j] * snd.amp;
@@ -401,9 +401,9 @@ namespace HatoPlayer
                             {
                                 double jd = snd.playingPosition;
 
-                                if (snd.ChannelsCount == 1)
+                                if (snd.ChannelCount == 1)
                                 {
-                                    for (int i = 0; i < count && jd < snd.BufSamplesCount - 1; i++)
+                                    for (int i = 0; i < count && jd < snd.BufSampleCount - 1; i++)
                                     {
                                         int j0 = (int)jd;
                                         float t = (float)(jd - j0);
@@ -414,9 +414,9 @@ namespace HatoPlayer
                                         jd += snd.SamplingRate / 44100.0;
                                     }
                                 }
-                                else if (snd.ChannelsCount == 2)
+                                else if (snd.ChannelCount == 2)
                                 {
-                                    for (int i = 0; i < count && jd < snd.BufSamplesCount - 1; i++)
+                                    for (int i = 0; i < count && jd < snd.BufSampleCount - 1; i++)
                                     {
                                         int j0 = (int)jd;
                                         float t = (float)(jd - j0);
@@ -437,7 +437,7 @@ namespace HatoPlayer
                                 snd.playingPosition += count * snd.SamplingRate / 44100.0;
                             }
 
-                            if (j >= snd.BufSamplesCount)
+                            if (j >= snd.BufSampleCount)
                             {
                                 lock (PlayingSoundList)
                                 {

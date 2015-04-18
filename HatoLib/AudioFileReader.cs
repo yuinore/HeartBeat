@@ -46,44 +46,44 @@ namespace HatoLib
             }
         }
 
-        public static void ReadAttribute(string filename, out int SamplingRate, out int ChannelsCount, out int BufSamplesCount)
+        public static void ReadAttribute(string filename, out int SamplingRate, out int ChannelCount, out int BufSampleCount)
         {
             if (Path.GetExtension(filename).ToLower() == ".wav")
             {
-                if (File.Exists(filename)) { ReadAttributeWav(filename, out  SamplingRate, out  ChannelsCount, out  BufSamplesCount); return; }
-                else if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { ReadAttributeVorbis(Path.ChangeExtension(filename, ".ogg"), out  SamplingRate, out  ChannelsCount, out BufSamplesCount); return; }
+                if (File.Exists(filename)) { ReadAttributeWav(filename, out  SamplingRate, out  ChannelCount, out  BufSampleCount); return; }
+                else if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { ReadAttributeVorbis(Path.ChangeExtension(filename, ".ogg"), out  SamplingRate, out  ChannelCount, out BufSampleCount); return; }
             }
             else if (Path.GetExtension(filename).ToLower() == ".ogg")
             {
-                if (File.Exists(filename)) { ReadAttributeVorbis(filename, out  SamplingRate, out  ChannelsCount, out BufSamplesCount); return; }
-                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { ReadAttributeWav(Path.ChangeExtension(filename, ".wav"), out  SamplingRate, out  ChannelsCount, out  BufSamplesCount); return; }
+                if (File.Exists(filename)) { ReadAttributeVorbis(filename, out  SamplingRate, out  ChannelCount, out BufSampleCount); return; }
+                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { ReadAttributeWav(Path.ChangeExtension(filename, ".wav"), out  SamplingRate, out  ChannelCount, out  BufSampleCount); return; }
             }
             else
             {
-                if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { ReadAttributeVorbis(Path.ChangeExtension(filename, ".ogg"), out  SamplingRate, out  ChannelsCount, out BufSamplesCount); return; }
-                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { ReadAttributeWav(Path.ChangeExtension(filename, ".wav"), out  SamplingRate, out  ChannelsCount, out  BufSamplesCount); return; }
+                if (File.Exists(Path.ChangeExtension(filename, ".ogg"))) { ReadAttributeVorbis(Path.ChangeExtension(filename, ".ogg"), out  SamplingRate, out  ChannelCount, out BufSampleCount); return; }
+                else if (File.Exists(Path.ChangeExtension(filename, ".wav"))) { ReadAttributeWav(Path.ChangeExtension(filename, ".wav"), out  SamplingRate, out  ChannelCount, out  BufSampleCount); return; }
             }
 
             throw new FileNotFoundException("ファイル " + filename + " が見つかりませんでした");
         }
 
-        private static void ReadAttributeWav(string filename, out int SamplingRate, out int ChannelsCount, out int BufSamplesCount)
+        private static void ReadAttributeWav(string filename, out int SamplingRate, out int ChannelCount, out int BufSampleCount)
         {
             using (var wreader = new WaveFileReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
             {
                 SamplingRate = wreader.SamplingRate;
-                BufSamplesCount = (int)wreader.SamplesCount;
-                ChannelsCount = wreader.ChannelsCount;
+                BufSampleCount = (int)wreader.SampleCount;
+                ChannelCount = wreader.ChannelCount;
             }
         }
 
-        private static void ReadAttributeVorbis(string filename, out int SamplingRate, out int ChannelsCount, out int BufSamplesCount)
+        private static void ReadAttributeVorbis(string filename, out int SamplingRate, out int ChannelCount, out int BufSampleCount)
         {
             using (var wreader = new NVorbis.VorbisReader(new FileStream(filename, FileMode.Open, FileAccess.Read), true))
             {
                 SamplingRate = wreader.SampleRate;
-                BufSamplesCount = (int)wreader.TotalSamples;
-                ChannelsCount = wreader.Channels;
+                BufSampleCount = (int)wreader.TotalSamples;
+                ChannelCount = wreader.Channels;
             }
         }
 

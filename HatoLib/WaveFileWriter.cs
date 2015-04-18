@@ -16,7 +16,7 @@ namespace HatoLib
         private bool disposed = false;
 
         private int bitDepth = 16;
-        private int channelsCount = 2;
+        private int channelCount = 2;
         
         int wrotesamples = 0;
 
@@ -112,17 +112,17 @@ namespace HatoLib
             w.Write(HeaderData);
         }
 
-        public WaveFileWriter(String filename, int channelsCount, int samplingRate, int bitDepth) :
+        public WaveFileWriter(String filename, int channelCount, int samplingRate, int bitDepth) :
             this(
                 new FileStream(filename, FileMode.Create, FileAccess.Write),
-                channelsCount, samplingRate, bitDepth)
+                channelCount, samplingRate, bitDepth)
         {
         }
 
-        public WaveFileWriter(Stream strm, int channelsCount, int samplingRate, int bitDepth)
+        public WaveFileWriter(Stream strm, int channelCount, int samplingRate, int bitDepth)
         {
             this.bitDepth = bitDepth;
-            this.channelsCount = channelsCount;
+            this.channelCount = channelCount;
 
             if (bitDepth != 8 && bitDepth != 16 && bitDepth != 24 && bitDepth != 32) throw new Exception(bitDepth + "bit wavの書き出しは対応しておりません");
 
@@ -132,10 +132,10 @@ namespace HatoLib
             w.Write((Int16)(bitDepth <= 24 ? 0x0001 : 0x0003));  // format id                    
             // 0x0001 ... PCM
             // 0x0003 ... WAVE_FORMAT_IEEE_FLOAT
-            w.Write((Int16)channelsCount);
+            w.Write((Int16)channelCount);
             w.Write((Int32)samplingRate);
-            w.Write((Int32)(samplingRate * (bitDepth >> 3) * channelsCount));  // data speed (bytes/sec)
-            w.Write((Int16)((bitDepth >> 3) * channelsCount));  // block size
+            w.Write((Int32)(samplingRate * (bitDepth >> 3) * channelCount));  // data speed (bytes/sec)
+            w.Write((Int16)((bitDepth >> 3) * channelCount));  // block size
             w.Write((Int16)bitDepth);
             if (bitDepth > 24)
             {
@@ -248,15 +248,15 @@ namespace HatoLib
         }
 
         public static void WriteAllSamples(String filename, float[][] buf,
-            int channelsCount, int samplingRate, int bitDepth)
+            int channelCount, int samplingRate, int bitDepth)
         {
             WriteAllSamples(new FileStream(filename, FileMode.Create, FileAccess.Write), buf,
-                channelsCount, samplingRate, bitDepth);
+                channelCount, samplingRate, bitDepth);
         }
         public static void WriteAllSamples(Stream strm, float[][] buf,
-            int channelsCount, int samplingRate, int bitDepth)
+            int channelCount, int samplingRate, int bitDepth)
         {
-            WaveFileWriter ww = new WaveFileWriter(strm, channelsCount, samplingRate, bitDepth);
+            WaveFileWriter ww = new WaveFileWriter(strm, channelCount, samplingRate, bitDepth);
 
             for (int i = 0; i < buf[0].Length; i++)
             {

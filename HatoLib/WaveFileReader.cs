@@ -23,10 +23,10 @@ namespace HatoLib
         public int BitDepth { get; private set; }
 
         /// <summary>チャンネル数です</summary>
-        public int ChannelsCount { get; private set; }
+        public int ChannelCount { get; private set; }
 
-        /// <summary>1チャンネルあたりのサンプル数です。SamplesCount / (double)SamplingRate が再生時間(秒)です。</summary>
-        public long SamplesCount { get; private set; }
+        /// <summary>1チャンネルあたりのサンプル数です。SampleCount / (double)SamplingRate が再生時間(秒)です。</summary>
+        public long SampleCount { get; private set; }
 
         private long headerPosition;
         private Stream strm;
@@ -132,7 +132,7 @@ namespace HatoLib
                     // 0x0001 ... PCM
                     // 0xFFFE ... WAVE_FORMAT_EXTENSIBLE  // 間違えた (24bit)
                     // 0x0003 ... WAVE_FORMAT_IEEE_FLOAT
-                    ChannelsCount = r.ReadInt16();
+                    ChannelCount = r.ReadInt16();
                     SamplingRate = r.ReadInt32();
                     r.ReadInt32();  // データ速度
                     r.ReadInt16();  // ブロックサイズ
@@ -157,7 +157,7 @@ namespace HatoLib
             // data
             int databytes = r.ReadInt32();// Convert.ToInt32(r.ReadBytes(4));  // dataチャンクのバイト数
             sample_remain = databytes / (BitDepth >> 3);
-            SamplesCount = sample_remain / ChannelsCount;
+            SampleCount = sample_remain / ChannelCount;
             // そもそもWaveファイルのdataチャンクのバイト数を表す部分が
 
             headerPosition = strm.Seek(0, SeekOrigin.Current);
@@ -223,17 +223,17 @@ namespace HatoLib
         public static float[][] ReadAllSamples(Stream strm)
         {
             WaveFileReader wr = new WaveFileReader(strm);
-            float[][] ret = new float[wr.ChannelsCount][];
+            float[][] ret = new float[wr.ChannelCount][];
             float indt;
             int n = 0;
 
-            for (int ch = 0; ch < wr.ChannelsCount; ch++)
+            for (int ch = 0; ch < wr.ChannelCount; ch++)
             {
-                ret[ch] = new float[wr.sample_remain / wr.ChannelsCount];
+                ret[ch] = new float[wr.sample_remain / wr.ChannelCount];
             }
             while (wr.ReadSample(out indt))
             {
-                for (int ch = 0; ch < wr.ChannelsCount; ch++)
+                for (int ch = 0; ch < wr.ChannelCount; ch++)
                 {
                     if (ch != 0) wr.ReadSample(out indt);  // TODO: パフォーマンスの改善
                     ret[ch][n] = indt;
@@ -252,7 +252,7 @@ namespace HatoLib
         /// <param name="readPosition"></param>
         public void Seek(int readPosition)
         {
-            strm.Seek(headerPosition + readPosition * (BitDepth / 8) * ChannelsCount, SeekOrigin.Begin);
+            strm.Seek(headerPosition + readPosition * (BitDepth / 8) * ChannelCount, SeekOrigin.Begin);
         }
     }
 }

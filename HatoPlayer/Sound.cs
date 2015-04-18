@@ -17,8 +17,8 @@ namespace HatoPlayer
         SecondaryBuffer sbuf;
 
         public int SamplingRate;
-        public int BufSamplesCount;
-        public int ChannelsCount;
+        public int BufSampleCount;
+        public int ChannelCount;
 
         internal float amp = 1.0f;
 
@@ -37,11 +37,11 @@ namespace HatoPlayer
 
             // ↓ここで同時にNVorbisからの2ファイルの読み込みが発生しているのかもしれない
             fbuf = AudioFileReader.ReadAllSamples(filename);  // ここで一度8/16bitから32bitに変換されてしまうんですよね・・・無駄・・・
-            AudioFileReader.ReadAttribute(filename, out SamplingRate, out ChannelsCount, out BufSamplesCount);
+            AudioFileReader.ReadAttribute(filename, out SamplingRate, out ChannelCount, out BufSampleCount);
 
             if (hplayer.PlaybackDevice == HatoPlayerDevice.PlaybackDeviceType.DirectSound)
             {
-                sbuf = new SecondaryBuffer(hplayer.hsound, fbuf, BufSamplesCount, ChannelsCount, SamplingRate);
+                sbuf = new SecondaryBuffer(hplayer.hsound, fbuf, BufSampleCount, ChannelCount, SamplingRate);
 
                 fbuf = null;  // ガベージコレクタに回収させる（超重要）
             }
