@@ -33,7 +33,7 @@ namespace HatoDSPSample
                 var rainbow = new CellTree(() => new Rainbow());
                 var osc1 = new CellTree(() => new AnalogOscillator());
 
-                rainbow.AssignChildren(new[] { osc1 });
+                rainbow.AddChildren(new[] { osc1 });
 
                 // Pitch, Amp, Type, OP1
                 osc1.AssignControllers(new float[] { 0, 0.03f, (float)Waveform.Saw, 0 });
@@ -59,10 +59,10 @@ namespace HatoDSPSample
                 var aenv = new CellTree(() => new ADSR());
 
                 // 順序は問わない
-                aenv.AssignChildren(new[] { filt2 });
-                filt2.AssignChildren(new[] { rainbow, fenv });
-                rainbow.AssignChildren(new[] { osc2 });
-                osc2.AssignChildren(new[] { osc1 });
+                aenv.AddChildren(new[] { filt2 });
+                filt2.AddChildren(new[] { rainbow, fenv });
+                rainbow.AddChildren(new[] { osc2 });
+                osc2.AddChildren(new[] { osc1 });
 
                 osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Saw, 0 });
                 osc2.AssignControllers(new float[] { -12, 0.05f, (float)Waveform.Saw, 0 });
@@ -99,7 +99,7 @@ namespace HatoDSPSample
                 {
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     var filt = new CellTree(() => new ButterworthFilterCell());
-                    filt.AssignChildren(new[] { osc1 });
+                    filt.AddChildren(new[] { osc1 });
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Saw, 0 });
                     var sig5 = filt.Generate().Take(2000000, lenv);
                     WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_saw_lp.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);

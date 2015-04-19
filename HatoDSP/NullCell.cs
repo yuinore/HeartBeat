@@ -13,7 +13,7 @@ namespace HatoDSP
             get { return new CellParameter[] { }; }
         }
 
-        public override void AssignChildren(CellTree[] children)
+        public override void AssignChildren(CellWire[] children)
         {
             return;
         }

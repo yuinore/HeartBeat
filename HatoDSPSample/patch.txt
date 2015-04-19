@@ -1,14 +1,14 @@
 ﻿[{
   "name":"$synth",
-  "children":["amp envelope"]
+  "children":["amp envelope:0"]
 },{
   "name":"rainbow",
   "module":"rainbow",
-  "children":["osc 2"]
+  "children":["osc 2:0"]
 },{
   "name":"filter 1",
   "module":"analog filter",
-  "children":["rainbow", "filter envelope"]
+  "children":["rainbow:0", "filter envelope:1"]
 },{
   "name":"osc 1",
   "module":"analog osc",
@@ -16,7 +16,7 @@
 },{
   "name":"osc 2",
   "module":"analog osc",
-  "children":["osc 1"],
+  "children":["osc 1:0"],
   "ctrl":[-12,0.05,0]      // pitch, amp, waveform
 },{
   "name":"filter envelope",
@@ -25,6 +25,6 @@
 },{
   "name":"amp envelope",
   "module":"ADSR",
-  "children":["filter 1"],
+  "children":["filter 1:0"],
   "ctrl":[0.01,2,0.5,0.1]    // ADSR
 }]

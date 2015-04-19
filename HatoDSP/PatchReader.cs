@@ -31,7 +31,7 @@ namespace HatoDSP
                 //json = Regex.Replace(json, @"/\*.*\*/", "");  // これだと /* /* */ もアレしてしまう気がする
                 //json = Regex.Replace(json, @"/\*.*?\*/", "");  // これだと /* // */ もアレしてしまう
                 json = Regex.Replace(json, @"(/\*.*?\*/|//.*?$)", "", RegexOptions.Multiline | RegexOptions.Singleline);
-                // ↑これだと文字列定数中のコメントも削除されそう・・・
+                // FIXME: ↑これだと文字列定数中のコメントも削除されそう・・・
                 // これだと単独の/*はコメント化されないですが構いませんよね？
 
                 dynamic dj = DynamicJson.Parse(json);
@@ -47,7 +47,9 @@ namespace HatoDSP
                         dynamic[] cldrn = (dynamic[])x.children;
                         if (cldrn.Length != 1) new NotImplementedException("あー");
 
-                        root = (string)cldrn[0];
+                        string cld = (string)cldrn[0];
+                        if (cld.Substring(cld.LastIndexOf(":") + 1) != "0") throw new Exception("あー");
+                        root = cld.Substring(0, cld.LastIndexOf(":"));
                     }
                     else
                     {
@@ -67,7 +69,15 @@ namespace HatoDSP
 
                 foreach (var x in children)
                 {
-                    cells[x.Key].AssignChildren(x.Value.Select(y => cells[y]).ToArray());
+                    cells[x.Key].AddChildren(x.Value.Select(y => {
+                        // "name:port" の形で指定する。portの省略は多分できない。
+                        int idx = y.LastIndexOf(":");
+                        if (idx == -1) throw new Exception("child は name:port の形で指定して下さい。portの省略はできません。");
+
+                        string name = y.Substring(0, idx);
+                        int port = Int32.Parse(y.Substring(idx + 1));
+                        return new CellWire(cells[name], port);
+                    }).ToArray());
                 }
 
                 foreach (var x in ctrl)

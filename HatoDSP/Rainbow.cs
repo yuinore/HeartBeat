@@ -31,17 +31,17 @@ namespace HatoDSP
             }
         }
 
-        public override void AssignChildren(CellTree[] children)
+        public override void AssignChildren(CellWire[] children)
         {
             if (children.Length >= 1)
             {
-                this.children = children[0];
+                this.children = children[0].Source;  // FIXME: 複数指定
 
                 list = new List<Cell>();  // 既存の割り当ては破棄
 
                 for (int i = 0; i < rainbowN; i++)
                 {
-                    list.Add(children[0].Generate());
+                    list.Add(children[0].Source.Generate());
                 }
             }
         }

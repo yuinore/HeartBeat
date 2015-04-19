@@ -18,15 +18,20 @@ namespace HatoDSP
         {
         }
 
-        public override void AssignChildren(CellTree[] children)
+        public override void AssignChildren(CellWire[] children)
         {
-            if (children.Length >= 1)
+            // FIXME: 複数指定
+
+            foreach (var wire in children)
             {
-                waveCell = children[0].Generate();
-            }
-            if (children.Length >= 2)
-            {
-                cutoffCell = children[1].Generate();
+                if (wire.Port == 0)
+                {
+                    waveCell = wire.Source.Generate();
+                }
+                else if (wire.Port == 1)
+                {
+                    cutoffCell = wire.Source.Generate();
+                }
             }
         }
 

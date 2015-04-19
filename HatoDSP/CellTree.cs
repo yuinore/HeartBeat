@@ -8,11 +8,14 @@ namespace HatoDSP
 {
     public class CellTree  // HatoSynthでのモジュールの単位
     {
+        // Cell と同様に、 Generate を呼んだ後に、 AssignChildren や AssignControllers を呼んではならない
+        // GUI による CellParameterValue の変更があった場合は[お察し下さい]。
+
         Func<Cell> generator;
         public string Name;  // must be unique
-        public int Port;  // connection type, 0, 1, ...
-        CellTree[] children;
+        List<CellWire> children = new List<CellWire>();
         CellParameterValue[] ctrl;
+        bool constructed = false;
         
         public CellTree(Func<Cell> generator)
         {
@@ -42,23 +45,41 @@ namespace HatoDSP
             }
         }
 
-        public void AssignChildren(CellTree[] children)
+        public void AddChildren(CellWire[] children)
         {
-            this.children = children;  // カプセル化は？？
+            if (constructed) throw new Exception("CellTreeの呼び出しに誤りがある可能性があります。");
+
+            this.children.AddRange(children);
+        }
+
+        public void AddChildren(CellTree[] children)  // 互換性のために
+        {
+            if (constructed) throw new Exception("CellTreeの呼び出しに誤りがある可能性があります。");
+
+            this.children.AddRange(
+                Enumerable.Range(0, children.Length)
+                .Select(i => new CellWire(children[i], i))
+                .ToArray());
         }
 
         public void AssignControllers(CellParameterValue[] ctrl)
         {
+            if (constructed) throw new Exception("CellTreeの呼び出しに誤りがある可能性があります。");
+
             this.ctrl = ctrl;  // カプセル化は？？
         }
 
         public void AssignControllers(float[] ctrl)  // 便宜的に
         {
+            if (constructed) throw new Exception("CellTreeの呼び出しに誤りがある可能性があります。");
+
             this.ctrl = ctrl.Select(x => new CellParameterValue(x)).ToArray();
         }
 
         public Cell Generate()
         {
+            constructed = true;
+
             if (generator == null)
             {
                 return null;
@@ -67,7 +88,7 @@ namespace HatoDSP
             Cell cell = generator();
             if (children != null)
             {
-                cell.AssignChildren(children);
+                cell.AssignChildren(children.ToArray());
             }
             if (ctrl != null)
             {

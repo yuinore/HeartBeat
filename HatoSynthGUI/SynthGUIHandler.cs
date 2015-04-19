@@ -445,7 +445,7 @@ namespace HatoSynthGUI
         {
             if (e.KeyCode == Keys.P && e.Control)
             {
-                dynamic[,] cells = new dynamic[TableSize.Height, TableSize.Width];
+                AAAA[,] cells = new AAAA[TableSize.Height, TableSize.Width];
                 for (int y = 0; y < TableSize.Height; y++)
                 {
                     for (int x = 0; x < TableSize.Width; x++)
@@ -453,25 +453,13 @@ namespace HatoSynthGUI
                         if (table[y, x] != null)
                         {
                             var preset = table[y, x].preset;
-                            /*cells[y, x] = new CellTree(preset.DefaultName, preset.ModuleName);
-                            if (preset.Ctrl != null)
-                            {
-                                cells[y, x].AssignControllers(preset.Ctrl);
-                            }*/
-                            // ******** TODO
-                            /*dynamic cell = new DynamicJson();  // 入れ子のDynamicJsonは正しくシリアライズされない
-                            cell.name = preset.DefaultName;
-                            cell.module = preset.ModuleName;*/
+
 
                             // DynamicJsonを編集しようかと思ったけど難しすぎる・・・
-                            /*dynamic cell = new AAAA();  // 匿名でないクラスも正しくシリアライズされない
-                            cell.name = preset.DefaultName;
-                            cell.module = preset.ModuleName;
-                            cell.ctrl = new float[0] { };  // 後から追加できない・・・
-                            cell.children = new string[0] { };
-                            */
+                            // DynamicJsonを入れ子にできれば捗るのだけれど、
+                            // そもそも遅延評価になっていないという罠。
 
-                            dynamic cell = new AAAA
+                            AAAA cell = new AAAA
                             {
                                 name = preset.DefaultName,  // FIXME: デフォルト名からユニークな名前に変更
                                 module = preset.ModuleName,
@@ -490,30 +478,38 @@ namespace HatoSynthGUI
                     }
                 }
 
+                // FIXME: ↓ Don't Repeat Yourself!!!!!!!!!!!!!
+
                 // 横向きの矢印について
                 for (int y = 0; y < TableSize.Height; y++)
                 {
                     for (int x = 0; x < TableSize.Width - 1; x++)
                     {
                         // [y,x] と [y,x+1] の間を結ぶ
-                        dynamic src = null, dst = null;
+                        AAAA src = null, dst = null;
+                        int port = 0;
+
                         switch (arrowX[y, x])
                         {
                             case ArrowDirection.Right:
                                 src = cells[y, x];
                                 dst = cells[y, x + 1];
+                                port = 0;
                                 break;
                             case ArrowDirection.Left:
                                 src = cells[y, x + 1];
                                 dst = cells[y, x];
+                                port = 0;
                                 break;
-                            case ArrowDirection.RightAlt:  // TODO: Alt指定
+                            case ArrowDirection.RightAlt:
                                 src = cells[y, x];
                                 dst = cells[y, x + 1];
+                                port = 1;
                                 break;
                             case ArrowDirection.LeftAlt:
                                 src = cells[y, x + 1];
                                 dst = cells[y, x];
+                                port = 1;
                                 break;
                         }
 
@@ -522,7 +518,9 @@ namespace HatoSynthGUI
                             //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
                             // ******** TODO
                             /////////////////////////////////////////////////////
-                            dst.children = new string[] { src.name };
+                            IEnumerable<string> arr = dst.children;
+                            arr = arr.Concat(new string[] { src.name + ":" + port });
+                            dst.children = arr.ToArray();
                         }
                     }
                 }
@@ -533,38 +531,46 @@ namespace HatoSynthGUI
                     for (int x = 0; x < TableSize.Width; x++)
                     {
                         // [y,x] と [y+1,x] の間を結ぶ
-                        dynamic src = null, dst = null;
+                        AAAA src = null, dst = null;
+                        int port = 0;
+
                         switch (arrowY[y, x])
                         {
                             case ArrowDirection.Down:
                                 src = cells[y, x];
                                 dst = cells[y + 1, x];
+                                port = 0;
                                 break;
                             case ArrowDirection.Up:
                                 src = cells[y + 1, x];
                                 dst = cells[y, x];
+                                port = 0;
                                 break;
-                            case ArrowDirection.DownAlt:  // TODO: Alt指定
+                            case ArrowDirection.DownAlt:
                                 src = cells[y, x];
                                 dst = cells[y + 1, x];
+                                port = 1;
                                 break;
                             case ArrowDirection.UpAlt:
                                 src = cells[y + 1, x];
                                 dst = cells[y, x];
+                                port = 1;
                                 break;
                         }
 
-                        if (src != null)
+                        if (src != null && dst != null)
                         {
                             //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
                             // ******** TODO
                             /////////////////////////////////////////////////////
-                            dst.children = new string[] { src.name };
+                            IEnumerable<string> arr = dst.children;
+                            arr = arr.Concat(new string[] { src.name + ":" + port });
+                            dst.children = arr.ToArray();
                         }
                     }
                 }
 
-                dynamic start = null;
+                AAAA start = null;
 
                 {
                     int y = TableSize.Height - 1;  // 一番下の行
@@ -578,7 +584,7 @@ namespace HatoSynthGUI
                             {
                                 name = "$synth",
                                 module = "",
-                                children = new string[] { cells[y, x].name },
+                                children = new string[] { cells[y, x].name + ":0" },
                                 ctrl = new float[0] { }
                             };
                         }

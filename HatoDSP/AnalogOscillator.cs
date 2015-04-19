@@ -23,10 +23,10 @@ namespace HatoDSP
         {
         }
 
-        public override void AssignChildren(CellTree[] children)
+        public override void AssignChildren(CellWire[] children)
         {
             if (children.Length >= 1) {
-                this.child0 = children[0];
+                this.child0 = children[0].Source;  // FIXME: 複数指定
                 cell = child0.Generate();
             }
         }

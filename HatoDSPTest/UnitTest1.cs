@@ -96,13 +96,13 @@ namespace HatoDSPTest
                     for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };  // 要素数がTakeで指定した個数と等しいことを確認
 
                     cell = (Cell)Activator.CreateInstance(t);
-                    cell.AssignChildren(new CellTree[] { });
+                    cell.AssignChildren(new CellWire[] { });
                     cell.Take(256, lenv);  // childの個数0個で実行
                     Assert.IsTrue(sig.Length >= 1);
                     for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
 
                     cell = (Cell)Activator.CreateInstance(t);
-                    cell.AssignChildren(new CellTree[] { child1 });
+                    cell.AssignChildren(new CellWire[] { new CellWire(child1, 0) });
                     cell.Take(256, lenv);  // childの個数1個で実行
                     Assert.IsTrue(sig.Length >= 1);
                     for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
