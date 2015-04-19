@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using HatoDSP;
 using HatoLib;
 using System.Linq;
+using System.Reflection;
 
 namespace HatoDSPTest
 {
@@ -61,6 +62,43 @@ namespace HatoDSPTest
             filt = iir2.Take(5, new[] { sig1, sig2 });
             Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { 0, 1, 3, 7, 13 })));
             Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { 5, 11, 23, 37, 53 })));
+
+            LocalEnvironment lenv = new LocalEnvironment() {
+                Freq = new ConstantSignal(0, 256),
+                Gate = new ConstantSignal(1, 256),
+                Pitch = new ConstantSignal(60, 256),
+                SamplingRate = 44100,
+                Locals = new System.Collections.Generic.Dictionary<string,Signal>(),
+            };
+
+            Assembly asm = Assembly.LoadFrom("HatoDSP.dll");
+
+            Type[] types = asm.GetTypes();
+
+            foreach (Type t in types)
+            {
+                if (t.IsSubclassOf(asm.GetType("HatoDSP.Cell", true)))
+                {
+                    //Console.WriteLine(t.Name);
+                    // t は HatoDSP.Cell を継承し、 Cell それ自身ではないクラス。
+
+                    Cell cell = null;
+                    CellTree child1 = new CellTree(() => new AnalogOscillator());
+
+                    /*
+                    cell = (Cell)Activator.CreateInstance(t);
+                    cell.Take(256, lenv);
+
+                    cell = (Cell)Activator.CreateInstance(t);
+                    cell.AssignChildren(new CellTree[] { });
+                    cell.Take(256, lenv);
+                     */
+
+                    cell = (Cell)Activator.CreateInstance(t);
+                    cell.AssignChildren(new CellTree[] { child1 });
+                    cell.Take(256, lenv);
+                }
+            }
         }
     }
 }
