@@ -105,7 +105,11 @@ namespace HatoDSP
         {
             if (signals.Length <= 1)
             {
-                if (signals.Length == 0) return new ConstantSignal(0f, 0);
+                if (signals.Length == 0)
+                {
+                    //return new ConstantSignal(0f, 0);
+                    throw new Exception("signalの長さが不明です。");
+                }
                 if (signals.Length == 1) return signals[0];
             }
 
@@ -154,6 +158,11 @@ namespace HatoDSP
                         }
                     }
                 }
+            }
+
+            if (buf == null)
+            {
+                return new ConstantSignal(c, count);  // すべて定数だった
             }
 
             if (c != 0)

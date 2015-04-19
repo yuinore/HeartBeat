@@ -4,6 +4,7 @@ using HatoDSP;
 using HatoLib;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace HatoDSPTest
 {
@@ -77,26 +78,37 @@ namespace HatoDSPTest
 
             foreach (Type t in types)
             {
-                if (t.IsSubclassOf(asm.GetType("HatoDSP.Cell", true)))
+                if (t.IsSubclassOf(typeof(Cell)))
                 {
+                    // Debug.Assert ではなく Assert.IsTrue を使うこと
+
                     //Console.WriteLine(t.Name);
                     // t は HatoDSP.Cell を継承し、 Cell それ自身ではないクラス。
 
                     Cell cell = null;
                     CellTree child1 = new CellTree(() => new AnalogOscillator());
+                    Signal[] sig = null;
 
-                    /*
-                    cell = (Cell)Activator.CreateInstance(t);
-                    cell.Take(256, lenv);
+                    cell = (Cell)Activator.CreateInstance(t);  // internalでも構わずインスタンス生成するんですね・・・
+                    Assert.IsTrue(cell.ParamsList != null);
+                    sig = cell.Take(256, lenv);  // childの指定なしで実行
+                    Assert.IsTrue(sig.Length >= 1);
+                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };  // 要素数がTakeで指定した個数と等しいことを確認
 
                     cell = (Cell)Activator.CreateInstance(t);
                     cell.AssignChildren(new CellTree[] { });
-                    cell.Take(256, lenv);
-                     */
+                    cell.Take(256, lenv);  // childの個数0個で実行
+                    Assert.IsTrue(sig.Length >= 1);
+                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
 
                     cell = (Cell)Activator.CreateInstance(t);
                     cell.AssignChildren(new CellTree[] { child1 });
+                    cell.Take(256, lenv);  // childの個数1個で実行
+                    Assert.IsTrue(sig.Length >= 1);
+                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
                     cell.Take(256, lenv);
+                    Assert.IsTrue(sig.Length >= 1);
+                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
                 }
             }
         }

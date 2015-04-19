@@ -10,7 +10,7 @@ namespace HatoDSP
     {
         FilterType type = FilterType.LowPass;
 
-        Cell waveCell;
+        Cell waveCell = new NullCell();
         Cell cutoffCell;
         IIRFilter[] filt;
 

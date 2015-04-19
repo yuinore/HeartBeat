@@ -16,6 +16,7 @@ namespace HatoDSP
 
         public abstract Signal[] Take(int count, LocalEnvironment lenv);
 
+        // パラメータがない場合でもnullを返してはならない。代わりに new CellParameter[]{} を返すこと。
         public abstract CellParameter[] ParamsList { get; }
     }
 }

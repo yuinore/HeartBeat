@@ -17,7 +17,11 @@ namespace HatoDSP
         {
             this.children = null;
 
-            list = new List<Cell>();
+            list = new List<Cell>();  // 初期化
+            for (int i = 0; i < rainbowN; i++)
+            {
+                list.Add(new NullCell());
+            }
 
             Random r = new Random(57923741);
             rand = new float[rainbowN];
@@ -33,7 +37,7 @@ namespace HatoDSP
             {
                 this.children = children[0];
 
-                list = new List<Cell>();  // 既存の割り当ては削除
+                list = new List<Cell>();  // 既存の割り当ては破棄
 
                 for (int i = 0; i < rainbowN; i++)
                 {

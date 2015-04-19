@@ -12,7 +12,7 @@ namespace HatoDSP
 
         readonly int ParamsRefreshRate = 16;
 
-        Cell waveCell;
+        Cell waveCell = new NullCell();
         Cell cutoffCell;
         IIRFilter[] filt;
 

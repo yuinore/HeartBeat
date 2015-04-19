@@ -39,6 +39,7 @@ namespace HatoSynthGUI
 
         Form form;
         SplitContainer splitContainer1;
+        ContextMenuStrip contextMenuStrip2;
         BlockPresetLibrary library;
         AsioHandler asio;
 
@@ -230,6 +231,8 @@ namespace HatoSynthGUI
             p.MouseMove += pictureBox1_MouseMove;
             p.MouseUp += pictureBox1_MouseUp;
 
+            p.ContextMenuStrip = contextMenuStrip2;
+
             cb.pBox = p;
             cb.x = x;
             cb.y = y;
@@ -314,6 +317,17 @@ namespace HatoSynthGUI
 
         private void Load()
         {
+            {
+                contextMenuStrip2 = new ContextMenuStrip();
+
+                ToolStripMenuItem item1 = new ToolStripMenuItem() { Text = "削除(&D)" };
+                item1.Click += DeleteToolStripMenuItem_Click;
+
+                contextMenuStrip2.Items.AddRange(new ToolStripItem[] {
+                    item1
+                });
+            }
+
             {
                 SplitContainer spc = new SplitContainer();
                 spc.Name = "splitContainer1";
@@ -589,6 +603,10 @@ namespace HatoSynthGUI
                     string str = json.ToString();
                     //string str = DynamicJson.Serialize(json);
 
+                    // jsonを整形
+                    dynamic parsedJson = Newtonsoft.Json.JsonConvert.DeserializeObject(str);
+                    str = Newtonsoft.Json.JsonConvert.SerializeObject(parsedJson, Newtonsoft.Json.Formatting.Indented);
+                    
                     RunAsio(str);
                 }
             }
@@ -660,6 +678,18 @@ namespace HatoSynthGUI
                     midiInDev.ChannelMessageReceived += midiInDev_ChannelMessageReceived;  // コールバック関数の指定
                     midiInDev.StartRecording();  // 入力待機の開始
                 }
+            }
+        }
+
+        private void DeleteToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            PictureBox source = (PictureBox)contextMenuStrip2.SourceControl;
+            if (source != null)
+            {
+                CellBlock cb = pictureboxToCellblock(source);
+                table[cb.y, cb.x] = null;
+
+                splitContainer1.Panel1.Controls.Remove(source);
             }
         }
 
