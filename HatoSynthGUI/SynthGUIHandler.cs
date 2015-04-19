@@ -1,6 +1,7 @@
 ﻿using Codeplex.Data;
 using HatoDSP;
 using HatoPlayer;
+using Sanford.Multimedia.Midi;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,7 +16,7 @@ namespace HatoSynthGUI
     /// <summary>
     /// 空の Windows Form に対してコントロールを作成し、イベントハンドラを結び付けます。
     /// </summary>
-    public class SynthGUIHandler
+    public class SynthGUIHandler : IDisposable
     {
         //************************** 設定項目 **************************
 
@@ -39,6 +40,7 @@ namespace HatoSynthGUI
         Form form;
         SplitContainer splitContainer1;
         BlockPresetLibrary library;
+        AsioHandler asio;
 
         /// <summary>
         /// PictureBox と、その位置の組
@@ -551,7 +553,8 @@ namespace HatoSynthGUI
                 dynamic start = null;
 
                 {
-                    int y = TableSize.Height - 1;
+                    int y = TableSize.Height - 1;  // 一番下の行
+
                     for (int x = 0; x < TableSize.Width; x++)
                     {
                         if ((arrowY[y, x] == ArrowDirection.Down || arrowY[y, x] == ArrowDirection.DownAlt) && cells[y, x] != null)
@@ -582,23 +585,51 @@ namespace HatoSynthGUI
                 if (start != null)
                 {
                     json[((dynamic[])json).Length] = start;
+
+                    string str = json.ToString();
+                    //string str = DynamicJson.Serialize(json);
+
+                    RunAsio(str);
                 }
-
-                string str = json.ToString();
-                //string str = DynamicJson.Serialize(json);
-
-                RunAsio(str);
             }
         }
 
+        private InputDevice midiInDev;
+
+        #region Midi入力のイベントハンドラ
+        void midiInDev_ChannelMessageReceived(object sender, ChannelMessageEventArgs ev)
+        {
+            ChannelCommand cmd = ev.Message.Command;
+            int n = ev.Message.Data1;  // ノート番号
+            int vel = ev.Message.Data2;  // ベロシティ（ノートオン時のみ）
+
+            switch (cmd)
+            {
+                case ChannelCommand.NoteOn:
+                    synth.NoteOn(n);
+                    Console.WriteLine("on  " + n);
+                    break;
+                case ChannelCommand.NoteOff:
+                    synth.NoteOff(n);
+                    Console.WriteLine("off " + n);
+                    break;
+            }
+        }
+        #endregion
+
+        HatoSynthDevice synth = null;
+
         void RunAsio(string patch)
         {
-            HatoSynthDevice synth = new HatoSynthDevice(patch);
+            synth = new HatoSynthDevice(patch);
             synth.NoteOn(60);
-            synth.NoteOn(64);
-            synth.NoteOn(67);
-            using (AsioHandler asio = new AsioHandler())
+            //synth.NoteOn(64);
+            //synth.NoteOn(67);
+
+            if (asio == null)
             {
+                asio = new AsioHandler();
+
                 // 再生が停止するまで AsioHandler を解放しないように・・・
                 asio.Run(aBuf =>
                 {
@@ -613,10 +644,67 @@ namespace HatoSynthGUI
                     }
                 });
 
-                System.Threading.Thread.Sleep(10000);
+                // Midi入力デバイスの列挙
+                for (int i = 0; i < InputDevice.DeviceCount; i++)
+                {
+                    var dev = InputDevice.GetDeviceCapabilities(i);
 
-                asio.Stop();
+                    Console.WriteLine("in " + i + " : " + dev.name);
+                }
+
+                // midi入力の初期化
+                if (InputDevice.DeviceCount >= 9)
+                {
+                    // FIXME: inputデバイスの選択
+                    midiInDev = new InputDevice(8);  // Windowsからmidiデバイスを開く
+                    midiInDev.ChannelMessageReceived += midiInDev_ChannelMessageReceived;  // コールバック関数の指定
+                    midiInDev.StartRecording();  // 入力待機の開始
+                }
             }
         }
+
+        #region implementation of IDisposable
+        // Flag: Has Dispose already been called?
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            
+            System.Diagnostics.Debug.Assert(disposing, "激おこ @ " + this.GetType().ToString());
+
+            if (disposing)
+            {
+                // Free any other managed objects here.
+                if (asio != null)
+                {
+                    asio.Dispose();
+                }
+
+                if (midiInDev != null)
+                {
+                    midiInDev.Dispose();
+                }
+            }
+
+            // Free any unmanaged objects here.
+
+            disposed = true;
+        }
+        
+        ~SynthGUIHandler()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

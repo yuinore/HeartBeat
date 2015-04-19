@@ -23,5 +23,10 @@ namespace HatoSynthGUI
         {
             handler = new SynthGUIHandler(this);
         }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            handler.Dispose();
+        }
     }
 }
