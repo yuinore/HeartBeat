@@ -164,6 +164,9 @@ namespace HatoDSPFast {
             }
 
             phase += phasedelta;
+
+            while (phase >= 16 * Math::PI) phase -= 16 * Math::PI;  // SIMD‰»‚µ‚½Û‚Éfloat‚ğint‚É‚·‚é‚Ì‚Å‚»‚Ì‚½‚ß‚É
+
         }
     }
 }

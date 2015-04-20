@@ -149,7 +149,7 @@ namespace HatoDSPSample
             }
 
             WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test3.wav"), new float[][] { Enumerable.Range(0, 1048576).Select(x => (float)Math.Sin(8 * Math.PI * x / 1048576)).ToArray() }, 1, 44100, 32);
-            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test4.wav"), new float[][] { Enumerable.Range(0, 1048576).Select(x => (float)FastMath.Sin(8 * Math.PI * x / 1048576)).ToArray() }, 1, 44100, 32);
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test4.wav"), new float[][] { Enumerable.Range(0, 1048576).Select(x => (float)HatoDSPFast.FastMath.Sin(8 * Math.PI * x / 1048576)).ToArray() }, 1, 44100, 32);
 
             s.Stop();
             label1.Text = "" + s.ElapsedMilliseconds;
@@ -256,6 +256,11 @@ namespace HatoDSPSample
 
         private void button4_Click(object sender, EventArgs e)
         {
+            while (!HatoDSPFast.FastMath.Initialized)  // 重要
+            {
+                System.Threading.Thread.Sleep(100);
+            }
+
             Stopwatch s = new Stopwatch();
             s.Start();
 

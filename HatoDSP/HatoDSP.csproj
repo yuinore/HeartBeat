@@ -50,7 +50,6 @@
     <Compile Include="ConstantSignal.cs" />
     <Compile Include="CellParameterValue.cs" />
     <Compile Include="ExactSignal.cs" />
-    <Compile Include="FastMath.cs" />
     <Compile Include="FilterType.cs" />
     <Compile Include="HatoSynthDevice.cs" />
     <Compile Include="IIRFilter.cs" />
