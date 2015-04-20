@@ -216,6 +216,8 @@ namespace HatoDSP
                 }
 
                 phase += phasedelta;
+
+                if (phase >= 16 * Math.PI) phase -= 16 * Math.PI;  // SIMD化した際にfloatをintにするのでそのために
             }
 
             if (child0 != null)

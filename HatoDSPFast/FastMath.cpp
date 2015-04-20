@@ -119,20 +119,19 @@ namespace HatoDSPFast {
     {
         if (!initialized) return 0;
 
-        if (x < 0) x = -x;  // Fixme: xが負の場合
         double xr = x * N_2pi;
-        int a = ((Int64)xr) & Mask;
+        Int32 ixr = (Int32)xr;
+        if (xr < 0) ixr -= 1;  // xが負の場合の丸め補正
+        int a = (int)(ixr & Mask);
+        double d = xr - ixr - 0.5;  // xrがちょうど整数のときは、丸めの都合上、d = x >= 0 ? -0.5 : +0.5 となる
+
         if (a < N / 2)
         {
-            double d = xr - (Int64)xr - 0.5;
-
             return f0[a] + d * (f1[a] + d * f2[a]);
         }
         else
         {
             a = a & (N / 2 - 1);
-
-            double d = xr - (Int64)xr - 0.5;
 
             return -(f0[a] + d * (f1[a] + d * f2[a]));
         }
@@ -156,8 +155,8 @@ namespace HatoDSPFast {
 
             double d = xr - a - 0.5;  // テイラー展開の基準点からの差
 
-            //return (pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * ((Int64)1 << integPart);
-            return (pow2_0[a] + d * pow2_1[a]) * ((Int64)1 << integPart);  // 指数関数はとても滑らか（ |f''(x)| / |f(x)| << 1 という意味で）
+            //return (pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * ((Int32)1 << integPart);
+            return (pow2_0[a] + d * pow2_1[a]) * ((Int32)1 << integPart);  // 指数関数はとても滑らか（ |f''(x)| / |f(x)| << 1 という意味で）
         }
         else
         {
@@ -177,7 +176,7 @@ namespace HatoDSPFast {
         }
     }
 
-    double inline FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・(2^50 くらいまではOK)
+    double inline FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・( 1000rad くらいまででお願い)
     {
         if (!initialized) return 0;
 
@@ -187,10 +186,11 @@ namespace HatoDSPFast {
         double N2_2PI = WT_SIZE_2PI[logovertone];
         int mask = WT_MASK[logovertone];
 
-        if (x < 0) x = -x;  // Fixme: xが負の場合
         double xr = x * N2_2PI;
-        int a = (int)(((Int64)xr) & mask);
-        double d = xr - (Int64)xr - 0.5;
+        Int32 ixr = (Int32)xr;
+        if (xr < 0) ixr -= 1;  // xが負の場合の丸め補正
+        int a = (int)(ixr & mask);
+        double d = xr - ixr - 0.5;  // xrがちょうど整数のときは、丸めの都合上、d = x >= 0 ? -0.5 : +0.5 となる
 
         //float* aa = new __declspec(align(32)) float[8];  // メモ：アラインメント
         // gcc : __attribute__
@@ -211,8 +211,8 @@ namespace HatoDSPFast {
 
         if (x < 0) x = -x;
         double xr = x * N2_2PI;
-        int a = (int)(((Int64)xr) & mask);
-        double d = xr - (Int64)xr - 0.5;
+        int a = (int)(((Int32)xr) & mask);
+        double d = xr - (Int32)xr - 0.5;
 
         return tri0[logovertone][a] + d * (tri1[logovertone][a] + d * tri2[logovertone][a]);
     }
@@ -229,8 +229,8 @@ namespace HatoDSPFast {
 
         if (x < 0) x = -x;
         double xr = x * N2_2PI;
-        int a = (int)(((Int64)xr) & mask);
-        double d = xr - (Int64)xr - 0.5;
+        int a = (int)(((Int32)xr) & mask);
+        double d = xr - (Int32)xr - 0.5;
 
         return imp0[logovertone][a] + d * (imp1[logovertone][a] + d * imp2[logovertone][a]);
     }
