@@ -258,6 +258,8 @@ namespace HatoLib
         {
             WaveFileWriter ww = new WaveFileWriter(strm, channelCount, samplingRate, bitDepth);
 
+            if (buf.Length != channelCount) throw new Exception("チャンネル数が異なります。正しい数字は、" + buf.Length + " です。");
+
             for (int i = 0; i < buf[0].Length; i++)
             {
                 for (int ch = 0; ch < buf.Length; ch++)

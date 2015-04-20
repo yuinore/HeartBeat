@@ -22,7 +22,7 @@ namespace HatoDSPSample
 
         private void button1_Click(object sender, EventArgs e)
         {
-            while (!HatoDSPFast.FastMath.Initialized)
+            while (!HatoDSPFast.FastMath.Initialized)  // 重要
             {
                 System.Threading.Thread.Sleep(100);
             }
@@ -181,7 +181,7 @@ namespace HatoDSPSample
 
             var sig = pr.Root.Generate().Take(200000, lenv);
 
-            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("new_from_patch.wav"), sig.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+            WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("new_from_patch.wav"), sig.Select(x => x.ToArray()).ToArray(), sig.Length, 44100, 32);
 
             s.Stop();
             label1.Text = "" + s.ElapsedMilliseconds;
