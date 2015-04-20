@@ -114,7 +114,7 @@ namespace HatoDSP
                     if (i % ParamsRefreshRate == 0)
                     {
                         w0 = 2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate;
-                        sin = (float)HatoDSPFast.FastMath.Sin(w0);
+                        sin = (float)HatoDSPFast.FastMathWrap.Sin(w0);
                         cos = (float)Math.Cos(w0);
                         alp = sin / Q;
                     }

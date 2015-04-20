@@ -108,7 +108,7 @@ namespace HatoDSP
                     if (time < releasedAt + R)
                     {
                         //double rate = Math.Pow(0.00001, (time - releasedAt) / R);
-                        double rate = HatoDSPFast.FastMath.Pow2(log2a * (time - releasedAt) / R); // 0dB to -100dB
+                        double rate = HatoDSPFast.FastMathWrap.Pow2(log2a * (time - releasedAt) / R); // 0dB to -100dB
                         ret[i] = (float)(lastgain * rate);
                     }
                     else

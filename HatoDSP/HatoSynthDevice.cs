@@ -24,12 +24,12 @@ namespace HatoDSP
         // 空のパッチでシンセサイザーを初期化します。
         public HatoSynthDevice()
         {
-            Task.Run(() => HatoDSPFast.FastMath.Saw(1.0, 2));
+            Task.Run(() => HatoDSPFast.FastMathWrap.Saw(1.0, 2));
         }
 
         public HatoSynthDevice(string patch)
         {
-            Task.Run(() => HatoDSPFast.FastMath.Saw(1.0, 2));
+            Task.Run(() => HatoDSPFast.FastMathWrap.Saw(1.0, 2));
 
             var r = new PatchReader(patch);
 

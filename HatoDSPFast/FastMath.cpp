@@ -12,11 +12,58 @@ namespace HatoDSPFast {
     using namespace System::Text;
     using namespace System::Threading::Tasks;
 
-    // いくら必要になるまで呼ばれないからといって静的コンストラクタで重い処理をさせるのは良くないと思います。
-    static FastMath::FastMath()
+    // https://msdn.microsoft.com/ja-jp/library/acxkb76w.aspx
+    const double FastMath::INV_0x4000000000000000L = 1.0 / 0x4000000000000000L;
+
+    const double FastMath::LOG2 = 0.69314718055994530941723212145818;  // ←これ多分4倍精度
+    const double FastMath::INV_2PI = 1.0 / (2 * Math::PI);
+
+    const double FastMath::_2pi_N = 2.0 * Math::PI / N;
+    const double FastMath::N_2pi = N / (2.0 * Math::PI);
+    const double FastMath::log2_N = LOG2 / N;
+
+    //****** 初期化のない変数実体
+    float* FastMath::f0;
+    float* FastMath::f1;
+    float* FastMath::f2;
+    float* FastMath::pow2_0;
+    float* FastMath::pow2_1;
+    float* FastMath::pow2_2;
+    float* FastMath::ipw2_0;
+    float* FastMath::ipw2_1;
+    float* FastMath::ipw2_2;
+    float** FastMath::saw0;
+    float** FastMath::saw1;
+    float** FastMath::saw2;
+    float** FastMath::tri0;
+    float** FastMath::tri1;
+    float** FastMath::tri2;
+    float** FastMath::imp0;
+    float** FastMath::imp1;
+    float** FastMath::imp2;
+
+    int* FastMath::WT_SIZE;  // wavetableのサイズ(個)。添字にlogovertoneを取り、この配列の長さはWT_Nである。すべて2のべき乗でなければならない。
+    double* FastMath::WT_SIZE_2PI;  // == WT_SIZE / (2.0 * PI)
+    int* FastMath::WT_MASK;  // == WT_SIZE.Select(x => x - 1)
+    bool FastMath::initialized;
+    bool FastMath::initializeStarted;
+    //******
+
+    int FastMath::Get_WT_N() {
+        return WT_N;
+    }
+
+    bool FastMath::IsInitialized()
     {
+        // TODO: メモリバリア
+        if (!initializeStarted) {
+            initializeStarted = true;
+            Task::Factory->StartNew(gcnew Action(Initialize));  // マネージコードが混ざってるけどいいのか？？
+        }
+
+        return initialized;
+
         // デリゲートとメソッドグループ（メソッド定義）の違いとは
-        Task::Factory->StartNew(gcnew Action(Initialize));
 
         // Delegateの細かいこと - 奇想曲 in C# - はてなダイアリー
         // http://d.hatena.ne.jp/toshi_m/20100717/1279368502
@@ -117,7 +164,10 @@ namespace HatoDSPFast {
 
     double FastMath::Sin(double x)
     {
-        if (!initialized) return 0;
+        if (!initialized) {
+            IsInitialized();  // 初期化指示
+            return 0;
+        }
 
         double xr = x * N_2pi;
         Int32 ixr = (Int32)xr;
@@ -139,7 +189,10 @@ namespace HatoDSPFast {
 
     double FastMath::Pow2(double x)
     {
-        if (!initialized) return 0;
+        if (!initialized) {
+            IsInitialized();  // 初期化指示
+            return 0;
+        }
 
         //int integPart = (int)(x - ((int)x - 1)) + ((int)x - 1);  // floor(x) ← おまけ
 
@@ -176,9 +229,12 @@ namespace HatoDSPFast {
         }
     }
 
-    double inline FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・( 1000rad くらいまででお願い)
+    double /*inline*/ FastMath::Saw(double x, int logovertone)  // 【お願い】xにあんまり大きな値を渡さないで・・・( 1000rad くらいまででお願い)
     {
-        if (!initialized) return 0;
+        if (!initialized) {
+            IsInitialized();  // 初期化指示
+            return 0;
+        }
 
         if (logovertone >= WT_N) logovertone = WT_N - 1;  // あくまで保険
         if (logovertone < 0) logovertone = 0;  // あくまで保険
@@ -201,7 +257,10 @@ namespace HatoDSPFast {
 
     double FastMath::Tri(double x, int logovertone)
     {
-        if (!initialized) return 0;
+        if (!initialized) {
+            IsInitialized();  // 初期化指示
+            return 0;
+        }
 
         if (logovertone >= WT_N) logovertone = WT_N - 1;
         if (logovertone < 0) logovertone = 0;
@@ -219,7 +278,10 @@ namespace HatoDSPFast {
 
     double FastMath::Impulse(double x, int logovertone)
     {
-        if (!initialized) return 0;
+        if (!initialized) {
+            IsInitialized();  // 初期化指示
+            return 0;
+        }
 
         if (logovertone >= WT_N) logovertone = WT_N - 1;
         if (logovertone < 0) logovertone = 0;

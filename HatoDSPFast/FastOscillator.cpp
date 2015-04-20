@@ -50,7 +50,7 @@ namespace HatoDSPFast {
             logovertonefloat = temp - freqoctave + overtoneBias;   // 倍音(基音を含む)の数の、底を2とする対数
             // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
             logovertone = (int)logovertonefloat;                   // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
-            isNotTooLow = logovertone < DSPLib::FastMath::WT_N;    // 音が低すぎないかどうかを表すbool変数
+            isNotTooLow = logovertone < DSPLib::FastMath::Get_WT_N(); // 音が低すぎないかどうかを表すbool変数
             isTooHigh = phasedelta >= Math::PI;                    // 音が高すぎるかどうかを表すbool変数
             isVeryHigh = logovertone <= 0;                         // 音が高く、単一のsin波で信号を表せるかどうかを表す
             isInRange = isNotTooLow && !isVeryHigh;                // 上の3条件をまとめた一時変数
@@ -72,7 +72,7 @@ namespace HatoDSPFast {
                 logovertonefloat = temp - freqoctave + overtoneBias;   // 倍音(基音を含む)の数の、底を2とする対数
                 // (*注：正確には、「小数部分切り捨てると、基音を含む倍音の数になる数字」の、底を2とする対数)
                 logovertone = (int)logovertonefloat;                   // 倍音(基音を含む)の数の、底を2とする対数を切り捨てた数
-                isNotTooLow = logovertone < DSPLib::FastMath::WT_N;    // 音が低すぎないかどうかを表すbool変数
+                isNotTooLow = logovertone < DSPLib::FastMath::Get_WT_N(); // 音が低すぎないかどうかを表すbool変数
                 isTooHigh = phasedelta >= Math::PI;                    // 音が高すぎるかどうかを表すbool変数
                 isVeryHigh = logovertone <= 0;                         // 音が高く、単一のsin波で信号を表せるかどうかを表す
                 isInRange = isNotTooLow && !isVeryHigh;                // 上の3条件をまとめた一時変数
@@ -125,7 +125,7 @@ namespace HatoDSPFast {
                 else
                 {
                     // 不連続点を含まず収束が速いため、最適化を行わない（計算量的には最適化した方が良いかも（要検証））
-                    buf[i] = (float)(DSPLib::FastMath::Tri(phase, DSPLib::FastMath::WT_N - 1));  // 第2引数はlogovertoneのままでもよい
+                    buf[i] = (float)(DSPLib::FastMath::Tri(phase, DSPLib::FastMath::Get_WT_N() - 1));  // 第2引数はlogovertoneのままでもよい
                 }
                 break;
 

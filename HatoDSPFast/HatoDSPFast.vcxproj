@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FastMath.h" />
+    <ClInclude Include="FastMathWrap.h" />
     <ClInclude Include="FastOscillator.h" />
     <ClInclude Include="HatoDSPFast.h" />
     <ClInclude Include="resource.h" />
@@ -89,6 +90,7 @@
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="FastMath.cpp" />
+    <ClCompile Include="FastMathWrap.cpp" />
     <ClCompile Include="FastOscillator.cpp" />
     <ClCompile Include="HatoDSPFast.cpp" />
     <ClCompile Include="Stdafx.cpp">
