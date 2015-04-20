@@ -24,7 +24,6 @@ namespace HeartBeatCore
         /// 先読みする時間差。曲の開始前に読み込む時間もここで定まる。
         /// キー音の演奏可能時刻からの差分ではなく適正演奏時間からの差分であるため、注意が必要。
         /// 1.0くらいで読み込みミスが発生しないくらいがちょうどいいと思う。
-        /// (TODO:曲開始前のキー音割り当て)
         /// </summary>
         double WavFileLoadingDelayTime = 999;//10.0;
 
@@ -66,7 +65,6 @@ namespace HeartBeatCore
 
         public bool autoplay = false;
 
-        // TODO: Skinへの移行
         public float RingShowingPeriodByMeasure
         {
             get { return skin.RingShowingPeriodByMeasure; }

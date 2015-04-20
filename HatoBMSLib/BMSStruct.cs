@@ -434,8 +434,6 @@ namespace HatoBMSLib
                 }
                 else
                 {
-                    // TODO: 例外処理
-
                     // 制御オブジェ・LN終端・地雷等
                     if (obj.BMSChannel == 3)
                     {

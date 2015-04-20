@@ -13,7 +13,7 @@ namespace HatoPlayer
     /// </summary>
     public class Sound
     {
-        HatoPlayerDevice hplayer;  // FIXME: hplayerはDisposeされているかもしれない
+        HatoPlayerDevice hplayer;  // hplayerはDisposeされているかもしれないけどまあ別にいいか
         SecondaryBuffer sbuf;
 
         public int SamplingRate;

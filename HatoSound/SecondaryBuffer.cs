@@ -114,8 +114,15 @@ namespace HatoSound
         private void WriteSamples(float[][] data, int dstPositionInSample, int count, bool playing = false)
         {
             // TODO: バッファが短すぎる場合の例外
-            // TODO: クリッピングの処理
-            short[][] sdata = data.Select(x => x.Select(y => (short)(32767 * y)).ToArray()).ToArray();  // こ　れ　は　ひ　ど　い
+            short[][] sdata = data.Select(x => x.Select(y =>
+            {
+                //*** クリッピング処理と、shortへの変換
+                double fsample = y * 32767.0;
+                short ssample = (short)fsample;
+                if (fsample > 32767.0) ssample = 32767;
+                if (fsample < -32768.0) ssample = -32768;
+                return ssample;
+            }).ToArray()).ToArray();  // こ　れ　は　ひ　ど　い
 
             // Get Capabilties from secondary sound buffer
             var capabilities = dsSecondaryBuffer.Capabilities;

@@ -87,9 +87,10 @@ namespace HatoDSPFast {
                 else
                 {
                     double normphase = phase * inv_2pi;
-                    //ret[i] += (float)((0.5 - normphase % 1) * 2);  // FIXME: phaseが負の時の処理
-                    double temp3 = normphase - (Int64)normphase;  // 剰余演算。"temp3 = normphase % 1;" を表す。
-                    buf[i] += (float)((0.5 - temp3) * 2);  // FIXME: phaseが負の時の処理
+                    int inorm = (int)normphase;
+                    if (phase < 0) inorm -= 1;
+                    double temp3 = normphase - inorm;  // 剰余演算。"temp3 = normphase % 1;" を表す。
+                    buf[i] += (float)((0.5 - temp3) * 2);
                 }
                 break;
 
@@ -99,8 +100,12 @@ namespace HatoDSPFast {
                 else if (isVeryHigh) { buf[i] = (float)(DSPLib::FastMath::Sin(phase) * _2_pi * 2); }
                 else
                 {
-                    buf[i] += (float)(((Int64)(phase * inv_pi) & 1) * (-2) + 1);  // (phase * inv_pi) % 2 == 0 ? 1 : -1
-                    // FIXME: phaseが負の時の処理
+                    if (phase >= 0){
+                        buf[i] += (float)(((Int64)(phase * inv_pi) & 1) * (-2) + 1);  // (phase * inv_pi) % 2 == 0 ? 1 : -1
+                    }
+                    else{
+                        buf[i] += (float)(((Int64)(phase * inv_pi) & 1) * 2 - 1);
+                    }
                 }
                 break;
 
@@ -110,9 +115,9 @@ namespace HatoDSPFast {
                 else if (isVeryHigh) { buf[i] = (float)((DSPLib::FastMath::Sin(phase) - DSPLib::FastMath::Sin(phase + (1 - op1) * (2 * Math::PI))) * _2_pi); }
                 else
                 {
-                    // FIXME: phaseが負の時の処理
                     double x = phase * inv_pi * 0.5;  // 0～1で1周期
                     double decimalPart = x - (Int64)x;  // 小数部分
+                    if (x < 0) decimalPart += 1;
 
                     buf[i] += (decimalPart < op1 ? 1 - op1 : -op1) * 2;
                 }
@@ -124,7 +129,7 @@ namespace HatoDSPFast {
                 else if (isVeryHigh) { buf[i] = (float)(Math::Cos(phase) * (8 / (Math::PI * Math::PI))); }
                 else
                 {
-                    // 不連続点を含まず収束が速いため、最適化を行わない（計算量的には最適化した方が良いかも（要検証））
+                    // 不連続点を含まず収束が速いため、最適化を行わない（TODO:計算量的には最適化した方が良いかも（要検証））
                     buf[i] = (float)(DSPLib::FastMath::Tri(phase, DSPLib::FastMath::Get_WT_N() - 1));  // 第2引数はlogovertoneのままでもよい
                 }
                 break;
@@ -143,8 +148,17 @@ namespace HatoDSPFast {
                 }
                 else
                 {
-                    int lastval = (int)((Int64)(phase * inv_pi) & 1L);
-                    int currval = (int)((Int64)((phase + phasedelta) * inv_pi) & 1L);
+                    double dphase1 = phase * inv_pi;
+                    double dphase2 = (phase + phasedelta) * inv_pi;
+
+                    int iphase1 = (int)dphase1;
+                    int iphase2 = (int)dphase2;
+
+                    if (dphase1 < 0){ iphase1 -= 1; }
+                    if (dphase2 < 0){ iphase2 -= 1; }
+
+                    int lastval = (iphase1 & 1);
+                    int currval = (iphase2 & 1);
 
                     buf[i] += (float)((lastval & (1 ^ currval)) << 1);  // lastval == 1 && currentval == 0 ? 2 : 0
                 }
