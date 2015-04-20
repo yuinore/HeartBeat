@@ -4,8 +4,8 @@
 
 using namespace System;
 
-namespace HatoDSPFast {
-
+namespace HatoDSPFast
+{
 	public ref class Class1
 	{
 		// TODO: このクラスの、ユーザーのメソッドをここに追加してください。

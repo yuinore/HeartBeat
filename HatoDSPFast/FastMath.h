@@ -1,5 +1,6 @@
 #pragma once
-namespace HatoDSPFast{
+namespace HatoDSPFast
+{
     using namespace System;
 
     // Static classes causing warnings.
