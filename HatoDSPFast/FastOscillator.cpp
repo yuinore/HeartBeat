@@ -19,7 +19,6 @@ namespace HatoDSPFast {
         float pshift, float amplify, int waveform, float op1,
         float samplingRate,
         bool constantPitch, float lenv_Pitch, array<float>^ pitch){
-        // メモ：amplifyは使用されていません。
 
         double overtoneBias = 0.36;  // 調整値
 
@@ -82,56 +81,56 @@ namespace HatoDSPFast {
             switch (waveform)
             {
             case 0:  //Waveform.Saw:
-                if (isInRange) { buf[i] = (float)(DSPLib::FastMath::Saw(phase, logovertone)); }
-                else if (isTooHigh) { buf[i] = 0; }
-                else if (isVeryHigh) { buf[i] = (float)(DSPLib::FastMath::Sin(phase) * _2_pi); }  // この周波数帯は、出力前LPF(名前忘れた)を掛けると消えてしまう。
+                if (isInRange) { buf[i] += amplify * (float)(DSPLib::FastMath::Saw(phase, logovertone)); }
+                else if (isTooHigh) { buf[i] += 0; }
+                else if (isVeryHigh) { buf[i] += amplify * (float)(DSPLib::FastMath::Sin(phase) * _2_pi); }  // この周波数帯は、出力前LPF(名前忘れた)を掛けると消えてしまう。
                 else
                 {
                     double normphase = phase * inv_2pi;
                     int inorm = (int)normphase;
                     if (phase < 0) inorm -= 1;
                     double temp3 = normphase - inorm;  // 剰余演算。"temp3 = normphase % 1;" を表す。
-                    buf[i] += (float)((0.5 - temp3) * 2);
+                    buf[i] += amplify * (float)((0.5 - temp3) * 2);
                 }
                 break;
 
             case 1:  //Waveform.Square:
-                if (isInRange) { buf[i] = (float)((DSPLib::FastMath::Saw(phase, logovertone) - DSPLib::FastMath::Saw(phase + Math::PI, logovertone))); }
-                else if (isTooHigh) { buf[i] = 0; }
-                else if (isVeryHigh) { buf[i] = (float)(DSPLib::FastMath::Sin(phase) * _2_pi * 2); }
+                if (isInRange) { buf[i] += amplify * (float)((DSPLib::FastMath::Saw(phase, logovertone) - DSPLib::FastMath::Saw(phase + Math::PI, logovertone))); }
+                else if (isTooHigh) { buf[i] += 0; }
+                else if (isVeryHigh) { buf[i] += amplify * (float)(DSPLib::FastMath::Sin(phase) * _2_pi * 2); }
                 else
                 {
                     if (phase >= 0){
-                        buf[i] += (float)(((Int64)(phase * inv_pi) & 1) * (-2) + 1);  // (phase * inv_pi) % 2 == 0 ? 1 : -1
+                        buf[i] += amplify * (float)(((Int64)(phase * inv_pi) & 1) * (-2) + 1);  // (phase * inv_pi) % 2 == 0 ? 1 : -1
                     }
                     else{
-                        buf[i] += (float)(((Int64)(phase * inv_pi) & 1) * 2 - 1);
+                        buf[i] += amplify * (float)(((Int64)(phase * inv_pi) & 1) * 2 - 1);
                     }
                 }
                 break;
 
             case 4:  //Waveform.Pulse:
-                if (isInRange) { buf[i] = (float)((DSPLib::FastMath::Saw(phase, logovertone) - DSPLib::FastMath::Saw(phase + (1 - op1) * (2 * Math::PI), logovertone))); }
-                else if (isTooHigh) { buf[i] = 0; }
-                else if (isVeryHigh) { buf[i] = (float)((DSPLib::FastMath::Sin(phase) - DSPLib::FastMath::Sin(phase + (1 - op1) * (2 * Math::PI))) * _2_pi); }
+                if (isInRange) { buf[i] += amplify * (float)((DSPLib::FastMath::Saw(phase, logovertone) - DSPLib::FastMath::Saw(phase + (1 - op1) * (2 * Math::PI), logovertone))); }
+                else if (isTooHigh) { buf[i] += 0; }
+                else if (isVeryHigh) { buf[i] += amplify * (float)((DSPLib::FastMath::Sin(phase) - DSPLib::FastMath::Sin(phase + (1 - op1) * (2 * Math::PI))) * _2_pi); }
                 else
                 {
                     double x = phase * inv_pi * 0.5;  // 0～1で1周期
                     double decimalPart = x - (Int64)x;  // 小数部分
                     if (x < 0) decimalPart += 1;
 
-                    buf[i] += (decimalPart < op1 ? 1 - op1 : -op1) * 2;
+                    buf[i] += amplify * ((decimalPart < op1 ? 1 - op1 : -op1) * 2);
                 }
                 break;
 
             case 3:  //Waveform.Tri:
-                if (isInRange) { buf[i] = (float)(DSPLib::FastMath::Tri(phase, logovertone)); }
-                else if (isTooHigh) { buf[i] = 0; }
-                else if (isVeryHigh) { buf[i] = (float)(Math::Cos(phase) * (8 / (Math::PI * Math::PI))); }
+                if (isInRange) { buf[i] += amplify * (float)(DSPLib::FastMath::Tri(phase, logovertone)); }
+                else if (isTooHigh) { buf[i] += 0; }
+                else if (isVeryHigh) { buf[i] += amplify * (float)(Math::Cos(phase) * (8 / (Math::PI * Math::PI))); }
                 else
                 {
                     // 不連続点を含まず収束が速いため、最適化を行わない（TODO:計算量的には最適化した方が良いかも（要検証））
-                    buf[i] = (float)(DSPLib::FastMath::Tri(phase, DSPLib::FastMath::Get_WT_N() - 1));  // 第2引数はlogovertoneのままでもよい
+                    buf[i] += amplify * (float)(DSPLib::FastMath::Tri(phase, DSPLib::FastMath::Get_WT_N() - 1));  // 第2引数はlogovertoneのままでもよい
                 }
                 break;
 
@@ -139,13 +138,13 @@ namespace HatoDSPFast {
                 if (isInRange)
                 {
                     double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
-                    buf[i] = (float)(DSPLib::FastMath::Impulse(phase, logovertone) * invovertonecount * 2);  // 音量はLPFを通した後基準で
+                    buf[i] += amplify * (float)(DSPLib::FastMath::Impulse(phase, logovertone) * invovertonecount * 2);  // 音量はLPFを通した後基準で
                 }
-                else if (isTooHigh) { buf[i] = 0; }
+                else if (isTooHigh) { buf[i] += 0; }
                 else if (isVeryHigh)
                 {
                     double invovertonecount = freqratio * temp2;  // 小数部分切り捨てると、基音を含む倍音の数になる数字の逆数
-                    buf[i] = (float)(Math::Cos(phase) * 2 * invovertonecount);
+                    buf[i] += amplify * (float)(Math::Cos(phase) * 2 * invovertonecount);
                 }
                 else
                 {
@@ -161,7 +160,7 @@ namespace HatoDSPFast {
                     int lastval = (iphase1 & 1);
                     int currval = (iphase2 & 1);
 
-                    buf[i] += (float)((lastval & (1 ^ currval)) << 1);  // lastval == 1 && currentval == 0 ? 2 : 0
+                    buf[i] += amplify * (float)((lastval & (1 ^ currval)) << 1);  // lastval == 1 && currentval == 0 ? 2 : 0
                 }
                 break;
 
@@ -169,11 +168,11 @@ namespace HatoDSPFast {
             default:
                 if (isTooHigh)
                 {
-                    buf[i] = 0;
+                    buf[i] += 0;
                 }
                 else
                 {
-                    buf[i] = (float)DSPLib::FastMath::Sin(phase);
+                    buf[i] += amplify * (float)DSPLib::FastMath::Sin(phase);
                 }
                 break;
             }
@@ -181,7 +180,6 @@ namespace HatoDSPFast {
             phase += phasedelta;
 
             while (phase >= 16 * Math::PI) phase -= 16 * Math::PI;  // SIMD化した際にfloatをintにするのでそのために
-
         }
     }
 }

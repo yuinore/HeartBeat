@@ -9,7 +9,7 @@ namespace HatoDSP
 {
     public class AnalogOscillator : Cell
     {
-        CellTree child0;
+        //CellTree child0;
         Cell cell;
         CellParameterValue[] ctrl;
 
@@ -25,8 +25,8 @@ namespace HatoDSP
         public override void AssignChildren(CellWire[] children)
         {
             if (children.Length >= 1) {
-                this.child0 = children[0].Source;  // FIXME: 複数指定
-                cell = child0.Generate();
+                //this.child0 = children[0].Source;  // FIXME: 複数指定
+                cell = children[0].Source.Generate();
             }
         }
 
@@ -83,24 +83,28 @@ namespace HatoDSP
                 if (ctrl.Length >= 4) { op1 = ctrl[3].Value; }
             }
 
-            // 処理
-            if (buf.Length < count)
-            {
-                buf = new float[count];
-            }
-
             bool constantPitch = (lenv.Pitch is ConstantSignal);  // メモ：Expressionが導入された場合に修正
             
-            fastOsc.Take(
-                count, buf,
-                pshift, amp, (int)waveform, op1,
-                lenv.SamplingRate,
-                constantPitch,
-                constantPitch ? ((ConstantSignal)lenv.Pitch).val : 0,
-                constantPitch ? null : lenv.Pitch.ToArray());
-
-            if (child0 != null)
+            if (cell != null)
             {
+                if (buf.Length < count)
+                {
+                    buf = new float[count];
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    buf[i] = 0;
+                }
+
+                fastOsc.Take(
+                    count, buf,
+                    pshift, amp, (int)waveform, op1,
+                    lenv.SamplingRate,
+                    constantPitch,
+                    constantPitch ? ((ConstantSignal)lenv.Pitch).val : 0,
+                    constantPitch ? null : lenv.Pitch.ToArray());
+
                 cell.Take(count, lenv);  // バッファに加算
 
                 int chCount = cell.ChannelCount;
@@ -108,16 +112,19 @@ namespace HatoDSP
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        lenv.Buffer[ch][i] += buf[i] * amp;  // 結果を格納
+                        lenv.Buffer[ch][i] += buf[i];  // 結果をすべてのチャンネルに格納
                     }
                 }
             }
             else
             {
-                for (int i = 0; i < count; i++)
-                {
-                    lenv.Buffer[0][i] += buf[i] * amp;  // 結果を格納
-                }
+                fastOsc.Take(
+                    count, lenv.Buffer[0],
+                    pshift, amp, (int)waveform, op1,
+                    lenv.SamplingRate,
+                    constantPitch,
+                    constantPitch ? ((ConstantSignal)lenv.Pitch).val : 0,
+                    constantPitch ? null : lenv.Pitch.ToArray());  // 結果を格納
             }
         }
     }

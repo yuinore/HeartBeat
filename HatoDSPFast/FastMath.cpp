@@ -209,7 +209,8 @@ namespace HatoDSPFast {
             double d = xr - a - 0.5;  // テイラー展開の基準点からの差
 
             //return (pow2_0[a] + d * (pow2_1[a] + d * pow2_2[a])) * ((Int32)1 << integPart);
-            return (pow2_0[a] + d * pow2_1[a]) * ((Int32)1 << integPart);  // 指数関数はとても滑らか（ |f''(x)| / |f(x)| << 1 という意味で）
+            return (pow2_0[a] + d * pow2_1[a]) * (((__int64)1) << integPart);  // 指数関数はとても滑らか（ |f''(x)| / |f(x)| << 1 という意味で）
+            // ___________________________________ ↑絶対Int32にするなよ！
         }
         else
         {

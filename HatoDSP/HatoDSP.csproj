@@ -59,11 +59,9 @@
     <Compile Include="PatchFormatException.cs" />
     <Compile Include="PatchReader.cs" />
     <Compile Include="LocalEnvironment.cs" />
-    <Compile Include="Module.cs" />
     <Compile Include="Rainbow.cs" />
     <Compile Include="Signal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <None Include="SinGenerator.cs" />
     <Compile Include="Waveform.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class IIRFilter : Module
+    public class IIRFilter
     {
         readonly int chCnt;
 
@@ -39,23 +39,19 @@ namespace HatoDSP
 
         // input[0] : フィルタへの入力信号
         // input[1] : a,bパラメータ
-        public override float[][] Take(int count, float[][][] input)
+        public void Take(int count, float[][][] input)
         {
             if (input.Length != 1 && input.Length != 2) throw new Exception("Invalid Input Count.");
             if (input[0].Length != chCnt) throw new Exception("Invalid Input Signal's Channels Count.");
             float[][] param = null;
             if (input.Length >= 2)
             {
-                param = input[1].Select(x => x.ToArray()).ToArray();
+                param = input[1];
             }
-
-            float[][] ret = new float[input[0].Length][];
 
             for (int j = 0; j < chCnt; j++)
             {
                 //if (input[0][j].Length != count) throw new Exception("Invalid Input Signal's Length.");
-
-                float[] arr = input[0][j].ToArray();  // TODO: ToArray() が不要?
 
                 float t0 = z0[j];  // これで高速化はされるのか？ → 計測したら高速化されてるっぽいです・・・
                 float t1 = z1[j];
@@ -73,22 +69,18 @@ namespace HatoDSP
                         b2 = param[5][i];
                     }
 
-                    t0 = arr[i] - (a1 * t1 + a2 * t2) * inv_a0;
+                    t0 = input[0][j][i] - (a1 * t1 + a2 * t2) * inv_a0;
                     if (-1.1754944e-38 < t0 && t0 < 1.1754944e-38) t0 = 0;  // 1.1754944e-38 は 2^(-126) で、正の最小の正規化数
-                    arr[i] = (t0 * b0 + t1 * b1 + t2 * b2) * inv_a0;
+                    input[0][j][i] = (t0 * b0 + t1 * b1 + t2 * b2) * inv_a0;
 
                     t2 = t1;
                     t1 = t0;
                 }
 
-                ret[j] = arr;
-
                 z0[j] = t0;
                 z1[j] = t1;
                 z2[j] = t2;
             }
-
-            return ret;
         }
     }
 }

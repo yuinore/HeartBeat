@@ -69,8 +69,6 @@ namespace HatoDSP
 
         public override void Take(int count, LocalEnvironment lenv)
         {
-            Signal[] sumL = new Signal[list.Count];
-            Signal[] sumR = new Signal[list.Count];
             Signal originalPitch = lenv.Pitch;
             float[][] sum = lenv.Buffer;
 

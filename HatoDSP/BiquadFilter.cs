@@ -63,6 +63,12 @@ namespace HatoDSP
         }
 
         float[][] input, cutoffsignal;
+        float[] a0 = new float[256];
+        float[] a1 = new float[256];
+        float[] a2 = new float[256];
+        float[] b0 = new float[256];
+        float[] b1 = new float[256];
+        float[] b2 = new float[256];
 
         public override void Take(int count, LocalEnvironment lenv)
         {
@@ -148,19 +154,22 @@ namespace HatoDSP
 
                 for (int i = 0; i < filt.Length; i++)
                 {
-                    input = filt[i].Take(count, new float[][][] { input });
+                    filt[i].Take(count, new float[][][] { input });
                 }
             }
             else
             {
-                float[] a0 = new float[count];
-                float[] a1 = new float[count];
-                float[] a2 = new float[count];
-                float[] b0 = new float[count];
-                float[] b1 = new float[count];
-                float[] b2 = new float[count];
+                if (a0.Length < count)
+                {
+                    a0 = new float[count];
+                    a1 = new float[count];
+                    a2 = new float[count];
+                    b0 = new float[count];
+                    b1 = new float[count];
+                    b2 = new float[count];
+                }
 
-                float[] cutoff = cutoffsignal[0].ToArray();  // TODO: ToArray() が不要
+                float[] cutoff = cutoffsignal[0];
 
                 double w0 = 0;
                 float sin = 0, cos = 0, alp = 0;
@@ -169,8 +178,6 @@ namespace HatoDSP
 
                 for (int i = 0; i < count; i++)
                 {
-                    // float[] cutoff = cutoffsignal.ToArray(); // 酷すぎる
-
                     if (i % ParamsRefreshRate == 0)
                     {
                         w0 = 2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate;
@@ -196,7 +203,7 @@ namespace HatoDSP
 
                 for (int i = 0; i < filt.Length; i++)
                 {
-                    input = filt[i].Take(count, new float[][][] { 
+                    filt[i].Take(count, new float[][][] { 
                         input, 
                         new float[][] { 
                             a0,

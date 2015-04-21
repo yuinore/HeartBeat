@@ -124,7 +124,7 @@ namespace HatoDSP
                 }
             }
 
-            return mix.Select(x => new ExactSignal(x)).ToArray();
+            return mix.Select(x => new ExactSignal(x, 1.0f, false)).ToArray();
         }
 
         /// <summary>
