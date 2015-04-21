@@ -50,7 +50,24 @@ namespace HatoDSP
             }
         }
 
-        public override Signal[] Take(int count, LocalEnvironment lenv)
+        public override int ChannelCount
+        {
+            get
+            {
+                if (cell != null)
+                {
+                    return cell.ChannelCount;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+
+        float[] buf = new float[256];
+
+        public override void Take(int count, LocalEnvironment lenv)
         {
             float pshift = 0;
             float amp = 1;
@@ -67,7 +84,10 @@ namespace HatoDSP
             }
 
             // 処理
-            float[] buf = new float[count];
+            if (buf.Length < count)
+            {
+                buf = new float[count];
+            }
 
             bool constantPitch = (lenv.Pitch is ConstantSignal);  // メモ：Expressionが導入された場合に修正
             
@@ -81,12 +101,23 @@ namespace HatoDSP
 
             if (child0 != null)
             {
-                var src = cell.Take(count, lenv);
-                return src.Select(x => Signal.Add(x, new ExactSignal(buf, amp, false))).ToArray();  // チャンネル数は入力信号と同じ
+                cell.Take(count, lenv);  // バッファに加算
+
+                int chCount = cell.ChannelCount;
+                for (int ch = 0; ch < chCount; ch++)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        lenv.Buffer[ch][i] += buf[i] * amp;  // 結果を格納
+                    }
+                }
             }
             else
             {
-                return new[] { new ExactSignal(buf, amp, false) };  // チャンネル数は1
+                for (int i = 0; i < count; i++)
+                {
+                    lenv.Buffer[0][i] += buf[i] * amp;  // 結果を格納
+                }
             }
         }
     }

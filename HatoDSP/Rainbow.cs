@@ -60,43 +60,71 @@ namespace HatoDSP
             }
         }
 
-        public override Signal[] Take(int count, LocalEnvironment lenv)
+        public override int ChannelCount
+        {
+            get { return 2; }
+        }
+
+        float[][] buf2;
+
+        public override void Take(int count, LocalEnvironment lenv)
         {
             Signal[] sumL = new Signal[list.Count];
             Signal[] sumR = new Signal[list.Count];
             Signal originalPitch = lenv.Pitch;
+            float[][] sum = lenv.Buffer;
 
             for (int j = 0; j < list.Count; j++)
             {
                 var x = list[j];
+                int chCount = x.ChannelCount;
 
                 // lenvのピッチをここで加工する
 
-                lenv.Pitch = Signal.Add(originalPitch, new ConstantSignal(0.2f * (j - (rainbowN - 1.0f) / 2 + (rand[j] - 0.5f) * 1.0f) / ((rainbowN - 1.0f) / 2), count));
+                if (buf2 == null || buf2.Length < chCount || buf2[0].Length < count)
+                {
+                    buf2 = (new float[chCount][]).Select(y => new float[count]).ToArray();
+                }
 
-                var sig = x.Take(count, lenv);
+                for (int ch = 0; ch < chCount; ch++)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        buf2[ch][i] = 0;
+                    }
+                }
+
+                var lenv2 = new LocalEnvironment()
+                {
+                    Buffer = buf2,  // 別に用意した空のバッファを与える
+                    Freq = lenv.Freq,
+                    Gate = lenv.Gate,
+                    Locals = lenv.Locals,
+                    Pitch = Signal.Add(originalPitch, new ConstantSignal(0.2f * (j - (rainbowN - 1.0f) / 2 + (rand[j] - 0.5f) * 1.0f) / ((rainbowN - 1.0f) / 2), count)),
+                    SamplingRate = lenv.SamplingRate
+                };
+
+                x.Take(count, lenv2);
 
                 float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
-                var panL = new ConstantSignal(1 - 1.0f * ((j - width) / width), count);
-                var panR = new ConstantSignal(1 + 1.0f * ((j - width) / width), count);
+                var panL = 1 - 1.0f * ((j - width) / width);
+                var panR = 1 + 1.0f * ((j - width) / width);
 
-                /*
-                for (int i = 0; i < sig.Length; i++)
+                if (chCount == 1)
                 {
-                    sum[i] = Signal.Add(
-                        Signal.Multiply(sig[i], i % 2 == 0 ? panL : panR),
-                        sum[i]);
-                }*/
-
-                if (sig.Length == 1)
-                {
-                    sumL[j] = Signal.Multiply(sig[0], panL);
-                    sumR[j] = Signal.Multiply(sig[0], panR);
+                    for (int i = 0; i < count; i++)
+                    {
+                        sum[0][i] += buf2[0][i] * panL;
+                        sum[1][i] += buf2[0][i] * panR;
+                    }
                 }
-                else if (sig.Length == 2)
+                else if (chCount == 2)
                 {
-                    sumL[j] = Signal.Multiply(sig[0], panL);
-                    sumR[j] = Signal.Multiply(sig[1], panR);
+                    for (int i = 0; i < count; i++)
+                    {
+                        sum[0][i] += buf2[0][i] * panL;
+                        sum[1][i] += buf2[1][i] * panR;
+                    }
                 }
                 else
                 {
@@ -104,11 +132,6 @@ namespace HatoDSP
                     catch { }
                 }
             }
-
-            return new Signal[] {
-                Signal.AddRange(sumL),
-                Signal.AddRange(sumR)
-            };
         }
     }
 }

@@ -22,6 +22,8 @@ namespace HatoDSPSample
 
         private void button1_Click(object sender, EventArgs e)
         {
+            float[][] buf = new float[2][] { new float[2000000], new float[2000000] };  // ←雑
+
             while (!HatoDSPFast.FastMathWrap.Initialized)  // 重要
             {
                 System.Threading.Thread.Sleep(100);
@@ -38,8 +40,9 @@ namespace HatoDSPSample
                 // Pitch, Amp, Type, OP1
                 osc1.AssignControllers(new float[] { 0, 0.03f, (float)Waveform.Saw, 0 });
 
-                var sig5 = rainbow.Generate().Take(100000, new LocalEnvironment
+                rainbow.Generate().Take(100000, new LocalEnvironment
                 {
+                    Buffer = buf,
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),
                     Pitch = new ConstantSignal(69, 100000),
@@ -47,9 +50,10 @@ namespace HatoDSPSample
                     Locals = null
                 });
 
-                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test1.wav"), sig5.Select(x => x.ToArray()).ToArray(), sig5.Length, 44100, 32);
+                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test1.wav"), buf.Select(x => x.ToArray()).ToArray(), buf.Length, 44100, 32);
             }
 
+            /*
             {
                 var filt2 = new CellTree(() => new ButterworthFilterCell());
                 var rainbow = new CellTree(() => new Rainbow());
@@ -68,8 +72,9 @@ namespace HatoDSPSample
                 osc2.AssignControllers(new float[] { -12, 0.05f, (float)Waveform.Saw, 0 });
                 aenv.AssignControllers(new float[] { 0.01f, 2, 0, 0.01f });
 
-                var sig5 = aenv.Generate().Take(100000, new LocalEnvironment
+                aenv.Generate().Take(100000, new LocalEnvironment
                 {
+                    Buffer = buf,
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 100000),
                     Pitch = new ConstantSignal(69, 100000),
@@ -77,12 +82,13 @@ namespace HatoDSPSample
                     Locals = null
                 });
 
-                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test2.wav"), sig5.Select(x => x.ToArray()).ToArray(), sig5.Length, 44100, 32);
-            }
+                WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test2.wav"), buf.Select(x => x.ToArray()).ToArray(), buf.Length, 44100, 32);
+            }*/
 
             {
                 var lenv = new LocalEnvironment
                 {
+                    Buffer = buf,
                     SamplingRate = 44100,
                     Freq = new ConstantSignal(441, 2000000),
                     Pitch = new ExactSignal(Enumerable.Range(0, 2000000).Select(i => (float)(-3 + i / 10000.0)).ToArray()),
@@ -91,60 +97,64 @@ namespace HatoDSPSample
                 };
 
                 {
+                    lenv.Buffer = buf = new float[2][] { new float[2000000], new float[2000000] };
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Saw, 0 });
-                    var sig5 = osc1.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_saw.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_saw.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
+                /*
                 {
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     var filt = new CellTree(() => new ButterworthFilterCell());
                     filt.AddChildren(new[] { osc1 });
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Saw, 0 });
-                    var sig5 = filt.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_saw_lp.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
-                }
+                    filt.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_saw_lp.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                }*/
                 {
+                    lenv.Buffer = buf = new float[2][] { new float[2000000], new float[2000000] };
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Square, 0 });
-                    var sig5 = osc1.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_squ.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_squ.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
                 {
+                    lenv.Buffer = buf = new float[2][] { new float[2000000], new float[2000000] };
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Tri, 0 });
-                    var sig5 = osc1.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_tri.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_tri.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
                 {
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Sin, 0 });
-                    var sig5 = osc1.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_sin.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_sin.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
                 {
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Impulse, 0 });
-                    var sig5 = osc1.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_impulse.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_impulse.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
                 {
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Pulse, 0.125f });
-                    var sig5 = osc1.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_pulse125.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_pulse125.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
                 {
                     var osc1 = new CellTree(() => new AnalogOscillator());
                     osc1.AssignControllers(new float[] { 0, 0.5f, (float)Waveform.Pulse, 0.25f });
-                    var sig5 = osc1.Generate().Take(2000000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_pulse25.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(2000000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_waveform_pulse25.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
                 {
                     var osc1 = new CellTree(() => new ADSR());
                     osc1.AssignControllers(new float[] { 0.1f, 1.0f, 0.5f, 0.1f });
-                    var sig5 = osc1.Generate().Take(80000, lenv);
-                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_adsr_1.wav"), sig5.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
+                    osc1.Generate().Take(80000, lenv);
+                    WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test_adsr_1.wav"), buf.Select(x => x.ToArray()).ToArray(), 1, 44100, 32);
                 }
             }
 
@@ -156,7 +166,7 @@ namespace HatoDSPSample
         }
 
         private void button2_Click(object sender, EventArgs e)
-        {
+        {/*
             while (!HatoDSPFast.FastMathWrap.Initialized)
             {
                 System.Threading.Thread.Sleep(100);
@@ -184,7 +194,7 @@ namespace HatoDSPSample
             WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("new_from_patch.wav"), sig.Select(x => x.ToArray()).ToArray(), sig.Length, 44100, 32);
 
             s.Stop();
-            label1.Text = "" + s.ElapsedMilliseconds;
+            label1.Text = "" + s.ElapsedMilliseconds;*/
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -203,7 +213,7 @@ namespace HatoDSPSample
 
             Signal[] sig = dev.Take(20000);
 
-            for (int k = 0; k < 100; k++)
+            for (int k = 0; k < 100/100; k++)
             {
                 dev.NoteOn(63 + 9);
 

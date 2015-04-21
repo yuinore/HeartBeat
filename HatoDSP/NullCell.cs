@@ -23,9 +23,14 @@ namespace HatoDSP
             return;
         }
 
-        public override Signal[] Take(int count, LocalEnvironment lenv)
+        public override int ChannelCount
         {
-            return new Signal[] { new ConstantSignal(0, count) };
+            get { return 1; }
+        }
+
+        public override void Take(int count, LocalEnvironment lenv)
+        {
+            return;
         }
     }
 }

@@ -53,16 +53,76 @@ namespace HatoDSP
             }
         }
 
-        public override Signal[] Take(int count, LocalEnvironment lenv)
+        public override int ChannelCount
         {
-            Signal[] input = waveCell.Take(count, lenv);
-            var cutoffsignal = cutoffCell == null ? new ConstantSignal(0, count) : cutoffCell.Take(count, lenv)[0];
-            filt = filt ?? (new int[slope]).Select(x => new IIRFilter(input.Length, 1, 0, 0, 0, 0, 0)).ToArray();
-
-            if (cutoffsignal is ConstantSignal)
+            get
             {
-                if (((ConstantSignal)(cutoffsignal)).count != count) throw new Exception();
-                float cutoff = ((ConstantSignal)(cutoffsignal)).val;
+                if (waveCell == null) throw new Exception();  // ←例外発生することはない
+                return waveCell.ChannelCount;
+            }
+        }
+
+        float[][] input, cutoffsignal;
+
+        public override void Take(int count, LocalEnvironment lenv)
+        {
+            float[][] retbuf = lenv.Buffer;
+
+            if (input == null || input.Length < waveCell.ChannelCount || input[0].Length < count)
+            {
+                input = (new float[waveCell.ChannelCount][]).Select(x => new float[count]).ToArray();
+            }
+            for (int ch = 0; ch < waveCell.ChannelCount; ch++)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    input[ch][i] = 0;
+                }
+            }
+            var lenv2 = new LocalEnvironment()
+            {
+                Buffer = input,  // 別に用意した空のバッファを与える
+                Freq = lenv.Freq,
+                Gate = lenv.Gate,
+                Locals = lenv.Locals,
+                Pitch = lenv.Pitch,
+                SamplingRate = lenv.SamplingRate
+            };
+            waveCell.Take(count, lenv2);  // バッファにデータを格納
+
+            if (cutoffCell != null)
+            {
+                if (cutoffsignal == null || cutoffsignal.Length < cutoffCell.ChannelCount || cutoffsignal[0].Length < count)
+                {
+                    cutoffsignal = (new float[cutoffCell.ChannelCount][]).Select(x => new float[count]).ToArray();
+                }
+                for (int ch = 0; ch < cutoffCell.ChannelCount; ch++)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        cutoffsignal[ch][i] = 0;
+                    }
+                }
+                var lenv3 = new LocalEnvironment()
+                {
+                    Buffer = cutoffsignal,  // 別に用意した空のバッファを与える
+                    Freq = lenv.Freq,
+                    Gate = lenv.Gate,
+                    Locals = lenv.Locals,
+                    Pitch = lenv.Pitch,
+                    SamplingRate = lenv.SamplingRate
+                };
+                cutoffCell.Take(count, lenv3);  // バッファにデータを格納
+            }
+
+            filt = filt ?? (new int[slope]).Select(x => new IIRFilter(waveCell.ChannelCount, 1, 0, 0, 0, 0, 0)).ToArray();
+
+            //Signal[] input = waveCell.Take(count, lenv);
+            //var cutoffsignal = cutoffCell == null ? new ConstantSignal(0, count) : cutoffCell.Take(count, lenv)[0];
+
+            if (cutoffCell == null)
+            {
+                float cutoff = 0;
 
                 double w0 = 2 * Math.PI * (800 + cutoff * 5000) / lenv.SamplingRate;
                 float sin = (float)Math.Sin(w0);
@@ -88,7 +148,7 @@ namespace HatoDSP
 
                 for (int i = 0; i < filt.Length; i++)
                 {
-                    input = filt[i].Take(count, new Signal[][] { input });
+                    input = filt[i].Take(count, new float[][][] { input });
                 }
             }
             else
@@ -100,7 +160,7 @@ namespace HatoDSP
                 float[] b1 = new float[count];
                 float[] b2 = new float[count];
 
-                float[] cutoff = cutoffsignal.ToArray();
+                float[] cutoff = cutoffsignal[0].ToArray();  // TODO: ToArray() が不要
 
                 double w0 = 0;
                 float sin = 0, cos = 0, alp = 0;
@@ -136,20 +196,26 @@ namespace HatoDSP
 
                 for (int i = 0; i < filt.Length; i++)
                 {
-                    input = filt[i].Take(count, new Signal[][] { 
+                    input = filt[i].Take(count, new float[][][] { 
                         input, 
-                        new Signal[] { 
-                            new ExactSignal(a0,1.0f, false),
-                            new ExactSignal(a1,1.0f, false),
-                            new ExactSignal(a2,1.0f, false),
-                            new ExactSignal(b0,1.0f, false),
-                            new ExactSignal(b1,1.0f, false),
-                            new ExactSignal(b2,1.0f, false)
+                        new float[][] { 
+                            a0,
+                            a1,
+                            a2,
+                            b0,
+                            b1,
+                            b2,
                     }});
                 }
             }
 
-            return input;
+            for (int ch = 0; ch < waveCell.ChannelCount; ch++)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    retbuf[ch][i] += input[ch][i];
+                }
+            }
         }
     }
 }

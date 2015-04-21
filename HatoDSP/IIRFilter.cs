@@ -38,7 +38,8 @@ namespace HatoDSP
         }
 
         // input[0] : フィルタへの入力信号
-        public override Signal[] Take(int count, params Signal[][] input)
+        // input[1] : a,bパラメータ
+        public override float[][] Take(int count, float[][][] input)
         {
             if (input.Length != 1 && input.Length != 2) throw new Exception("Invalid Input Count.");
             if (input[0].Length != chCnt) throw new Exception("Invalid Input Signal's Channels Count.");
@@ -48,13 +49,13 @@ namespace HatoDSP
                 param = input[1].Select(x => x.ToArray()).ToArray();
             }
 
-            Signal[] ret = new Signal[input[0].Length];
+            float[][] ret = new float[input[0].Length][];
 
             for (int j = 0; j < chCnt; j++)
             {
-                if (input[0][j].Count != count) throw new Exception("Invalid Input Signal's Length.");
+                //if (input[0][j].Length != count) throw new Exception("Invalid Input Signal's Length.");
 
-                float[] arr = input[0][j].ToArray();
+                float[] arr = input[0][j].ToArray();  // TODO: ToArray() が不要?
 
                 float t0 = z0[j];  // これで高速化はされるのか？ → 計測したら高速化されてるっぽいです・・・
                 float t1 = z1[j];
@@ -80,7 +81,7 @@ namespace HatoDSP
                     t1 = t0;
                 }
 
-                ret[j] = new ExactSignal(arr, 1.0f, false);
+                ret[j] = arr;
 
                 z0[j] = t0;
                 z1[j] = t1;

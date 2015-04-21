@@ -50,19 +50,19 @@ namespace HatoDSPTest
 
             var iir1 = new IIRFilter(2, 1, 0, 0, 1, -1, 0);
 
-            var filt = iir1.Take(5, new[] { sig1, sig2 });
-            Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { 0, 1, 1, 1, 1 })));
-            Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { 5, 1, 1, 1, 1 })));
+            var filt = iir1.Take(5, new[] { new[] { sig1.ToArray(), sig2.ToArray() } });
+            Assert.IsTrue(Signal.Equals(new ExactSignal(filt[0]), new ExactSignal(new float[] { 0, 1, 1, 1, 1 })));
+            Assert.IsTrue(Signal.Equals(new ExactSignal(filt[1]), new ExactSignal(new float[] { 5, 1, 1, 1, 1 })));
 
-            filt = iir1.Take(5, new[] { sig1, sig2 });
-            Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
-            Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
+            filt = iir1.Take(5, new[] { new[] { sig1.ToArray(), sig2.ToArray() } });
+            Assert.IsTrue(Signal.Equals(new ExactSignal(filt[0]), new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
+            Assert.IsTrue(Signal.Equals(new ExactSignal(filt[1]), new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
 
             var iir2 = new IIRFilter(2, 1, -1, 0, 1, 0, 1);
 
-            filt = iir2.Take(5, new[] { sig1, sig2 });
-            Assert.IsTrue(Signal.Equals(filt[0], new ExactSignal(new float[] { 0, 1, 3, 7, 13 })));
-            Assert.IsTrue(Signal.Equals(filt[1], new ExactSignal(new float[] { 5, 11, 23, 37, 53 })));
+            filt = iir2.Take(5, new[] { new[] { sig1.ToArray(), sig2.ToArray() } });
+            Assert.IsTrue(Signal.Equals(new ExactSignal(filt[0]), new ExactSignal(new float[] { 0, 1, 3, 7, 13 })));
+            Assert.IsTrue(Signal.Equals(new ExactSignal(filt[1]), new ExactSignal(new float[] { 5, 11, 23, 37, 53 })));
 
             LocalEnvironment lenv = new LocalEnvironment() {
                 Freq = new ConstantSignal(0, 256),
@@ -87,28 +87,38 @@ namespace HatoDSPTest
 
                     Cell cell = null;
                     CellTree child1 = new CellTree(() => new AnalogOscillator());
-                    Signal[] sig = null;
+                    float[][] sig = null;
+                    int chCnt = 1;
 
                     cell = (Cell)Activator.CreateInstance(t);  // internalでも構わずインスタンス生成するんですね・・・
                     Assert.IsTrue(cell.ParamsList != null);
-                    sig = cell.Take(256, lenv);  // childの指定なしで実行
-                    Assert.IsTrue(sig.Length >= 1);
-                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };  // 要素数がTakeで指定した個数と等しいことを確認
+                    chCnt = cell.ChannelCount;
+                    lenv.Buffer = sig = new float[chCnt][].Select(x => new float[256]).ToArray();
+                    cell.Take(256, lenv);  // childの指定なしで実行
+                    //Assert.IsTrue(sig.Length >= 1);
+                    //for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch] == 256); };  // 要素数がTakeで指定した個数と等しいことを確認
+                    //Assert.IsTrue(sig.Length == cell.ChannelCount);  // チャンネル数が表明通りであることを確認
 
                     cell = (Cell)Activator.CreateInstance(t);
                     cell.AssignChildren(new CellWire[] { });
+                    chCnt = cell.ChannelCount;
+                    lenv.Buffer = sig = new float[chCnt][].Select(x => new float[256]).ToArray();
                     cell.Take(256, lenv);  // childの個数0個で実行
-                    Assert.IsTrue(sig.Length >= 1);
-                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
+                    //Assert.IsTrue(sig.Length >= 1);
+                    //for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
+                    //Assert.IsTrue(sig.Length == cell.ChannelCount);
 
                     cell = (Cell)Activator.CreateInstance(t);
                     cell.AssignChildren(new CellWire[] { new CellWire(child1, 0) });
+                    chCnt = cell.ChannelCount;
+                    lenv.Buffer = sig = new float[chCnt][].Select(x => new float[256]).ToArray();
                     cell.Take(256, lenv);  // childの個数1個で実行
-                    Assert.IsTrue(sig.Length >= 1);
-                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
+                    //Assert.IsTrue(sig.Length >= 1);
+                    //for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
                     cell.Take(256, lenv);
-                    Assert.IsTrue(sig.Length >= 1);
-                    for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
+                    //Assert.IsTrue(sig.Length >= 1);
+                    //for (int ch = 0; ch < sig.Length; ch++) { Assert.IsTrue(sig[ch].Count == 256); };
+                    //Assert.IsTrue(sig.Length == cell.ChannelCount);
                 }
             }
         }

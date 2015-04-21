@@ -49,6 +49,13 @@ namespace HatoDSP
             }
         }
 
+        public override int ChannelCount
+        {
+            get {
+                return waveCell.ChannelCount;
+            }
+        }
+
         public override Signal[] Take(int count, LocalEnvironment lenv)
         {
             int degree = 20;

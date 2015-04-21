@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public abstract class Module  // 一般のシステムを表す
+    public abstract class Module  // 一般のシステムを表す（TODO:このクラス消す）
     {
-        public abstract Signal[] Take(int count, params Signal[][] input);
+        public abstract float[][] Take(int count, float[][][] input);
     }
 }

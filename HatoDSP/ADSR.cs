@@ -8,7 +8,6 @@ namespace HatoDSP
 {
     public class ADSR : Cell
     {
-        CellTree child0;
         Cell cell;
         CellParameterValue[] ctrl;
 
@@ -46,8 +45,8 @@ namespace HatoDSP
         {
             if (children.Length >= 1)
             {
-                this.child0 = children[0].Source;  // FIXME: 複数指定
-                cell = child0.Generate();
+                //this.child0 = children[0].Source;  // FIXME: 複数指定
+                cell = children[0].Source.Generate();
             }
         }
 
@@ -56,9 +55,27 @@ namespace HatoDSP
             this.ctrl = ctrl;
         }
 
-        public override Signal[] Take(int count, LocalEnvironment lenv)
+        public override int ChannelCount
         {
-            if (releaseFinished) return new Signal []{ new ConstantSignal(0, count) };
+            get
+            {
+                if (cell != null)
+                {
+                    return cell.ChannelCount;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+
+        float[] ret = new float[256];
+        float[][] buf2;
+
+        public override void Take(int count, LocalEnvironment lenv)
+        {
+            if (releaseFinished) return;
 
             // ctrlの解釈
             // A, D, S, R
@@ -72,7 +89,10 @@ namespace HatoDSP
 
             float[] gate = lenv.Gate.ToArray();
 
-            float[] ret = new float[count];
+            if (ret.Length < count)
+            {
+                ret = new float[count];  // ゼロ初期化はしない
+            }
 
             double dt = 1.0 / lenv.SamplingRate;
 
@@ -120,14 +140,49 @@ namespace HatoDSP
 
             }
 
-            if (child0 != null)
+            if (cell != null)
             {
-                var src = cell.Take(count, lenv);
-                return src.Select(x => Signal.Multiply(x, new ExactSignal(ret, 1.0f, false))).ToArray();  // チャンネル数は入力信号と同じ
+                if (cell != null && (buf2 == null || buf2.Length < cell.ChannelCount || buf2[0].Length < count))
+                {
+                    buf2 = (new float[cell.ChannelCount][]).Select(x => new float[count]).ToArray();
+                }
+
+                for (int ch = 0; ch < cell.ChannelCount; ch++)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        buf2[ch][i] = 0;
+                    }
+                }
+
+                // TODO: LocalEnvironment.Clone() の実装 (←MemberwiseCloneで良くないですか)
+                var lenv2 = new LocalEnvironment()
+                {
+                    Buffer = buf2,  // 別に用意した空のバッファを与える
+                    Freq = lenv.Freq,
+                    Gate = lenv.Gate,
+                    Locals = lenv.Locals,
+                    Pitch = lenv.Pitch,
+                    SamplingRate = lenv.SamplingRate
+                };
+
+                cell.Take(count, lenv2);  // バッファに加算
+
+                int chCount = cell.ChannelCount;
+                for (int ch = 0; ch < chCount; ch++)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        lenv.Buffer[ch][i] += buf2[ch][i] * ret[i];  // 結果を格納
+                    }
+                }
             }
             else
             {
-                return new[] { new ExactSignal(ret, 1.0f, false) };  // チャンネル数は1
+                for (int i = 0; i < count; i++)
+                {
+                    lenv.Buffer[0][i] += ret[i];  // 結果を格納
+                }
             }
         }
     }

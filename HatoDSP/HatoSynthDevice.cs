@@ -42,7 +42,7 @@ namespace HatoDSP
         /// </summary>
         public Signal[] Take(int count)
         {
-            var mix = (new int[2]).Select(x => (Signal)(new ConstantSignal(0, count))).ToArray();
+            var mix = (new int[2]).Select(x => new float[count]).ToArray();
 
             MyNoteEvent[] notes1 = null, notes2 = null;
 
@@ -54,24 +54,33 @@ namespace HatoDSP
 
             foreach (var note in notes1)
             {
+                float[][] ret = new float[note.cell.ChannelCount][].Select(x => new float[count]).ToArray();
+
                 var lenv = new LocalEnvironment()
                 {
+                    Buffer = ret,
                     Freq = new ConstantSignal(0, count),
                     Pitch = new ConstantSignal(note.n, count),
                     Locals = new Dictionary<string, Signal>(),
                     Gate = new ConstantSignal(1, count),  // ここが違う！！
                     SamplingRate = 44100
                 };
-                var ret = note.cell.Take(count, lenv);
-                if (ret.Length == 1)
+                note.cell.Take(count, lenv);
+                if (note.cell.ChannelCount == 1)
                 {
-                    mix[0] = Signal.Add(mix[0], ret[0]);
-                    mix[1] = Signal.Add(mix[1], ret[0]);
+                    for (int i = 0; i < count; i++)
+                    {
+                        mix[0][i] = mix[0][i] + ret[0][i];
+                        mix[1][i] = mix[1][i] + ret[0][i];
+                    }
                 }
-                else if (ret.Length == 2)
+                else if (note.cell.ChannelCount == 2)
                 {
-                    mix[0] = Signal.Add(mix[0], ret[0]);
-                    mix[1] = Signal.Add(mix[1], ret[1]);
+                    for (int i = 0; i < count; i++)
+                    {
+                        mix[0][i] = mix[0][i] + ret[0][i];
+                        mix[1][i] = mix[1][i] + ret[1][i];
+                    }
                 }
                 else
                 {
@@ -81,24 +90,33 @@ namespace HatoDSP
 
             foreach (var note in notes2)
             {
+                float[][] ret = new float[note.cell.ChannelCount][].Select(x => new float[count]).ToArray();
+
                 var lenv = new LocalEnvironment()
                 {
+                    Buffer = ret,
                     Freq = new ConstantSignal(0, count),
                     Pitch = new ConstantSignal(note.n, count),
                     Locals = new Dictionary<string, Signal>(),
                     Gate = new ConstantSignal(0, count),  // ここが違う！！
                     SamplingRate = 44100
                 };
-                var ret = note.cell.Take(count, lenv);
-                if (ret.Length == 1)
+                note.cell.Take(count, lenv);
+                if (note.cell.ChannelCount == 1)
                 {
-                    mix[0] = Signal.Add(mix[0], ret[0]);
-                    mix[1] = Signal.Add(mix[1], ret[0]);
+                    for (int i = 0; i < count; i++)
+                    {
+                        mix[0][i] = mix[0][i] + ret[0][i];
+                        mix[1][i] = mix[1][i] + ret[0][i];
+                    }
                 }
-                else if (ret.Length == 2)
+                else if (note.cell.ChannelCount == 2)
                 {
-                    mix[0] = Signal.Add(mix[0], ret[0]);
-                    mix[1] = Signal.Add(mix[1], ret[1]);
+                    for (int i = 0; i < count; i++)
+                    {
+                        mix[0][i] = mix[0][i] + ret[0][i];
+                        mix[1][i] = mix[1][i] + ret[1][i];
+                    }
                 }
                 else
                 {
@@ -106,7 +124,7 @@ namespace HatoDSP
                 }
             }
 
-            return mix;
+            return mix.Select(x => new ExactSignal(x)).ToArray();
         }
 
         /// <summary>
