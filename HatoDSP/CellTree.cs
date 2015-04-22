@@ -40,6 +40,9 @@ namespace HatoDSP
                 case "rainbow":
                     generator = () => new Rainbow();
                     break;
+                case "arithmetic":
+                    generator = () => new Arithmetic();
+                    break;
                 default:
                     throw new PatchFormatException("モジュール " + module + " は存在しません。");
             }
