@@ -40,8 +40,8 @@ namespace HatoSynthGUI
             new BlockPreset("Analog OSC",    "Square",         2, new float[] {0, 0.5f, (float)Waveform.Square, 0}),
             new BlockPreset("Analog OSC",    "Triangle",       3, new float[] {0, 0.5f, (float)Waveform.Tri, 0}),
             new BlockPreset("Rainbow",       "Echo",           4, new float[] {}),  // Not Implemented
-            new BlockPreset("Rainbow",       "Rainbow",        5, new float[] {}),
-            new BlockPreset("Rainbow",       "Uni",            6, new float[] {}),  // Not Implemented
+            new BlockPreset("Rainbow",       "Rainbow",        5, new float[] {7, 0.2f, 0.0f, 1.0f}),
+            new BlockPreset("Rainbow",       "Uni",            6, new float[] {7, 0.0f, 1.0f, 1.0f}),
             new BlockPreset("Analog Filter", "Lowpass Filter", 7, new float[] {}),
             new BlockPreset("ADSR",          "AD",             8, new float[] {0.001f, 0.50f, 0.0f, 0.50f}),  // Not Implemented
             new BlockPreset("ADSR",          "ASDR",           9, new float[] {0.001f, 0.50f, 0.5f, 0.01f}),

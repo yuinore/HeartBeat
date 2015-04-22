@@ -18,7 +18,8 @@ namespace HatoDSPFast {
     void FastOscillator::Take(int count, array<float>^ buf,
         float pshift, float amplify, int waveform, float op1,
         float samplingRate,
-        bool constantPitch, float lenv_Pitch, array<float>^ pitch){
+        bool constantPitch, float lenv_Pitch, array<float>^ pitch,
+        bool hasPhaseShift, array<float>^ phaseShiftArr){
 
         double overtoneBias = 0.36;  // 調整値
 
@@ -76,6 +77,10 @@ namespace HatoDSPFast {
                 isTooHigh = phasedelta >= Math::PI;                    // 音が高すぎるかどうかを表すbool変数
                 isVeryHigh = logovertone <= 0;                         // 音が高く、単一のsin波で信号を表せるかどうかを表す
                 isInRange = isNotTooLow && !isVeryHigh;                // 上の3条件をまとめた一時変数
+            }
+
+            if (hasPhaseShift){
+                phase += phaseShiftArr[i];  // FIXME: インパルスを飛ばしてしまうかもしれない
             }
 
             switch (waveform)
@@ -175,6 +180,10 @@ namespace HatoDSPFast {
                     buf[i] += amplify * (float)DSPLib::FastMath::Sin(phase);
                 }
                 break;
+            }
+
+            if (hasPhaseShift){
+                phase -= phaseShiftArr[i];  // FIXME: インパルスを飛ばしてしまうかもしれない
             }
 
             phase += phasedelta;

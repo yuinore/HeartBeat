@@ -49,7 +49,7 @@ namespace HatoDSPSample
                     Freq = new ConstantSignal(441, 100000),
                     Pitch = new ConstantSignal(69, 100000),
                     Gate = new ConstantSignal(1, 100000),
-                    Locals = null
+                    Locals = new Dictionary<string,Signal>()
                 });
 
                 WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test1.wav"), buf.Select(x => x.ToArray()).ToArray(), buf.Length, 44100, 32);
@@ -81,7 +81,7 @@ namespace HatoDSPSample
                     Freq = new ConstantSignal(441, 100000),
                     Pitch = new ConstantSignal(69, 100000),
                     Gate = new ConstantSignal(1, 100000),
-                    Locals = null
+                    Locals = new Dictionary<string,Signal>()
                 });
 
                 WaveFileWriter.WriteAllSamples(HatoPath.FromAppDir("test2.wav"), buf.Select(x => x.ToArray()).ToArray(), buf.Length, 44100, 32);
@@ -95,7 +95,7 @@ namespace HatoDSPSample
                     Freq = new ConstantSignal(441, 2000000),
                     Pitch = new ExactSignal(Enumerable.Range(0, 2000000).Select(i => (float)(-3 + i / 10000.0)).ToArray()),
                     Gate = new ConstantSignal(1, 2000000),
-                    Locals = null
+                    Locals = new Dictionary<string,Signal>()
                 };
 
                 {
@@ -195,7 +195,7 @@ namespace HatoDSPSample
                 Freq = new ConstantSignal(441, 200000),
                 Pitch = new ConstantSignal(69, 200000),
                 Gate = new ConstantSignal(1, 200000),
-                Locals = null
+                Locals = new Dictionary<string, Signal>()
             };
 
             pr.Root.Generate().Take(200000, lenv);

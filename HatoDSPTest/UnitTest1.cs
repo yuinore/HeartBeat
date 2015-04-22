@@ -55,13 +55,13 @@ namespace HatoDSPTest
             Assert.IsTrue(Signal.Equals(new ExactSignal(filt[0]), new ExactSignal(new float[] { 0, 1, 1, 1, 1 })));
             Assert.IsTrue(Signal.Equals(new ExactSignal(filt[1]), new ExactSignal(new float[] { 5, 1, 1, 1, 1 })));
 
-            filt = iir1.Take(5, new[] { new[] { filt[0] = sig1.ToArray(), filt[1] = sig2.ToArray() } });
+            iir1.Take(5, new[] { new[] { filt[0] = sig1.ToArray(), filt[1] = sig2.ToArray() } });
             Assert.IsTrue(Signal.Equals(new ExactSignal(filt[0]), new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
             Assert.IsTrue(Signal.Equals(new ExactSignal(filt[1]), new ExactSignal(new float[] { -4, 1, 1, 1, 1 })));
 
             var iir2 = new IIRFilter(2, 1, -1, 0, 1, 0, 1);
 
-            filt = iir2.Take(5, new[] { new[] { filt[0] = sig1.ToArray(), filt[1] = sig2.ToArray() } });
+            iir2.Take(5, new[] { new[] { filt[0] = sig1.ToArray(), filt[1] = sig2.ToArray() } });
             Assert.IsTrue(Signal.Equals(new ExactSignal(filt[0]), new ExactSignal(new float[] { 0, 1, 3, 7, 13 })));
             Assert.IsTrue(Signal.Equals(new ExactSignal(filt[1]), new ExactSignal(new float[] { 5, 11, 23, 37, 53 })));
 

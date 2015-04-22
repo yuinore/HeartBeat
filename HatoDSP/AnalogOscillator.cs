@@ -83,6 +83,13 @@ namespace HatoDSP
                 if (ctrl.Length >= 4) { op1 = ctrl[3].Value; }
             }
 
+            float[] phaseShiftArr = null;
+
+            if (lenv.Locals.ContainsKey("phase"))
+            {
+                phaseShiftArr = lenv.Locals["phase"].ToArray();
+            }
+
             bool constantPitch = (lenv.Pitch is ConstantSignal);  // メモ：Expressionが導入された場合に修正
             
             if (cell != null)
@@ -103,7 +110,9 @@ namespace HatoDSP
                     lenv.SamplingRate,
                     constantPitch,
                     constantPitch ? ((ConstantSignal)lenv.Pitch).val : 0,
-                    constantPitch ? null : lenv.Pitch.ToArray());
+                    constantPitch ? null : lenv.Pitch.ToArray(),
+                    phaseShiftArr != null,
+                    phaseShiftArr);
 
                 cell.Take(count, lenv);  // バッファに加算
 
@@ -124,7 +133,9 @@ namespace HatoDSP
                     lenv.SamplingRate,
                     constantPitch,
                     constantPitch ? ((ConstantSignal)lenv.Pitch).val : 0,
-                    constantPitch ? null : lenv.Pitch.ToArray());  // 結果を格納
+                    constantPitch ? null : lenv.Pitch.ToArray(),
+                    phaseShiftArr != null,
+                    phaseShiftArr);  // 結果を格納
             }
         }
     }

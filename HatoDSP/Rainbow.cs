@@ -11,6 +11,9 @@ namespace HatoDSP
         CellTree children;
         List<Cell> list;
         int rainbowN = 7;
+        float detuneAmount = 0.2f;  // 0～
+        float unisoneAmount = 0.0f;  // 0～1
+        float stereoAmount = 1.0f;  // 0～1
         float[] rand;
 
         public Rainbow()
@@ -49,13 +52,33 @@ namespace HatoDSP
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
             // TODO:
+            if (ctrl.Length >= 1)
+            {
+                rainbowN = Math.Min(32, (int)(ctrl[0].Value + 0.5f));
+            }
+            if (ctrl.Length >= 2)
+            {
+                detuneAmount = ctrl[1].Value;
+            }
+            if (ctrl.Length >= 3)
+            {
+                unisoneAmount = ctrl[2].Value;
+            }
+            if (ctrl.Length >= 4)
+            {
+                stereoAmount = ctrl[3].Value;
+            }
         }
 
         public override CellParameter[] ParamsList
         {
             get
             {
-                return new CellParameter[]{
+                return new CellParameter[]
+                {
+                    new CellParameter("Detune", true, 0.0f, 1.0f, 0.2f, x => (int)(x * 10000) * 0.01 + "%"),
+                    new CellParameter("Unison", true, 0.0f, 1.0f, 0.0f, x => (int)(x * 10000) * 0.01 + "cent"),
+                    new CellParameter("Stereo", true, 0.0f, 2.0f, 1.0f, x => (int)(x * 10000) * 0.01 + "%")
                 };
             }
         }
@@ -92,21 +115,27 @@ namespace HatoDSP
                     }
                 }
 
+                float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
+
                 var lenv2 = new LocalEnvironment()
                 {
                     Buffer = buf2,  // 別に用意した空のバッファを与える
                     Freq = lenv.Freq,
                     Gate = lenv.Gate,
                     Locals = lenv.Locals,
-                    Pitch = Signal.Add(originalPitch, new ConstantSignal(0.2f * (j - (rainbowN - 1.0f) / 2 + (rand[j] - 0.5f) * 1.0f) / ((rainbowN - 1.0f) / 2), count)),
+                    Pitch = Signal.Add(originalPitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.5f) / width, count)),
                     SamplingRate = lenv.SamplingRate
                 };
 
+                if (unisoneAmount != 0)
+                {
+                    lenv.Locals["phase"] = new ConstantSignal(unisoneAmount * 2.0f * (float)Math.PI * (j + (rand[j] - 0.5f) * 0.5f) / (float)rainbowN, count);  // FIXME: lenvをCloneしてから代入
+                }
+
                 x.Take(count, lenv2);
 
-                float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
-                var panL = 1 - 1.0f * ((j - width) / width);
-                var panR = 1 + 1.0f * ((j - width) / width);
+                var panL = 1 - stereoAmount * ((j - width) / width);
+                var panR = 1 + stereoAmount * ((j - width) / width);
 
                 if (chCount == 1)
                 {

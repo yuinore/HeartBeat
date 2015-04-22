@@ -16,7 +16,7 @@ namespace HatoDSP
         public Signal Pitch;
         public Signal Freq;
         public Signal Gate;
-        public Dictionary<string, Signal> Locals;
+        public Dictionary<string, Signal> Locals;  // キーはすべて小文字で格納してください。これは、JavaScript上の制約です。
         public float SamplingRate;
     }
 }
