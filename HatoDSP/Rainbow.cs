@@ -114,7 +114,7 @@ namespace HatoDSP
 
                 float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
 
-                var lenv2 = lenv.Clone();
+                LocalEnvironment lenv2 = lenv.Clone();
                 lenv2.Buffer = buf2;
                 lenv2.Pitch =  Signal.Add(lenv.Pitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.5f) / width, count));
 

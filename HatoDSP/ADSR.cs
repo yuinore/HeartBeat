@@ -156,7 +156,7 @@ namespace HatoDSP
                 }
 
                 // TODO: LocalEnvironment.Clone() の実装 (←MemberwiseCloneで良くないですか)
-                var lenv2 = lenv.Clone();
+                LocalEnvironment lenv2 = lenv.Clone();
                 lenv2.Buffer = buf2;  // 別に用意した空のバッファを与える
 
                 cell.Take(count, lenv2);  // バッファに加算

@@ -85,7 +85,7 @@ namespace HatoDSP
                     input[ch][i] = 0;
                 }
             }
-            var lenv2 = lenv.Clone();
+            LocalEnvironment lenv2 = lenv.Clone();
             lenv2.Buffer = input;
 
             waveCell.Take(count, lenv2);  // バッファにデータを格納
@@ -103,7 +103,7 @@ namespace HatoDSP
                         cutoffsignal[ch][i] = 0;
                     }
                 }
-                var lenv3 = lenv.Clone();
+                LocalEnvironment lenv3 = lenv.Clone();
                 lenv3.Buffer = cutoffsignal;  // 別に用意した空のバッファを与える
                 cutoffCell.Take(count, lenv3);  // バッファにデータを格納
             }

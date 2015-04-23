@@ -13,14 +13,21 @@ namespace HatoDSP
             AddSub = 0,  // 加減算 x1 + x2 + x3 + ... - y1 - y2 - y3 - ...
             MulDiv,  // 乗除算 x1 * x2 * x3 * ... / y1 / y2 / y3 / ...
             Sidechain,  // (x1 + x2 + x3 ...) * y1 * y2 * y3 ...
+            Count
         }
 
         Cell[] child = new Cell[] { };
         int[] port;
+        OperationType op = OperationType.AddSub;
 
         public override CellParameter[] ParamsList
         {
-            get { return new CellParameter[] { }; }
+            get
+            {
+                return new CellParameter[] {
+                    new CellParameter("Operation", false, 0, (float)OperationType.Count, (float)OperationType.AddSub, x => ((OperationType)(x + 0.5f)).ToString())
+                };
+            }
         }
 
         public override void AssignChildren(CellWire[] children)
@@ -31,7 +38,10 @@ namespace HatoDSP
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            return;
+            if (ctrl.Length >= 1)
+            {
+                op = (OperationType)(ctrl[0].Value + 0.5f);
+            }
         }
 
         int outChCnt = 0;
@@ -59,38 +69,42 @@ namespace HatoDSP
         {
             outChCnt = ChannelCount;  // ←二重代入
 
-            float[][] outbuf = lenv.Buffer;
+            LocalEnvironment lenv2 = lenv.Clone();
 
-            foreach (var cel in child)
+            switch (op)
             {
-                if (cel.ChannelCount == 1)
-                {
-                    float[][] tempbuf = new float[1][] { new float[count] };
-
-                    // FIXME: LocalEnvironmentのクローン
-                    lenv.Buffer = tempbuf;
-
-                    cel.Take(count, lenv);
-
-                    for(int ch = 0; ch < outChCnt; ch++)
+                case OperationType.MulDiv:
+                    break;
+                case OperationType.Sidechain:
+                    break;
+                case OperationType.AddSub:
+                default:
+                    foreach (var cel in child)
                     {
-                        for (int i = 0; i < count; i++)
+                        if (cel.ChannelCount == 1)
                         {
-                            outbuf[ch][i] += tempbuf[0][i];
+                            float[][] tempbuf = new float[1][] { new float[count] };
+
+                            lenv2.Buffer = tempbuf;
+
+                            cel.Take(count, lenv2);
+
+                            for (int ch = 0; ch < outChCnt; ch++)
+                            {
+                                for (int i = 0; i < count; i++)
+                                {
+                                    lenv.Buffer[ch][i] += tempbuf[0][i];  // すべてのチャンネルに加算する
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // TODO: チャンネル数が異なるときエラー
+                            cel.Take(count, lenv);  // 元のバッファにそのまま加算する
                         }
                     }
-                }
-                else
-                {
-                    // TODO: チャンネル数が異なるときエラー
-
-                    lenv.Buffer = outbuf;
-
-                    cel.Take(count, lenv);
-                }
+                    break;
             }
-
-            lenv.Buffer = outbuf;
         }
     }
 }
