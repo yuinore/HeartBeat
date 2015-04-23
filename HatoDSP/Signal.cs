@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public abstract class Signal  // 不変型という前提の最適化処理を既にいくつか実装していますのでそういうことにしておいてください。
+    public abstract class Signal  // 不変型という前提の最適化処理を既にいくつか実装していますのでそういうことにしておいてください。もっとも、建前上不変型なだけですが。
     {
         public static Signal Add(Signal x, Signal y)
         {

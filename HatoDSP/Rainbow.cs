@@ -92,9 +92,6 @@ namespace HatoDSP
 
         public override void Take(int count, LocalEnvironment lenv)
         {
-            Signal originalPitch = lenv.Pitch;
-            float[][] sum = lenv.Buffer;
-
             for (int j = 0; j < list.Count; j++)
             {
                 var x = list[j];
@@ -117,19 +114,13 @@ namespace HatoDSP
 
                 float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
 
-                var lenv2 = new LocalEnvironment()
-                {
-                    Buffer = buf2,  // 別に用意した空のバッファを与える
-                    Freq = lenv.Freq,
-                    Gate = lenv.Gate,
-                    Locals = lenv.Locals,
-                    Pitch = Signal.Add(originalPitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.5f) / width, count)),
-                    SamplingRate = lenv.SamplingRate
-                };
+                var lenv2 = lenv.Clone();
+                lenv2.Buffer = buf2;
+                lenv2.Pitch =  Signal.Add(lenv.Pitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.5f) / width, count));
 
                 if (unisoneAmount != 0)
                 {
-                    lenv.Locals["phase"] = new ConstantSignal(unisoneAmount * 2.0f * (float)Math.PI * (j + (rand[j] - 0.5f) * 0.5f) / (float)rainbowN, count);  // FIXME: lenvをCloneしてから代入
+                    lenv2.Locals["phase"] = new ConstantSignal(unisoneAmount * 2.0f * (float)Math.PI * (j + (rand[j] - 0.5f) * 0.5f) / (float)rainbowN, count);
                 }
 
                 x.Take(count, lenv2);
@@ -141,16 +132,16 @@ namespace HatoDSP
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        sum[0][i] += buf2[0][i] * panL;
-                        sum[1][i] += buf2[0][i] * panR;
+                        lenv.Buffer[0][i] += buf2[0][i] * panL;
+                        lenv.Buffer[1][i] += buf2[0][i] * panR;
                     }
                 }
                 else if (chCount == 2)
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        sum[0][i] += buf2[0][i] * panL;
-                        sum[1][i] += buf2[1][i] * panR;
+                        lenv.Buffer[0][i] += buf2[0][i] * panL;
+                        lenv.Buffer[1][i] += buf2[1][i] * panR;
                     }
                 }
                 else
