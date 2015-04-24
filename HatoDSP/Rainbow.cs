@@ -12,7 +12,7 @@ namespace HatoDSP
         List<Cell> list;
         int rainbowN = 7;
         float detuneAmount = 0.2f;  // 0～
-        float unisoneAmount = 0.0f;  // 0～1
+        float unisoneAmount = 1.0f;  // 0～1
         float stereoAmount = 1.0f;  // 0～1
         float[] rand;
 
@@ -92,6 +92,11 @@ namespace HatoDSP
 
         public override void Take(int count, LocalEnvironment lenv)
         {
+            float entireamp = (float)(1.0 / Math.Sqrt(rainbowN));
+            // 正規分布の和の分散は分散の和になる
+            // 従って振幅の期待値はその平方根に比例（適当な推論）
+            // ただし、デチューン量が大きい場合はこの限りではない
+
             for (int j = 0; j < list.Count; j++)
             {
                 var x = list[j];
@@ -116,17 +121,17 @@ namespace HatoDSP
 
                 LocalEnvironment lenv2 = lenv.Clone();
                 lenv2.Buffer = buf2;
-                lenv2.Pitch =  Signal.Add(lenv.Pitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.5f) / width, count));
+                lenv2.Pitch =  Signal.Add(lenv.Pitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.9228f) / width, count));
 
                 if (unisoneAmount != 0)
                 {
-                    lenv2.Locals["phase"] = new ConstantSignal(unisoneAmount * 2.0f * (float)Math.PI * (j + (rand[j] - 0.5f) * 0.5f) / (float)rainbowN, count);
+                    lenv2.Locals["phase"] = new ConstantSignal(unisoneAmount * 2.0f * (float)Math.PI * (j + (rand[j] - 0.5f) * 0.5392f) / (float)rainbowN, count);
                 }
 
                 x.Take(count, lenv2);
 
-                var panL = 1 - stereoAmount * ((j - width) / width);
-                var panR = 1 + stereoAmount * ((j - width) / width);
+                var panL = (1 - stereoAmount * ((j - width) / width)) * entireamp;
+                var panR = (1 + stereoAmount * ((j - width) / width)) * entireamp;
 
                 if (chCount == 1)
                 {

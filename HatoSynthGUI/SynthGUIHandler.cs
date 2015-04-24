@@ -1,5 +1,6 @@
 ﻿using Codeplex.Data;
 using HatoDSP;
+using HatoLib;
 using HatoPlayer;
 using Sanford.Multimedia.Midi;
 using System;
@@ -418,7 +419,8 @@ namespace HatoSynthGUI
                 var p = new PictureBox();
                 //p.Image = Image.FromFile(@"cells\cell_0000" + (cellId + 1) + ".png");
                 //p.ImageLocation = @"cells\cell_0000" + (cellId + 1) + ".png";
-                p.Image = Image.FromStream(File.OpenRead(@"cells\cell_0000" + library.Presets[cellId].GraphicId + ".png"), false, false);
+                p.Image = Image.FromStream(File.OpenRead(HatoPath.FromAppDir(@"cells\cell_000" +
+                    library.Presets[cellId].GraphicId / 10 + library.Presets[cellId].GraphicId % 10 + ".png")), false, false);
                 p.Name = "CellPreset_" + cellId;
                 p.Left = cellId % 2 * 40 + 4;
                 p.Top = cellId / 2 * 40 + 4;
@@ -513,7 +515,7 @@ namespace HatoSynthGUI
                                 break;
                         }
 
-                        if (src != null)
+                        if (src != null && dst != null)
                         {
                             //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
                             // ******** TODO

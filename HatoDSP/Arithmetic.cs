@@ -71,38 +71,97 @@ namespace HatoDSP
 
             LocalEnvironment lenv2 = lenv.Clone();
 
+            float[][] bufx = null, bufy = null;
+
+            if (op == OperationType.MulDiv || op == OperationType.Sidechain)
+            {
+                bufx = new float[outChCnt][];  // TODO: optimization
+                bufy = new float[outChCnt][];
+                for (int ch = 0; ch < outChCnt; ch++)
+                {
+                    bufx[ch] = new float[count];
+                    bufy[ch] = new float[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (op == OperationType.MulDiv)
+                        {
+                            bufx[ch][i] = 1;
+                        }
+                        bufy[ch][i] = 1;
+                    }
+                }
+            }
+
+            for (int celId = 0; celId < child.Length; celId++)
+            {
+                var cel = child[celId];
+
+                float[][] tempbuf = new float[cel.ChannelCount][];
+
+                for (int ch = 0; ch < cel.ChannelCount; ch++)
+                {
+                    tempbuf[ch] = new float[count];
+                }
+
+                lenv2.Buffer = tempbuf;
+
+                cel.Take(count, lenv2);
+
+                for (int ch = 0; ch < outChCnt; ch++)
+                {
+                    int srcch = cel.ChannelCount == 1 ? 0 : ch;  // 送り元チャンネル
+
+                    if (port[celId] == 0)
+                    {
+                        switch (op)
+                        {
+                            case OperationType.MulDiv:
+                                for (int i = 0; i < count; i++) { bufx[ch][i] *= tempbuf[srcch][i]; }
+                                break;
+                            case OperationType.Sidechain:
+                                for (int i = 0; i < count; i++) { bufx[ch][i] += tempbuf[srcch][i]; }
+                                break;
+                            case OperationType.AddSub:
+                            default:
+                                for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += tempbuf[srcch][i]; }
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (op)
+                        {
+                            case OperationType.MulDiv:
+                                for (int i = 0; i < count; i++) { bufy[ch][i] *= tempbuf[srcch][i]; }
+                                break;
+                            case OperationType.Sidechain:
+                                for (int i = 0; i < count; i++) { bufy[ch][i] *= tempbuf[srcch][i]; }
+                                break;
+                            case OperationType.AddSub:
+                            default:
+                                for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] -= tempbuf[srcch][i]; }
+                                break;
+                        }
+                    }
+                }
+            }
+
             switch (op)
             {
                 case OperationType.MulDiv:
+                    for (int ch = 0; ch < outChCnt; ch++)
+                    {
+                        for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += Math.Max(Math.Min(bufx[ch][i] / bufy[ch][i], 1.0f), -1.0f); }
+                    }
                     break;
                 case OperationType.Sidechain:
+                    for (int ch = 0; ch < outChCnt; ch++)
+                    {
+                        for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += bufx[ch][i] * bufy[ch][i]; }
+                    }
                     break;
                 case OperationType.AddSub:
                 default:
-                    foreach (var cel in child)
-                    {
-                        if (cel.ChannelCount == 1)
-                        {
-                            float[][] tempbuf = new float[1][] { new float[count] };
-
-                            lenv2.Buffer = tempbuf;
-
-                            cel.Take(count, lenv2);
-
-                            for (int ch = 0; ch < outChCnt; ch++)
-                            {
-                                for (int i = 0; i < count; i++)
-                                {
-                                    lenv.Buffer[ch][i] += tempbuf[0][i];  // すべてのチャンネルに加算する
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // TODO: チャンネル数が異なるときエラー
-                            cel.Take(count, lenv);  // 元のバッファにそのまま加算する
-                        }
-                    }
                     break;
             }
         }
