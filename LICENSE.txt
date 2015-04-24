@@ -1,0 +1,79 @@
+memo
+
+############## Libraries Summary ##############
+
+++++++++++++++ Nuget Package ++++++++++++++
+SharpDX (MIT License)
+Sanford MIDI Toolkit (MIT License)
+Json.NET (MIT License)
+
+++++++++++++++ other libraries ++++++++++++++
+NVorbis (Ms-PL)
+https://github.com/yuinore/nvorbis
+
+DynamicJson (Ms-PL)
+https://dynamicjson.codeplex.com/
+
+ASIO SDK
+http://www.steinberg.net/en/company/developers.html
+
+別EXEからのファイル ドロップを受け取るサンプル(C#.NET)
+http://homepage2.nifty.com/nonnon/SoftSample/CS.NET/SampleFileDrop.html
+
+++++++++++++++ to be added or not ++++++++++++++
+Ogg Vorbis .Net (Ms-PL)
+https://github.com/ttsuki/OggVorbis.NET
+http://tu3.jp/0603
+
+メルセンヌ・ツイスタ(Mersenne Twister、高性能擬似乱数発生器)の C#、C++ ポート
+http://homepage2.nifty.com/well/MersenneTwister.html
+
+V8 JavaScript Engine (New BSD License)
+https://code.google.com/p/v8/
+
+
+############## Helpful References ##############
+
+BMS command memo (JP)
+http://hitkey.nekokan.dyndns.info/cmdsJP.htm
+
+LR2スキン仕様書
+http://www.geocities.jp/red_without_right_stick/lr2skinhelp.html
+
+LR2スキンの仕様書に載ってない注意事項
+http://analogmania.blog35.fc2.com/blog-entry-169.html
+
+双2次フィルタ(ディジタルフィルタ) - ++C++
+http://ufcpp.net/study/digital_filter/biquad.html
+
+双一次変換 - 和歌山大学
+http://www.wakayama-u.ac.jp/~kawahara/signalproc/TeXfiles/bilinearTrans.pdf
+
+x86/x64 SIMD命令一覧表　（SSE～AVX2）
+http://www.officedaytime.com/tips/simd.html
+
+advanced optimization SSE - nifty
+http://homepage1.nifty.com/herumi/adv/adv50.html
+
+IA-32 命令のレイテンシとスループット
+http://www.intel.co.jp/content/dam/www/public/ijkk/jp/ja/documents/developer/ia32.pdf
+
+Intel 64 and IA-32 Architectures Optimization Reference Manual (September 2014)
+http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-optimization-manual.pdf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
