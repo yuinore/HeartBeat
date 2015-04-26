@@ -441,6 +441,39 @@ namespace HatoSynthGUI
             public string module { get; set; }
             public float[] ctrl { get; set; }
             public string[] children { get; set; }
+            public int pos { get; set; }
+
+            public int SetPos(int x, int y)  // どうしてこうなった？
+            {
+                if (x > 0xFFF || y > 0xFFF || x < 0 || y < 0) throw new Exception();
+
+                return pos = (
+                    ((x & 0x007) << 0) |
+                    ((x & 0x038) << 3) |
+                    ((x & 0x1C0) << 6) |
+                    ((x & 0xD00) << 9) |
+                    ((y & 0x007) << 3) |
+                    ((y & 0x038) << 6) |
+                    ((y & 0x1C0) << 9) |
+                    ((y & 0xD00) << 12));
+            }
+
+            public Tuple<int, int> GetPos()
+            {
+                int x = (
+                    ((pos & 0x000007) >> 0) |
+                    ((pos & 0x0001C0) >> 3) |
+                    ((pos & 0x007000) >> 6) |
+                    ((pos & 0x1C0000) >> 9));
+                
+                int y = (
+                    ((pos & 0x000038) >> 3) |
+                    ((pos & 0x000D00) >> 6) |
+                    ((pos & 0x038000) >> 9) |
+                    ((pos & 0xD00000) >> 12));
+
+                return new Tuple<int, int>(x, y);
+            }
         }
 
         void form_KeyDown(object sender, KeyEventArgs e)
@@ -475,6 +508,7 @@ namespace HatoSynthGUI
                                 cell.ctrl = preset.Ctrl;
                             }
 
+                            cell.SetPos(x, y);
                             cells[y, x] = cell;
                         }
                     }
