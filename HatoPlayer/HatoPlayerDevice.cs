@@ -186,13 +186,13 @@ namespace HatoPlayer
         /// </summary>
         /// <param name="wavid">BMSで定義されたwavid</param>
         /// <param name="isKeysound">ユーザーの操作により再生された音であればtrue</param>
-        public bool PlaySound(int wavid, bool isKeysound)
+        public bool PlaySound(int wavid, bool isKeysound, double playfrom)
         {
             Sound sbuf = null;
 
             if (WavidToBuffer.TryGetValue(wavid, out sbuf) && sbuf != null)
             {
-                sbuf.StopAndPlay(isKeysound ? -6.0 : -10.0);
+                sbuf.StopAndPlayFrom(isKeysound ? -6.0 : -10.0, playfrom);
                 return true;
             }
             else
@@ -221,7 +221,7 @@ namespace HatoPlayer
                                     var s = MixchToSynth[mixch];
                                     Task.Run(async () =>
                                     {
-                                        MixchToSynth[mixch].NoteOn(noteno);
+                                        MixchToSynth[mixch].NoteOn(noteno);  // FIXME: playfromに応じて途中再生？
 
                                         await Task.Delay((int)(duration * 1000));
 

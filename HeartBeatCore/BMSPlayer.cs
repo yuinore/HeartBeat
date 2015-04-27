@@ -282,7 +282,7 @@ namespace HeartBeatCore
 
                 if (keysoundReady && keysound.TryGetValue(keyid, out wavid))
                 {
-                    if (!hplayer.PlaySound(wavid, true))
+                    if (!hplayer.PlaySound(wavid, true, 0))
                     {
                         if (b.WavDefinitionList.ContainsKey(wavid))
                         {
@@ -401,7 +401,8 @@ namespace HeartBeatCore
                     Parallel.ForEach(b.SoundBMObjects, (sb) =>
                     { 
                         // 等号が入るかどうかに注意な！
-                        if (sb.Seconds >= PlayFrom && sb.Seconds <= PlayFrom + WavFileLoadingDelayTime)
+                        // FIXME: ファイルアクセスが無駄に多い(多分)ので最適化
+                        if ((sb.Seconds >= PlayFrom && sb.Seconds <= PlayFrom + WavFileLoadingDelayTime) || true)
                         {
                             hplayer.PrepareSound(sb.Wavid);
                         }
@@ -830,7 +831,7 @@ namespace HeartBeatCore
                 {
                     foreach (var x in b.SoundBMObjects)
                     {
-                        while (x.Seconds >= CurrentSongPosition())
+                        while (x.Seconds >= CurrentSongPosition() || CurrentSongPosition() < PlayFrom)
                         {
                             // TaskSchedulerException・・・？？
                             await Task.Delay(5);
@@ -838,21 +839,20 @@ namespace HeartBeatCore
 
                         if (Stopped) return;
 
-                        if (x.Seconds >= PlayFrom)
+                        if (autoplay ? !x.IsInvisible() : x.IsBackSound())
                         {
-                            if (autoplay ? !x.IsInvisible() : x.IsBackSound())
+                            if (!hplayer.PlaySound(x.Wavid,
+                                false,
+                                x.Seconds < PlayFrom ? CurrentSongPosition() - x.Seconds : 0))
                             {
-                                if (!hplayer.PlaySound(x.Wavid, false))
+                                if (b.WavDefinitionList.ContainsKey(x.Wavid))
                                 {
-                                    if (b.WavDefinitionList.ContainsKey(x.Wavid))
-                                    {
-                                        TraceWarning("  Warning : Audio \"" + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + "\" is not loaded yet...");
-                                    }
-                                    else
-                                    {
-                                        // WAVが定義されていない場合。
-                                        // （空文字定義の場合は除く）
-                                    }
+                                    TraceWarning("  Warning : Audio \"" + b.WavDefinitionList.GetValueOrDefault(x.Wavid) + "\" is not loaded yet...");
+                                }
+                                else
+                                {
+                                    // WAVが定義されていない場合。
+                                    // （空文字定義の場合は除く）
                                 }
                             }
                         }

@@ -67,25 +67,37 @@ namespace HatoPlayer
             }
         }
 
-        public void StopAndPlay(double volumeInDb = 0)
+        public void StopAndPlayFrom(double volumeInDb = 0, double playfrom = 0)
         {
             amp = (float)Math.Pow(10, volumeInDb * 0.05);
 
             if (sbuf != null && hplayer.PlaybackDevice == HatoPlayerDevice.PlaybackDeviceType.DirectSound)
             {
-                sbuf.StopAndPlay(volumeInDb);
+                if (playfrom < 0.01)
+                {
+                    sbuf.StopAndPlay(volumeInDb);
+                }
             }
             else
             {
-                lock (hplayer.PlayingSoundList)
+                playingPosition = playfrom * SamplingRate;
+
+                if (playingPosition < BufSampleCount)
                 {
-                    if (!hplayer.PlayingSoundList.Contains(this))
+                    lock (hplayer.PlayingSoundList)
                     {
-                        hplayer.PlayingSoundList.Add(this);
+                        if (!hplayer.PlayingSoundList.Contains(this))
+                        {
+                            hplayer.PlayingSoundList.Add(this);
+                        }
                     }
-                    playingPosition = 0;
                 }
             }
+        }
+
+        public void StopAndPlay(double volumeInDb = 0)
+        {
+            StopAndPlayFrom(volumeInDb, 0);
         }
     }
 }
