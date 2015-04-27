@@ -134,7 +134,7 @@ namespace HatoPlayer
             //*** クリッピング処理と、shortへの変換
             for (int i = 0; i < count; i++)
             {
-                double fsample = currChBuf[i] * 3276.7;  // FIXME:ここで音量調整しない
+                double fsample = currChBuf[i] * 3276.7;  // FIXME:ここで音量調整しない←早く修正して
                 short ssample = (short)fsample;
                 if(fsample > 32767.0) ssample = 32767;
                 if(fsample < -32768.0) ssample = -32768;

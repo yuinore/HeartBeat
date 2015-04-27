@@ -162,19 +162,11 @@ namespace HatoSound
             dsSecondaryBuffer.Play(0, PlayFlags.None);
         }
 
-        public void StopAndPlay()
+        public void StopAndPlay(double volumeInDb = 0, double playfrom = 0)
         {
             dsSecondaryBuffer.Stop();
-            dsSecondaryBuffer.CurrentPosition = 0;
-            dsSecondaryBuffer.Volume = 0;
-            dsSecondaryBuffer.Play(0, PlayFlags.None);
-        }
-
-        public void StopAndPlay(double volumeInDb)
-        {
-            dsSecondaryBuffer.Stop();
-            dsSecondaryBuffer.CurrentPosition = 0;
-            dsSecondaryBuffer.Volume = (int)(volumeInDb * 100.0);
+            dsSecondaryBuffer.CurrentPosition = (int)(playfrom * SamplingRate * ChannelCount * sizeof(short));
+            dsSecondaryBuffer.Volume = (int)(volumeInDb * 100.0);  // -10000 ～ 0, それぞれ -100dB, 0dB を表す。
             dsSecondaryBuffer.Play(0, PlayFlags.None);
         }
 

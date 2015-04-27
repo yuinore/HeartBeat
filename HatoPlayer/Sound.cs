@@ -73,10 +73,7 @@ namespace HatoPlayer
 
             if (sbuf != null && hplayer.PlaybackDevice == HatoPlayerDevice.PlaybackDeviceType.DirectSound)
             {
-                if (playfrom < 0.01)
-                {
-                    sbuf.StopAndPlay(volumeInDb);
-                }
+                sbuf.StopAndPlay(volumeInDb, playfrom);
             }
             else
             {
