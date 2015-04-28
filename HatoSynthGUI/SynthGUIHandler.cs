@@ -5,6 +5,7 @@ using HatoPlayer;
 using Sanford.Multimedia.Midi;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -43,17 +44,7 @@ namespace HatoSynthGUI
         ContextMenuStrip contextMenuStrip2;
         BlockPresetLibrary library;
         AsioHandler asio;
-
-        /// <summary>
-        /// PictureBox と、その位置の組
-        /// </summary>
-        private class CellBlock
-        {
-            public PictureBox pBox;
-            public BlockPresetLibrary.BlockPreset preset;
-            public int y;
-            public int x;
-        }
+        BlockTableManager btable;
 
         public enum ArrowDirection
         {
@@ -72,26 +63,8 @@ namespace HatoSynthGUI
         /// それぞれのマスにどのセルが入っているか。
         /// 【注意】添字は y, x の順
         /// </summary>
-        CellBlock[,] table;
         ArrowDirection[,] arrowX, arrowY;
         
-        /// <summary>
-        /// tableをPictureBoxで逆引きします。
-        /// </summary>
-        CellBlock pictureboxToCellblock(PictureBox p)
-        {
-            foreach (var cb in table)
-            {
-                if (cb == null) continue;
-
-                if (cb.pBox == p)
-                {
-                    return cb;  // TODO: 計算量削減のためのDictionary作成
-                }
-            }
-
-            throw new KeyNotFoundException();
-        }
 
         int dragx = 0, dragy = 0;  // ドラッグ開始時の e.X, e.Y の値
         bool dragging = false;
@@ -110,10 +83,11 @@ namespace HatoSynthGUI
         {
             this.form = form;
 
-            table = new CellBlock[TableSize.Height, TableSize.Width];
             arrowX = new ArrowDirection[TableSize.Height, TableSize.Width - 1];
             arrowY = new ArrowDirection[TableSize.Height, TableSize.Width];
             library = new BlockPresetLibrary();
+
+            btable = new BlockTableManager(TableSize);
 
             this.Load();
         }
@@ -128,25 +102,15 @@ namespace HatoSynthGUI
             if (posy < 0) posy = 0;
             if (posy >= TableSize.Height) posy = TableSize.Height - 1;
 
-            CellBlock cb = null;
-
-            if (table[posy, posx] == null)
+            if (btable.TryMove(draggingBox, ref posx, ref posy))
             {
-                cb = pictureboxToCellblock(draggingBox);
-
-                table[cb.y, cb.x] = null;
-
-                cb.x = posx;
-                cb.y = posy;
-                table[posy, posx] = cb;
             }
             else
             {
-                cb = pictureboxToCellblock(draggingBox);
             }
 
-            draggingBox.Left = cb.x * CellTableInterval + CellMargin;
-            draggingBox.Top = cb.y * CellTableInterval + CellMargin;
+            draggingBox.Left = posx * CellTableInterval + CellMargin;
+            draggingBox.Top = posy * CellTableInterval + CellMargin;
             draggingBox = null;
         }
 
@@ -191,31 +155,28 @@ namespace HatoSynthGUI
 
         private void pictureBox2_DoubleClick(object sender, EventArgs e)
         {
-            var cb = new CellBlock();
-            int x = 0, y = 0;
-            for (y = 0; y < TableSize.Height; y++)
-            {
-                for (x = 0; x < TableSize.Width; x++)
-                {
-                    if (table[y, x] == null)
-                    {
-                        table[y, x] = cb;
+            int x, y;
 
-                        // gotoの濫用に注意
-                        goto break1;  // C# に goto 文ってあったの！？！？
-                    }
-                }
+            if (btable.IsFull(out x, out y))
+            {
+                return;
             }
 
-            return;  // もしテーブルに空きがなかったら何もしない
-
-            break1:
+            BlockPresetLibrary.BlockPreset preset = null;
 
             string sendername = ((PictureBox)sender).Name;
-            if (sendername.StartsWith("CellPreset_"))
+            if (sendername.StartsWith("CellPreset_"))  // どのプリセット画像が選択されたか
             {
                 int presetId = Int32.Parse(sendername.Substring(11));
-                cb.preset = library.Presets[presetId];
+                preset = library.Presets[presetId];
+            }
+            else
+            {
+                // マネージ コードのアサーション
+                // https://msdn.microsoft.com/ja-jp/library/ttcc4x86(v=vs.110).aspx
+                Debug.Assert(false, "何か不幸なことが起きた");
+
+                preset = library.Presets[0];
             }
 
             var p = new PictureBox();
@@ -234,9 +195,7 @@ namespace HatoSynthGUI
 
             p.ContextMenuStrip = contextMenuStrip2;
 
-            cb.pBox = p;
-            cb.x = x;
-            cb.y = y;
+            btable.Add(p, x, y, preset);
 
             splitContainer1.Panel1.Controls.Add(p);
             splitContainer1.Panel1.Controls.SetChildIndex(p, 0);
@@ -485,11 +444,10 @@ namespace HatoSynthGUI
                 {
                     for (int x = 0; x < TableSize.Width; x++)
                     {
-                        if (table[y, x] != null)
+                        BlockPresetLibrary.BlockPreset preset;
+
+                        if (btable.TryGetPreset(x, y, out preset))
                         {
-                            var preset = table[y, x].preset;
-
-
                             // DynamicJsonを編集しようかと思ったけど難しすぎる・・・
                             // DynamicJsonを入れ子にできれば捗るのだけれど、
                             // そもそも遅延評価になっていないという罠。
@@ -725,11 +683,10 @@ namespace HatoSynthGUI
 
         private void DeleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            PictureBox source = (PictureBox)contextMenuStrip2.SourceControl;
+            PictureBox source = (PictureBox)contextMenuStrip2.SourceControl;  // メモ：うまく取得できないことがあるらしい
             if (source != null)
             {
-                CellBlock cb = pictureboxToCellblock(source);
-                table[cb.y, cb.x] = null;
+                btable.Remove(source);
 
                 splitContainer1.Panel1.Controls.Remove(source);
             }
