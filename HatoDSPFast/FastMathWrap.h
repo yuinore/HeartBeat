@@ -7,10 +7,10 @@ namespace HatoDSPFast
     using namespace System::Text;
     using namespace System::Threading::Tasks;
 
-    public ref class FastMathWrap
+    public ref class FastMathWrap abstract sealed
     {
     public:
-        FastMathWrap();
+        static FastMathWrap();
         static double Sin(double x);
         static double Pow2(double x);
         static double Saw(double x, int logovertone);

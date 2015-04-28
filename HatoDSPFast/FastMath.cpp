@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "FastMath.h"
+#include "WaveFile.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <xmmintrin.h>
@@ -83,6 +85,7 @@ namespace HatoDSPFast {
             WT_MASK[j] = temp[j] - 1;
         }
 
+        //************* 配列のメモリ確保 *************
         f0 = (float*)calloc(N / 2, sizeof(float));
         f1 = (float*)calloc(N / 2, sizeof(float));
         f2 = (float*)calloc(N / 2, sizeof(float));
@@ -92,23 +95,6 @@ namespace HatoDSPFast {
         ipw2_0 = (float*)calloc(N, sizeof(float));
         ipw2_1 = (float*)calloc(N, sizeof(float));
         ipw2_2 = (float*)calloc(N, sizeof(float));
-
-        for (int i = 0; i < N / 2; i++)
-        {
-            f0[i] = (float)Math::Sin(2 * Math::PI * (i + 0.5) / N);
-            f1[i] = (float)(_2pi_N * Math::Cos(2 * Math::PI * (i + 0.5) / N));
-            f2[i] = -(float)(_2pi_N * _2pi_N * Math::Sin(2 * Math::PI * (i + 0.5) / N) / 2);
-        }
-
-        for (int i = 0; i < N; i++)
-        {
-            pow2_0[i] = (float)Math::Pow(2, (i + 0.5) / N);
-            pow2_1[i] = (float)(log2_N * Math::Pow(2, (i + 0.5) / N));
-            pow2_2[i] = (float)(log2_N * log2_N * Math::Pow(2, (i + 0.5) / N) / 2);
-            ipw2_0[i] = (float)Math::Pow(2, -(i + 0.5) / N);
-            ipw2_1[i] = (float)(-log2_N * Math::Pow(2, -(i + 0.5) / N));
-            ipw2_2[i] = (float)(log2_N * log2_N * Math::Pow(2, -(i + 0.5) / N) / 2);
-        }
 
         saw0 = (float**)calloc(WT_N, sizeof(float*));
         saw1 = (float**)calloc(WT_N, sizeof(float*));
@@ -133,13 +119,43 @@ namespace HatoDSPFast {
             imp0[j] = (float*)calloc(N2, sizeof(float));
             imp1[j] = (float*)calloc(N2, sizeof(float));
             imp2[j] = (float*)calloc(N2, sizeof(float));
+        }
+
+        //************* 既存のキャッシュのチェック *************
+        if (!System::IO::Directory::Exists("cache\\wavetable\\initialized")) {
+            // TODO: キャッシュ読み込みの処理
+        }
+
+        //************* 配列のデータの生成 *************
+        for (int i = 0; i < N / 2; i++)
+        {
+            f0[i] = (float)Math::Sin(2 * Math::PI * (i + 0.5) / N);
+            f1[i] = (float)(_2pi_N * Math::Cos(2 * Math::PI * (i + 0.5) / N));
+            f2[i] = -(float)(_2pi_N * _2pi_N * Math::Sin(2 * Math::PI * (i + 0.5) / N) / 2);
+        }
+
+        for (int i = 0; i < N; i++)
+        {
+            pow2_0[i] = (float)Math::Pow(2, (i + 0.5) / N);
+            pow2_1[i] = (float)(log2_N * Math::Pow(2, (i + 0.5) / N));
+            pow2_2[i] = (float)(log2_N * log2_N * Math::Pow(2, (i + 0.5) / N) / 2);
+            ipw2_0[i] = (float)Math::Pow(2, -(i + 0.5) / N);
+            ipw2_1[i] = (float)(-log2_N * Math::Pow(2, -(i + 0.5) / N));
+            ipw2_2[i] = (float)(log2_N * log2_N * Math::Pow(2, -(i + 0.5) / N) / 2);
+        }
+
+        for (int j = 0; j < WT_N; j++)
+        {
+            int N2 = WT_SIZE[j];
 
             double _2pi_N2 = 2 * Math::PI / N2;
 
             for (int i = 0; i < N2; i++)
             {
-                for (int n = 1; n <= 1 << j; n++)
+                for (int n = 1 << j; n >= 1; n--)  // 誤差を減らすために小さい(と期待される)方から加算する
                 {
+                    // n := 倍音のインデックス(1-origin)
+
                     saw0[j][i] += (float)(Math::Sin(2 * Math::PI * n * (i + 0.5) / N2) / (n * Math::PI / 2));
                     saw1[j][i] += (float)(_2pi_N2 * n * Math::Cos(2 * Math::PI * n * (i + 0.5) / N2) / (n * Math::PI / 2));
                     saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math::Sin(2 * Math::PI * n * (i + 0.5) / N2) / (2 * n * Math::PI / 2));
@@ -158,8 +174,58 @@ namespace HatoDSPFast {
             }
         }
 
-        // 私、ちゃんとメモリバリアしてるかな・・・？
+        //************* 初期化完了の通知 *************
+
+        // 私、ちゃんとメモリバリアしてるかな・・・？(多分してない)
         System::Threading::Volatile::Write(initialized, true);
+
+        //************* ファイルへのキャッシュの書き込み *************
+        if (chacheWavetable) {
+            if (!System::IO::Directory::Exists("cache\\")) {
+                System::IO::Directory::CreateDirectory("cache\\");
+            }
+            if (!System::IO::Directory::Exists("cache\\wavetable\\")) {
+                System::IO::Directory::CreateDirectory("cache\\wavetable\\");
+            }
+
+            WaveFile::WriteAllSamples("cache\\wavetable\\sin0.wav", &f0, 1, N / 2, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\sin1.wav", &f1, 1, N / 2, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\sin2.wav", &f2, 1, N / 2, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\pow2_0.wav", &pow2_0, 1, N, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\pow2_1.wav", &pow2_1, 1, N, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\pow2_2.wav", &pow2_2, 1, N, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\ipw2_0.wav", &ipw2_0, 1, N, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\ipw2_1.wav", &ipw2_1, 1, N, 44100, 32);
+            WaveFile::WriteAllSamples("cache\\wavetable\\ipw2_2.wav", &ipw2_2, 1, N, 44100, 32);
+
+            for (int j = 0; j < WT_N; j++)
+            {
+                int N2 = WT_SIZE[j];
+
+                char fname[100];
+
+                sprintf(fname, "cache\\wavetable\\saw0[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &saw0[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\saw1[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &saw1[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\saw2[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &saw2[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\tri0[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &tri0[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\tri1[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &tri1[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\tri2[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &tri2[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\imp0[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &imp0[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\imp1[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &imp1[j], 1, WT_SIZE[j], 44100, 32);
+                sprintf(fname, "cache\\wavetable\\imp2[%d].wav", j);
+                WaveFile::WriteAllSamples(fname, &imp2[j], 1, WT_SIZE[j], 44100, 32);
+            }
+
+            WaveFile::WriteAllSamples("cache\\wavetable\\initialized", &f0, 1, 1, 44100, 32);
+        }
     }
 
     double FastMath::Sin(double x)

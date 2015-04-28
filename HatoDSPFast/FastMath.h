@@ -14,7 +14,7 @@ namespace HatoDSPFast
 
     public class FastMath abstract sealed  // public static class
     {
-    private:
+    public:
         static float* f0;
         static float* f1;
         static float* f2;
@@ -64,6 +64,8 @@ namespace HatoDSPFast
         static const int N = 512;
         static const int Mask = N - 1;
         static const double INV_0x4000000000000000L;
+
+        static const bool chacheWavetable = true;
 
         // Šeíˆê•Ï”
     private:

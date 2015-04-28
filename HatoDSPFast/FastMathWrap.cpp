@@ -10,7 +10,7 @@ namespace HatoDSPFast
     using namespace System::Text;
     using namespace System::Threading::Tasks;
 
-    FastMathWrap::FastMathWrap()
+    static FastMathWrap::FastMathWrap()
     {
     }
 
