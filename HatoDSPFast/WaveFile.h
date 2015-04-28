@@ -7,5 +7,6 @@ namespace HatoDSPFast
         static WaveFile();
 
         static void WriteAllSamples(char* filename, float** buf, int channels, int samplecount, int samplingrate, int bitdepth);
+        static void ReadAllSamples(char* filename, float** buf, int maxchannels, int maxsamplecount);
     };
 }

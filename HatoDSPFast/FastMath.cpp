@@ -7,6 +7,10 @@
 #include <xmmintrin.h>
 #include <immintrin.h>
 
+void aaa() {
+    System::Windows::Forms::MessageBox::Show("trace : " + System::DateTime::Now.Second + ", " + System::DateTime::Now.Millisecond);
+}
+
 namespace HatoDSPFast {
     using namespace System;
     using namespace System::Collections::Generic;
@@ -75,6 +79,7 @@ namespace HatoDSPFast {
         WT_SIZE = (int*)calloc(WT_N, sizeof(int));
         WT_SIZE_2PI = (double*)calloc(WT_N, sizeof(double));
         WT_MASK = (int*)calloc(WT_N, sizeof(int));
+        char fname[100];
 
         int temp[WT_N] = { 8, 512, 512, 512, 1024, 1024, 2048, 2048, 4096, 4096 };  // あえてわかりやすくするために temp[0]=8 で
         // N_SAW換算で   { 8, 256, 128, 64,  64,   32,   32,   16,   16,   8 };  // 最高周波数の倍音1周期あたりに割かれるサンプル数
@@ -121,11 +126,56 @@ namespace HatoDSPFast {
             imp2[j] = (float*)calloc(N2, sizeof(float));
         }
 
-        //************* 既存のキャッシュのチェック *************
-        if (!System::IO::Directory::Exists("cache\\wavetable\\initialized")) {
-            // TODO: キャッシュ読み込みの処理
-        }
+        //************* 既存のキャッシュのチェック（読み込めた場合はreturn） *************
+        if (System::IO::File::Exists("cache\\wavetable\\initialized")) {
+            //Task::Run(gcnew Action(aaa));
+            // ボトルネックはファイル読み込みではないらしい。
 
+            try {
+                WaveFile::ReadAllSamples("cache\\wavetable\\sin0.wav", &f0, 1, N / 2);
+                WaveFile::ReadAllSamples("cache\\wavetable\\sin1.wav", &f1, 1, N / 2);
+                WaveFile::ReadAllSamples("cache\\wavetable\\sin2.wav", &f2, 1, N / 2);
+                WaveFile::ReadAllSamples("cache\\wavetable\\pow2_0.wav", &pow2_0, 1, N);
+                WaveFile::ReadAllSamples("cache\\wavetable\\pow2_1.wav", &pow2_1, 1, N);
+                WaveFile::ReadAllSamples("cache\\wavetable\\pow2_2.wav", &pow2_2, 1, N);
+                WaveFile::ReadAllSamples("cache\\wavetable\\ipw2_0.wav", &ipw2_0, 1, N);
+                WaveFile::ReadAllSamples("cache\\wavetable\\ipw2_1.wav", &ipw2_1, 1, N);
+                WaveFile::ReadAllSamples("cache\\wavetable\\ipw2_2.wav", &ipw2_2, 1, N);
+
+                for (int j = 0; j < WT_N; j++)
+                {
+                    int N2 = WT_SIZE[j];
+
+                    sprintf(fname, "cache\\wavetable\\saw0[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &saw0[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\saw1[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &saw1[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\saw2[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &saw2[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\tri0[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &tri0[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\tri1[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &tri1[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\tri2[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &tri2[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\imp0[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &imp0[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\imp1[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &imp1[j], 1, WT_SIZE[j]);
+                    sprintf(fname, "cache\\wavetable\\imp2[%d].wav", j);
+                    WaveFile::ReadAllSamples(fname, &imp2[j], 1, WT_SIZE[j]);
+                }
+
+                // 正常に終了
+                //Task::Run(gcnew Action(aaa));
+
+                System::Threading::Volatile::Write(initialized, true);
+
+                return;
+            }
+            catch (System::IO::FileNotFoundException^) {
+            }
+        }
         //************* 配列のデータの生成 *************
         for (int i = 0; i < N / 2; i++)
         {
@@ -201,8 +251,6 @@ namespace HatoDSPFast {
             for (int j = 0; j < WT_N; j++)
             {
                 int N2 = WT_SIZE[j];
-
-                char fname[100];
 
                 sprintf(fname, "cache\\wavetable\\saw0[%d].wav", j);
                 WaveFile::WriteAllSamples(fname, &saw0[j], 1, WT_SIZE[j], 44100, 32);

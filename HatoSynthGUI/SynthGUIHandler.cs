@@ -600,14 +600,18 @@ namespace HatoSynthGUI
                 {
                     json[((dynamic[])json).Length] = start;
 
+                    //Task.Run(() => MessageBox.Show("serialize start : " + DateTime.Now.Second + ", " + DateTime.Now.Millisecond));
+
                     string str = json.ToString();
-                    //string str = DynamicJson.Serialize(json);
 
                     // jsonを整形
                     dynamic parsedJson = Newtonsoft.Json.JsonConvert.DeserializeObject(str);
                     str = Newtonsoft.Json.JsonConvert.SerializeObject(parsedJson, Newtonsoft.Json.Formatting.Indented);
-                    
-                    RunAsio(str);
+
+                    RunAsio(str);  // ← 100msくらい
+                    // RunAsio から返ってきてから、callback関数が最初に呼ばれるまで 330ms くらい掛かっている？
+                    // ASIOの制約かもしれないですね。
+                    // それともアセンブリ(.dllファイル)の読み込みに時間が掛かっている・・・？
                 }
             }
         }
