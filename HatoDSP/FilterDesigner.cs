@@ -84,5 +84,77 @@ namespace HatoDSP
 
             return coef.ToArray();
         }
+
+        public static void Biquad(
+            FilterType type, float w0, float Q, float A,
+            out float a0, out float a1, out float a2, out float b0, out float b1, out float b2)
+        {
+            // w0 ... 2pi normalized frequency
+            // Q ... Quality parameter
+
+            float sin = (float)Math.Sin(w0);
+            float cos = (float)Math.Cos(w0);
+            float alp = sin / Q;
+            float sqrtA = 0;
+
+            float[] ab = null;
+
+            System.Diagnostics.Debug.Assert(A >= 0);
+
+            switch (type)
+            {
+                case FilterType.LowPass:
+                    ab = new float[6] { 1 + alp, -2 * cos, 1 - alp, (1 - cos) * 0.5f, +(1 - cos), (1 - cos) * 0.5f };
+                    break;
+                case FilterType.HighPass:
+                    ab = new float[6] { 1 + alp, -2 * cos, 1 - alp, (1 + cos) * 0.5f, -(1 + cos), (1 + cos) * 0.5f };
+                    break;
+                case FilterType.BandPass:
+                    ab = new float[6] { 1 + alp, -2 * cos, 1 - alp, sin * 0.5f, 0, -sin * 0.5f };
+                    // *NOTICE: constant skirt gain, peak gain = Q
+                    break;
+                case FilterType.Notch:
+                    ab = new float[6] { 1 + alp, -2 * cos, 1 - alp, 1, -2 * cos, 1 };
+                    break;
+                case FilterType.AllPass:
+                    ab = new float[6] { 1 + alp, -2 * cos, 1 - alp, 1 - alp, -2 * cos, 1 + alp };
+                    break;
+                case FilterType.Peaking:
+                    ab = new float[6] { 1 + alp / A, -2 * cos, 1 - alp / A, 1 + alp * A, -2 * cos, 1 - alp * A };
+                    break;
+                case FilterType.LowShelf:
+                    sqrtA = (float)Math.Sqrt(A);
+                    ab = new float[6] {
+                        (A+1) + (A-1)*cos + 2*sqrtA*alp,
+                        -2*( (A-1) + (A+1)*cos),
+                        (A+1) + (A-1)*cos - 2*sqrtA*alp,
+                        A*( (A+1) - (A-1)*cos + 2*sqrtA*alp ),
+                        2*A*( (A-1) - (A+1)*cos ),
+                        A*( (A+1) - (A-1)*cos - 2*sqrtA*alp )
+                    };
+                    break;
+                case FilterType.HighShelf:
+                    sqrtA = (float)Math.Sqrt(A);
+                    ab = new float[6] {
+                        (A+1) - (A-1)*cos + 2*sqrtA*alp,
+                        2*( (A-1) - (A+1)*cos),
+                        (A+1) - (A-1)*cos - 2*sqrtA*alp,
+                        A*( (A+1) + (A-1)*cos + 2*sqrtA*alp ),
+                        -2*A*( (A-1) + (A+1)*cos ),
+                        A*( (A+1) + (A-1)*cos - 2*sqrtA*alp )
+                    };
+                    break;
+                default:
+                    ab = new float[6];
+                    break;
+            }
+
+            a0 = ab[0];  // TODO: リファクタリング
+            a1 = ab[1];
+            a2 = ab[2];
+            b0 = ab[3];
+            b1 = ab[4];
+            b2 = ab[5];
+        }
     }
 }

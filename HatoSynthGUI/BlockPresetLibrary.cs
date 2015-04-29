@@ -42,14 +42,15 @@ namespace HatoSynthGUI
             new BlockPreset("Null",          "Echo",           4,  new float[] {}),  // Not Implemented
             new BlockPreset("Rainbow",       "Rainbow",        5,  new float[] {7, 0.2f, 1.0f, 1.0f}),
             new BlockPreset("Rainbow",       "Uni",            6,  new float[] {7, 0.0f, 1.0f, 1.0f}),
-            new BlockPreset("Analog Filter", "Lowpass",        7,  new float[] {}),
+            new BlockPreset("Analog Filter", "Lowpass",        7,  new float[] {(float)FilterType.LowPass}),
             new BlockPreset("ADSR",          "AD",             8,  new float[] {0.001f, 0.50f, 0.0f, 0.50f}),  // Not Precisely Implemented
             new BlockPreset("ADSR",          "ASDR",           9,  new float[] {0.001f, 0.50f, 0.5f, 0.01f}),
-            new BlockPreset("Null",          "Low Shelf",      10, new float[] {}),
-            new BlockPreset("Null",          "High Shelf",     11, new float[] {}),
-            new BlockPreset("Null",          "Peaking",        12, new float[] {}),
-            new BlockPreset("Null",          "Bandpass",       13, new float[] {}),
-            new BlockPreset("Null",          "Highpass",       14, new float[] {}),
+            new BlockPreset("Analog Filter", "Low Shelf",      10, new float[] {(float)FilterType.LowShelf}),
+            new BlockPreset("Analog Filter", "High Shelf",     11, new float[] {(float)FilterType.HighShelf}),
+            new BlockPreset("Analog Filter", "Peaking",        12, new float[] {(float)FilterType.Peaking}),
+            new BlockPreset("Analog Filter", "Bandpass",       13, new float[] {(float)FilterType.BandPass}),
+            new BlockPreset("Analog Filter", "Highpass",       14, new float[] {(float)FilterType.HighPass}),
+            // Notch, AllPass is not implemented...??
             new BlockPreset("Null",          "Feedback",       15, new float[] {}),
             new BlockPreset("Null",          "Loop",           16, new float[] {}),
             new BlockPreset("Null",          "Noise",          17, new float[] {}),

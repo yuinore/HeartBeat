@@ -9,13 +9,14 @@ namespace HatoDSP
     public enum FilterType
     {
         None = 0,
-        AllPass = 0,
+        AllPass = 1,
         LowPass,
         HighPass,
         BandPass,
         Notch,
         LowShelf,
-        HiShelf,
-        Peaking
+        HighShelf,
+        Peaking,
+        Count
     }
 }

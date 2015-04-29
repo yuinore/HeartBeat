@@ -10,8 +10,6 @@ namespace HatoDSP
     {
         FilterType type = FilterType.LowPass;
 
-        readonly int ParamsRefreshRate = 1; //16;
-
         Cell waveCell = new NullCell();
         Cell cutoffCell;
         IIRFilter[] filt;
@@ -41,7 +39,10 @@ namespace HatoDSP
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            // TODO:
+            if (ctrl.Length >= 1)
+            {
+                type = (FilterType)(ctrl[0].Value + 0.5);
+            }
         }
 
         public override CellParameter[] ParamsList
@@ -49,6 +50,9 @@ namespace HatoDSP
             get
             {
                 return new CellParameter[]{
+                    new CellParameter(
+                        "Filter Type", false, 0, (float)(FilterType.Count - 1), (float)FilterType.LowPass,
+                        x => ((FilterType)(x + 0.5)).ToString())
                 };
             }
         }
@@ -117,22 +121,14 @@ namespace HatoDSP
             {
                 float cutoff = 0;
 
-                double w0 = 2 * Math.PI * (800 + cutoff * 5000) / lenv.SamplingRate;
-                float sin = (float)Math.Sin(w0);
-                float cos = (float)Math.Cos(w0);
+                float w0 = (float)(2 * Math.PI * (800 + cutoff * 5000) / lenv.SamplingRate);
                 float Q = 6.0f;
-                float alp = sin / Q;
 
-                float[] ab = null;
+                float[] ab = new float[6];
 
-                switch (type)
-                {
-                    case FilterType.LowPass:
-                        ab = new float[6] { 1 + alp, -2 * cos, 1 - alp, (1 - cos) * 0.5f, 1 - cos, (1 - cos) * 0.5f };
-                        break;
-                    default:
-                        break;
-                }
+                FilterDesigner.Biquad(
+                    type, w0, Q, 0.5f,
+                    out ab[0], out ab[1], out ab[2], out ab[3], out ab[4], out ab[5]);
 
                 for (int i = 0; i < filt.Length; i++)
                 {
@@ -158,34 +154,17 @@ namespace HatoDSP
 
                 float[] cutoff = cutoffsignal[0];
 
-                double w0 = 0;
-                float sin = 0, cos = 0, alp = 0;
+                float w0 = 0;
 
                 float Q = 6.0f;
 
                 for (int i = 0; i < count; i++)
                 {
-                    if (i % ParamsRefreshRate == 0)
-                    {
-                        w0 = 2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate;
-                        sin = (float)HatoDSPFast.FastMathWrap.Sin(w0);
-                        cos = (float)Math.Cos(w0);
-                        alp = sin / Q;
-                    }
+                    w0 = (float)(2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate);
 
-                    switch (type)
-                    {
-                        case FilterType.LowPass:
-                            a0[i] = 1 + alp;
-                            a1[i] = -2 * cos;
-                            a2[i] = 1 - alp;
-                            b0[i] = (1 - cos) * 0.5f;
-                            b1[i] = 1 - cos;
-                            b2[i] = (1 - cos) * 0.5f;
-                            break;
-                        default:
-                            break;
-                    }
+                    FilterDesigner.Biquad(
+                        type, w0, Q, 0.5f,
+                        out a0[i], out a1[i], out a2[i], out b0[i], out b1[i], out b2[i]);
                 }
 
                 for (int i = 0; i < filt.Length; i++)
