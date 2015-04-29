@@ -63,7 +63,7 @@ namespace HatoSynthGUI
         /// それぞれのマスにどのセルが入っているか。
         /// 【注意】添字は y, x の順
         /// </summary>
-        ArrowDirection[,] arrowX, arrowY;
+        List<ArrowSummary> arrows;
         
 
         int dragx = 0, dragy = 0;  // ドラッグ開始時の e.X, e.Y の値
@@ -83,8 +83,8 @@ namespace HatoSynthGUI
         {
             this.form = form;
 
-            arrowX = new ArrowDirection[TableSize.Height, TableSize.Width - 1];
-            arrowY = new ArrowDirection[TableSize.Height, TableSize.Width];
+            arrows = new List<ArrowSummary>();
+
             library = new BlockPresetLibrary();
 
             btable = new BlockTableManager(TableSize);
@@ -204,74 +204,84 @@ namespace HatoSynthGUI
         private void arrowX_Click(object sender, EventArgs e)
         {
             var p = (PictureBox)sender;
-            int y = 0, x = 0;
+            int arrowId = 0;  // XとYの通し
+
             if (p.Name.StartsWith("ArrowX_"))
             {
-                int arrowId = Int32.Parse(p.Name.Substring(7));
-                x = arrowId % (TableSize.Width - 1);
-                y = arrowId / (TableSize.Width - 1);
+                arrowId = Int32.Parse(p.Name.Substring(7));
             }
+            else
+            {
+                Debug.Assert(false, "arrowのハンドラが正しく結び付けられていません。");
+                arrowId = 0;
+            }
+
             if (p.ImageLocation == @"cells\arrow_00000.png" || p.ImageLocation == null)
             {
                 p.ImageLocation = @"cells\arrow_00002.png";
-                arrowX[y, x] = ArrowDirection.Right;
+                arrows[arrowId].direction = ArrowDirection.Right;
             }
             else if (p.ImageLocation == @"cells\arrow_00002.png")
             {
                 p.ImageLocation = @"cells\arrow_00004.png";
-                arrowX[y, x] = ArrowDirection.Left;
+                arrows[arrowId].direction = ArrowDirection.Left;
             }
             else if (p.ImageLocation == @"cells\arrow_00004.png")
             {
                 p.ImageLocation = @"cells\arrow_00006.png";
-                arrowX[y, x] = ArrowDirection.RightAlt;
+                arrows[arrowId].direction = ArrowDirection.RightAlt;
             }
             else if (p.ImageLocation == @"cells\arrow_00006.png")
             {
                 p.ImageLocation = @"cells\arrow_00008.png";
-                arrowX[y, x] = ArrowDirection.LeftAlt;
+                arrows[arrowId].direction = ArrowDirection.LeftAlt;
             }
             else
             {
                 p.ImageLocation = @"cells\arrow_00000.png";
-                arrowX[y, x] = ArrowDirection.None;
+                arrows[arrowId].direction = ArrowDirection.None;
             }
         }
 
         private void arrowY_Click(object sender, EventArgs e)
         {
             var p = (PictureBox)sender;
-            int y = 0, x = 0;
+            int arrowId = 0;
+
             if (p.Name.StartsWith("ArrowY_"))
             {
-                int arrowId = Int32.Parse(p.Name.Substring(7));
-                x = arrowId % TableSize.Width;
-                y = arrowId / TableSize.Width;
+                arrowId = Int32.Parse(p.Name.Substring(7));
             }
+            else
+            {
+                Debug.Assert(false, "arrowのハンドラが正しく結び付けられていません。");
+                arrowId = 0;
+            }
+
             if (p.ImageLocation == @"cells\arrow_00000.png" || p.ImageLocation == null)
             {
                 p.ImageLocation = @"cells\arrow_00003.png";
-                arrowY[y, x] = ArrowDirection.Down;
+                arrows[arrowId].direction = ArrowDirection.Down;
             }
             else if (p.ImageLocation == @"cells\arrow_00003.png")
             {
                 p.ImageLocation = @"cells\arrow_00001.png";
-                arrowY[y, x] = ArrowDirection.Up;
+                arrows[arrowId].direction = ArrowDirection.Up;
             }
             else if (p.ImageLocation == @"cells\arrow_00001.png")
             {
                 p.ImageLocation = @"cells\arrow_00007.png";
-                arrowY[y, x] = ArrowDirection.DownAlt;
+                arrows[arrowId].direction = ArrowDirection.DownAlt;
             }
             else if (p.ImageLocation == @"cells\arrow_00007.png")
             {
                 p.ImageLocation = @"cells\arrow_00005.png";
-                arrowY[y, x] = ArrowDirection.UpAlt;
+                arrows[arrowId].direction = ArrowDirection.UpAlt;
             }
             else
             {
                 p.ImageLocation = @"cells\arrow_00000.png";
-                arrowY[y, x] = ArrowDirection.None;
+                arrows[arrowId].direction = ArrowDirection.None;
             }
         }
 
@@ -315,16 +325,22 @@ namespace HatoSynthGUI
             {
                 var size = CellMargin * 2;
 
-                for (int arrowId = 0; arrowId < (TableSize.Width - 1) * TableSize.Height; arrowId++)
+                int arrowId;
+                int arrowId2 = 0;
+
+                for (arrowId = 0; arrowId < (TableSize.Width - 1) * TableSize.Height; arrowId++, arrowId2++)
                 {
+                    int x1 = arrowId % (TableSize.Width - 1);
+                    int y1 = arrowId / (TableSize.Width - 1);
+
                     // 水平方向（左右向き）の矢印
                     var p = new PictureBox();
                     //p.Image = Image.FromFile(@"cells\arrow_00000.png");
                     //p.ImageLocation = @"cells\arrow_00000.png";
                     p.Image = Image.FromStream(File.OpenRead(@"cells\arrow_00000.png"), false, false);
-                    p.Name = "ArrowX_" + arrowId;
-                    p.Left = (arrowId % (TableSize.Width - 1) + 1) * CellTableInterval - CellMargin;
-                    p.Top = arrowId / (TableSize.Width - 1) * CellTableInterval + CellTableInterval / 2 - CellMargin;
+                    p.Name = "ArrowX_" + arrowId2;
+                    p.Left = (x1 + 1) * CellTableInterval - CellMargin;
+                    p.Top = y1 * CellTableInterval + CellTableInterval / 2 - CellMargin;
                     p.Size = new System.Drawing.Size(size, size);
                     p.SizeMode = PictureBoxSizeMode.Zoom;
                     p.BorderStyle = BorderStyle.None;
@@ -333,18 +349,25 @@ namespace HatoSynthGUI
                     p.MouseDown += arrowX_Click;
 
                     splitContainer1.Panel1.Controls.Add(p);
+
+                    arrows.Add(new ArrowSummary(x1, y1, x1 + 1, y1));
                 }
 
-                for (int arrowId = 0; arrowId < TableSize.Width * TableSize.Height; arrowId++)
+                Debug.Assert(arrowId2 == (TableSize.Width - 1) * TableSize.Height);
+
+                for (arrowId = 0; arrowId < TableSize.Width * TableSize.Height; arrowId++, arrowId2++)
                 {
+                    int x1 = arrowId % TableSize.Width;
+                    int y1 = arrowId / TableSize.Width;
+
                     // 垂直方向（左右向き）の矢印
                     var p = new PictureBox();
                     //p.Image = Image.FromFile(@"cells\arrow_00000.png");
                     //p.ImageLocation = @"cells\arrow_00000.png";
                     p.Image = Image.FromStream(File.OpenRead(@"cells\arrow_00000.png"), false, false);
-                    p.Name = "ArrowY_" + arrowId;
-                    p.Left = arrowId % TableSize.Width * CellTableInterval + CellTableInterval / 2 - CellMargin;
-                    p.Top = (arrowId / TableSize.Width + 1) * CellTableInterval - CellMargin;
+                    p.Name = "ArrowY_" + arrowId2;
+                    p.Left = x1 * CellTableInterval + CellTableInterval / 2 - CellMargin;
+                    p.Top = (y1 + 1) * CellTableInterval - CellMargin;
                     p.Size = new System.Drawing.Size(size, size);
                     p.SizeMode = PictureBoxSizeMode.Zoom;
                     p.BorderStyle = BorderStyle.None;
@@ -353,6 +376,8 @@ namespace HatoSynthGUI
                     p.MouseDown += arrowY_Click;
 
                     splitContainer1.Panel1.Controls.Add(p);
+
+                    arrows.Add(new ArrowSummary(x1, y1, x1, y1 + 1));
                 }
             }
 
@@ -435,6 +460,26 @@ namespace HatoSynthGUI
             }
         }
 
+        private class ArrowSummary
+        {
+            public int pos1x;  // 矢印の左または上
+            public int pos1y;
+            public int pos2x;  // 矢印の右または下
+            public int pos2y;
+            public ArrowDirection direction;
+
+            public ArrowSummary(int x1, int y1, int x2, int y2)
+            {
+                Debug.Assert(x1 <= x2 && y1 <= y2);  // GUI関連は要求レベルが高くて、バグが入り込みやすそうで困る
+
+                pos1x = x1;
+                pos1y = y1;
+                pos2x = x2;
+                pos2y = y2;
+                direction = ArrowDirection.None;
+            }
+        }
+
         void form_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.P && e.Control)
@@ -474,114 +519,80 @@ namespace HatoSynthGUI
 
                 // FIXME: ↓ Don't Repeat Yourself!!!!!!!!!!!!!
 
-                // 横向きの矢印について
-                for (int y = 0; y < TableSize.Height; y++)
+                // 最下段以外の矢印
+                for (int arrowId = 0; arrowId < arrows.Count; arrowId++)
                 {
-                    for (int x = 0; x < TableSize.Width - 1; x++)
+                    AAAA src = null, dst = null;
+                    int port = 0;
+                    ArrowSummary sm = arrows[arrowId];
+
+                    if (sm.pos2y == TableSize.Height) continue;  // 最下段の矢印だった場合
+
+                    switch (sm.direction)
                     {
-                        // [y,x] と [y,x+1] の間を結ぶ
-                        AAAA src = null, dst = null;
-                        int port = 0;
-
-                        switch (arrowX[y, x])
-                        {
-                            case ArrowDirection.Right:
-                                src = cells[y, x];
-                                dst = cells[y, x + 1];
-                                port = 0;
-                                break;
-                            case ArrowDirection.Left:
-                                src = cells[y, x + 1];
-                                dst = cells[y, x];
-                                port = 0;
-                                break;
-                            case ArrowDirection.RightAlt:
-                                src = cells[y, x];
-                                dst = cells[y, x + 1];
-                                port = 1;
-                                break;
-                            case ArrowDirection.LeftAlt:
-                                src = cells[y, x + 1];
-                                dst = cells[y, x];
-                                port = 1;
-                                break;
-                        }
-
-                        if (src != null && dst != null)
-                        {
-                            //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
-                            // ******** TODO
-                            /////////////////////////////////////////////////////
-                            IEnumerable<string> arr = dst.children;
-                            arr = arr.Concat(new string[] { src.name + ":" + port });
-                            dst.children = arr.ToArray();
-                        }
+                        case ArrowDirection.Right:
+                        case ArrowDirection.Down:
+                        case ArrowDirection.RightAlt:
+                        case ArrowDirection.DownAlt:
+                            src = cells[sm.pos1y, sm.pos1x];  // 順方向
+                            dst = cells[sm.pos2y, sm.pos2x];
+                            break;
+                        case ArrowDirection.Left:
+                        case ArrowDirection.Up:
+                        case ArrowDirection.LeftAlt:
+                        case ArrowDirection.UpAlt:
+                            src = cells[sm.pos2y, sm.pos2x];  // 逆方向
+                            dst = cells[sm.pos1y, sm.pos1x];
+                            break;
                     }
-                }
 
-                // 縦向きの矢印について
-                for (int y = 0; y < TableSize.Height - 1; y++)
-                {
-                    for (int x = 0; x < TableSize.Width; x++)
+                    switch (sm.direction)
                     {
-                        // [y,x] と [y+1,x] の間を結ぶ
-                        AAAA src = null, dst = null;
-                        int port = 0;
+                        case ArrowDirection.Right:
+                        case ArrowDirection.Down:
+                        case ArrowDirection.Left:
+                        case ArrowDirection.Up:
+                            port = 0;
+                            break;
+                        case ArrowDirection.RightAlt:
+                        case ArrowDirection.DownAlt:
+                        case ArrowDirection.LeftAlt:
+                        case ArrowDirection.UpAlt:
+                            port = 1;
+                            break;
+                    }
 
-                        switch (arrowY[y, x])
-                        {
-                            case ArrowDirection.Down:
-                                src = cells[y, x];
-                                dst = cells[y + 1, x];
-                                port = 0;
-                                break;
-                            case ArrowDirection.Up:
-                                src = cells[y + 1, x];
-                                dst = cells[y, x];
-                                port = 0;
-                                break;
-                            case ArrowDirection.DownAlt:
-                                src = cells[y, x];
-                                dst = cells[y + 1, x];
-                                port = 1;
-                                break;
-                            case ArrowDirection.UpAlt:
-                                src = cells[y + 1, x];
-                                dst = cells[y, x];
-                                port = 1;
-                                break;
-                        }
-
-                        if (src != null && dst != null)
-                        {
-                            //dst.AssignChildren(new CellTree[] { src });  // TODO: 複数指定
-                            // ******** TODO
-                            /////////////////////////////////////////////////////
-                            IEnumerable<string> arr = dst.children;
-                            arr = arr.Concat(new string[] { src.name + ":" + port });
-                            dst.children = arr.ToArray();
-                        }
+                    if (src != null && dst != null)
+                    {
+                        // TODO: 空の配列は書き出さないようにできる？
+                        IEnumerable<string> arr = dst.children;
+                        arr = arr.Concat(new string[] { src.name + ":" + port });
+                        dst.children = arr.ToArray();
                     }
                 }
 
                 AAAA start = null;
 
+                // 最下段の矢印について
+                for (int arrowId = 0; arrowId < arrows.Count; arrowId++)
                 {
-                    int y = TableSize.Height - 1;  // 一番下の行
+                    AAAA src = null, dst = null;
+                    int port = 0;
+                    ArrowSummary sm = arrows[arrowId];
 
-                    for (int x = 0; x < TableSize.Width; x++)
+                    if (sm.pos2y != TableSize.Height) continue;  // 最下段の矢印ではなかった場合
+
+                    if ((sm.direction == ArrowDirection.Down || sm.direction == ArrowDirection.DownAlt)
+                        && cells[sm.pos1y, sm.pos1x] != null)
                     {
-                        if ((arrowY[y, x] == ArrowDirection.Down || arrowY[y, x] == ArrowDirection.DownAlt) && cells[y, x] != null)
+                        //start = cells[y, x];  // [y,x] がスタート地点（複数あるかも）
+                        start = new AAAA
                         {
-                            //start = cells[y, x];  // [y,x] がスタート地点（複数あるかも）
-                            start = new AAAA
-                            {
-                                name = "$synth",
-                                module = "",
-                                children = new string[] { cells[y, x].name + ":0" },
-                                ctrl = new float[0] { }
-                            };
-                        }
+                            name = "$synth",
+                            module = "",
+                            children = new string[] { cells[sm.pos1y, sm.pos1x].name + ":0" },
+                            ctrl = new float[0] { }
+                        };
                     }
                 }
 
