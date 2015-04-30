@@ -576,8 +576,6 @@ namespace HatoSynthGUI
                 // 最下段の矢印について
                 for (int arrowId = 0; arrowId < arrows.Count; arrowId++)
                 {
-                    AAAA src = null, dst = null;
-                    int port = 0;
                     ArrowSummary sm = arrows[arrowId];
 
                     if (sm.pos2y != TableSize.Height) continue;  // 最下段の矢印ではなかった場合
@@ -585,7 +583,6 @@ namespace HatoSynthGUI
                     if ((sm.direction == ArrowDirection.Down || sm.direction == ArrowDirection.DownAlt)
                         && cells[sm.pos1y, sm.pos1x] != null)
                     {
-                        //start = cells[y, x];  // [y,x] がスタート地点（複数あるかも）
                         start = new AAAA
                         {
                             name = "$synth",
