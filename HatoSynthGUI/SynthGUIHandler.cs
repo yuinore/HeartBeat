@@ -632,6 +632,7 @@ namespace HatoSynthGUI
             ChannelCommand cmd = ev.Message.Command;
             int n = ev.Message.Data1;  // ノート番号
             int vel = ev.Message.Data2;  // ベロシティ（ノートオン時のみ）
+            int bend = (n | (vel << 7)) - 8192;  // ピッチベンド(-8192～8191)
 
             switch (cmd)
             {
@@ -642,6 +643,10 @@ namespace HatoSynthGUI
                 case ChannelCommand.NoteOff:
                     synth.NoteOff(n);
                     Console.WriteLine("off " + n);
+                    break;
+                case ChannelCommand.PitchWheel:
+                    synth.PitchBend(bend);
+                    Console.WriteLine("bend " + bend);
                     break;
             }
         }

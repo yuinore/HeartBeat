@@ -15,6 +15,9 @@ namespace HatoDSP
         public int Polyphony = 4;
         public int ReleasePolyphony = 2;
 
+        int pitchBend = 0;
+        int bendrange = 1;
+
         class MyNoteEvent
         {
             public Cell cell;
@@ -60,7 +63,7 @@ namespace HatoDSP
                 {
                     Buffer = ret,
                     Freq = new ConstantSignal(0, count),
-                    Pitch = new ConstantSignal(note.n, count),
+                    Pitch = new ConstantSignal((float)(note.n + pitchBend * bendrange / 8192.0), count),
                     Locals = new Dictionary<string, Signal>(),
                     Gate = new ConstantSignal(1, count),  // ここが違う！！
                     SamplingRate = 44100
@@ -169,6 +172,13 @@ namespace HatoDSP
                     notes.Remove(item);  // 遅いかも？
                 }
             }
+        }
+
+        public void PitchBend(int bend)
+        {
+            System.Diagnostics.Debug.Assert(-8192 <= bend && bend <= 8191);
+
+            pitchBend = bend;
         }
     }
 }
