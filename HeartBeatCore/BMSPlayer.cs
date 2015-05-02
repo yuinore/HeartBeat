@@ -73,6 +73,12 @@ namespace HeartBeatCore
 
         double tempRHS = 1.0;
 
+        // 現在の状態を表す変数
+        readonly object InitializationLock = new object();
+        bool InitializationStarted = false;
+        bool InitializationCompleted = false;
+        bool Stopped = false;  // 演奏が永久に停止されたことを示します。ASIOを解放したり、プリローディングをキャンセルしたりすることがあります。
+
         bool fast;  // fast再生だとさすがに間に合わなかったり。
         public bool Fast
         {
@@ -133,8 +139,6 @@ namespace HeartBeatCore
         BitmapData bga_poor = null;
 
         Stopwatch s = new Stopwatch();
-
-        bool Stopped = false;
 
         StringBuilder ConsoleMessage = new StringBuilder("Waiting...\n");
         string LineMessage = "\n";
@@ -240,11 +244,34 @@ namespace HeartBeatCore
             lock (songposLock)  // ←超超超超超重要（というかそんなにみんなCurrentSongPosition()呼んでるんですか？？）
             {
                 double ms = s.ElapsedMilliseconds;
-                sumelapsed += (ms - lastelapsed) * tempRHS / 1000.0;
+                sumelapsed += (ms - lastelapsed) * tempRHS * 0.001;
                 lastelapsed = ms;
                 ret = sumelapsed;
             }
             return ret + PlayFrom - DelayingTimeBeforePlay;
+        }
+
+        public void SeekAndPlay(int startmeasure = 0)
+        {
+            lock (InitializationLock)
+            {
+                if (InitializationCompleted) {
+                    // FIXME: 読み込み中にシークしても無視されないように
+                    return;
+                }
+
+                try
+                {
+                    PlayFrom = b.transp.MeasureToSeconds(new Rational(startmeasure));
+                }
+                catch
+                {
+                    Debug.Assert(false);
+                    PlayFrom = 0;
+                }
+
+                s.Restart();
+            }
         }
 
         /// <summary>
@@ -252,19 +279,30 @@ namespace HeartBeatCore
         /// Run()より前に呼んでも後に呼んでも構いませんが、
         /// どちらにしてもRun()を呼び出す必要があります多分。
         /// 
-        /// LoadAndPlayから処理が返るまではDisposeしないでください・・・
-        /// （LoadAndPlayを非同期で開始しないでください）
-        /// と思ったけど、これasyncメソッドですね・・・
+        /// LoadAndPlayが完全に完了するまでにDisposeが呼ばれることを想定していません。
+        /// 多分困ると思うので誰か修正して下さい。
+        /// （そもそも本当にawaitを使う必要があったのか？）
         /// FIXME: LoadAndPlayが完了する前にDisposeが呼ばれた時の対策
         /// </summary>
         public async void LoadAndPlay(string path, int startmeasure = 0)
         {
+            lock (InitializationLock)
+            {
+                if (InitializationStarted) { return; }
+                // TODO: startmeasureの登録
+                InitializationStarted = true;
+            }
+
+            try
             {
                 Process thisProcess = System.Diagnostics.Process.GetCurrentProcess();
                 thisProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
             }
+            catch
+            {
+            }
 
-            s = new Stopwatch();
+            s.Reset();
 
             // キーに割り当てられているキー音のwavid
             Dictionary<int, int> keysound = new Dictionary<int, int>();
@@ -307,6 +345,7 @@ namespace HeartBeatCore
             ps.MaximumAcceptance = b.PlayableBMObjects.Count();
             ps.MaximumExScore = ps.MaximumAcceptance * regulation.MaxScorePerObject;
 
+            // 初期キー音の設定
             foreach (var x in b.SoundBMObjects)
             {
                 if(x.BMSChannel != 0x01 && !keysound.ContainsKey(x.Keyid)) {
@@ -342,7 +381,7 @@ namespace HeartBeatCore
             #region PlayFromとDelayingTimeBeforePlayの調整
             PlayFrom = b.transp.MeasureToSeconds(new Rational(startmeasure));
 
-            // ↓謎のコードその1 (演奏開始時刻を早めるタイプの最適化)
+            #region 謎のコードその1 (演奏開始時刻を早めるタイプの最適化)
             {
                 var b1 = b.SoundBMObjects.FirstOrDefault();
                 var b2 = b.GraphicBMObjects.FirstOrDefault();
@@ -357,14 +396,16 @@ namespace HeartBeatCore
                 // あんまり変なことすると例えばBGAがあった時とかどうするのよ
                 // 自然が一番なんじゃないの？？
             }
+            #endregion
 
-            // ↓謎のコードその2 (演奏開始時刻を遅くするタイプの最適化)
+            #region 謎のコードその2 (演奏開始時刻を遅くするタイプの最適化)
             DelayingTimeBeforePlay = Math.Max(DelayingTimeBeforePlay, 
                 autoplay 
                     ? 1.0  // オートプレイなら1秒後に開始
                     : (b.PlayableBMObjects.Count >= 1  // 演奏可能オブジェがある前提で、
                         ? Math.Max(1.0, 3.0 - PosOrZero(b.PlayableBMObjects[0].Seconds - PlayFrom))  // 最初の演奏可能ノーツが現れるまでに3秒掛かるようにする
                         : 1.0));
+            #endregion
 
             TraceMessage("PlayFrom = " + Math.Round(PlayFrom * 1000) + "ms, Delay = " + Math.Round(DelayingTimeBeforePlay * 1000) + "ms");
             #endregion
@@ -388,18 +429,22 @@ namespace HeartBeatCore
             //hplayer.Run();
             #endregion
 
-            #region プリローディング
+            #region キー音のプリローディング
             {
                 // ああ、StartNewすればいいのか・・・
                 Task task = Task.Factory.StartNew(() =>
                 {
                     Parallel.ForEach(keysound, (kvpair) =>
                     {
+                        if (Stopped) return;
+
                         hplayer.PrepareSound(kvpair.Value);
                     });
 
                     Parallel.ForEach(b.SoundBMObjects, (sb) =>
-                    { 
+                    {
+                        if (Stopped) return;
+
                         // 等号が入るかどうかに注意な！
                         // FIXME: ファイルアクセスが無駄に多い(多分)ので最適化
                         if ((sb.Seconds >= PlayFrom && sb.Seconds <= PlayFrom + WavFileLoadingDelayTime) || true)
@@ -442,6 +487,11 @@ namespace HeartBeatCore
             TraceMessage("    Loading Time: " + loadingTime.ElapsedMilliseconds + "ms");
 
             hplayer.Run();  // ASIOデバイスを起動して再生する（注：ASIOデバイスを作成するため、Formと同じスレッドから呼ぶ必要があるかもしれない）
+
+            lock (InitializationLock)
+            {
+                InitializationCompleted = true;
+            }
 
             s.Start();  // 内部タイマーの作動
 
@@ -969,7 +1019,7 @@ namespace HeartBeatCore
 
             {
                 // 200ミリ秒の間、GCに処理を返さずに待機する（せめてもの優しさ）
-                Thread.Sleep(200);  // await Task.Delayにしてはならない（重要）
+                Thread.Sleep(100);  // await Task.Delayにしてはならない（重要）
             }
 
             if (disposing)

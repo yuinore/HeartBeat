@@ -208,10 +208,6 @@ namespace HeartBeatBeta
 
                         player.Run();
 
-                        // 疑問点1：playerがDisposeされても、ASIO Callbackが呼ばれ続ける
-                        //          というかASIOがちゃんとDisoseされてない
-                        // 疑問点2： その原因として、 await Task.Delayが永遠に終了しない
-
                         player.Stop();
                     } // form disposed here
                 }
