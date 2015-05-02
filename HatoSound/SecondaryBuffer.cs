@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 
 namespace HatoSound
 {
-    public class SecondaryBuffer
+    public class SecondaryBuffer : IDisposable
     {
-        static List<int> LockObject = new List<int>();
+        static readonly object LockObject = new object();
         public int SamplingRate;
         public int BufSampleCount;
         public int ChannelCount;
@@ -228,5 +228,44 @@ namespace HatoSound
                 }
             });
         }
+
+        #region implementation of IDisposable
+        // Flag: Has Dispose already been called?
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            
+            System.Diagnostics.Debug.Assert(disposing, "激おこ @ " + this.GetType().ToString());
+
+            if (disposing)
+            {
+                // Free any other managed objects here.
+                if (dsSecondaryBuffer != null)
+                {
+                    dsSecondaryBuffer.Dispose();
+                }
+            }
+
+            // Free any unmanaged objects here.
+
+            disposed = true;
+        }
+        
+        ~SecondaryBuffer()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }

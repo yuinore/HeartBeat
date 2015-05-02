@@ -11,9 +11,10 @@ namespace HatoPlayer
     /// <summary>
     /// 音声を扱います。HatoPlayerを通じて再生します。
     /// </summary>
-    public class Sound
+    public class Sound : IDisposable
     {
         HatoPlayerDevice hplayer;  // hplayerはDisposeされているかもしれないけどまあ別にいいか
+
         SecondaryBuffer sbuf;
 
         public int SamplingRate;
@@ -96,5 +97,44 @@ namespace HatoPlayer
         {
             StopAndPlayFrom(volumeInDb, 0);
         }
+
+        #region implementation of IDisposable
+        // Flag: Has Dispose already been called?
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            
+            System.Diagnostics.Debug.Assert(disposing, "激おこ @ " + this.GetType().ToString());
+
+            if (disposing)
+            {
+                // Free any other managed objects here.
+                if (sbuf != null)
+                {
+                    sbuf.Dispose();
+                }
+            }
+
+            // Free any unmanaged objects here.
+
+            disposed = true;
+        }
+        
+        ~Sound()
+        {
+            Dispose(false);
+        }
+        #endregion
     }
 }
