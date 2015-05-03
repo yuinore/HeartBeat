@@ -21,6 +21,8 @@ namespace HatoPlayer
         public int BufSampleCount;
         public int ChannelCount;
 
+        string fn;
+
         internal float amp = 1.0f;
 
         internal float[][] fbuf;
@@ -30,21 +32,79 @@ namespace HatoPlayer
         {
             this.hplayer = hplayer;
             sbuf = null;
+
+            lock (hplayer.soundList)
+            {
+                if (!hplayer.Disposed)
+                {
+                    hplayer.soundList.Add(this);
+                }
+                else
+                {
+                    Dispose();  // コンストラクタからDispose()を呼ぶ人 #いろいろな人
+                }
+            }
+            
         }
 
         public Sound(HatoPlayerDevice hplayer, string filename)
         {
-            this.hplayer = hplayer;
+            // メモ：
+            //   1. スレッドAで、Soundのコンストラクタに突入し、重いファイルを読みに行く
+            //
+            //   2. その後、スレッドBで、HatoPlayerDevice.Dispose() が実行される
+            //
+            //   3. thisへの参照カウントが0になったので、Soundのデストラクタが（なぜか）実行される
+            //      →この時点では、まだスレッドAで実行されていたコンストラクタは終了していない
+            //
+            //   4. スレッドAのファイル読み込みが終了する。
 
-            // ↓ここで同時にNVorbisからの2ファイルの読み込みが発生しているのかもしれない
-            fbuf = AudioFileReader.ReadAllSamples(filename);  // ここで一度8/16bitから32bitに変換されてしまうんですよね・・・無駄・・・
-            AudioFileReader.ReadAttribute(filename, out SamplingRate, out ChannelCount, out BufSampleCount);
-
-            if (hplayer.PlaybackDevice == HatoPlayerDevice.PlaybackDeviceType.DirectSound)
+            try
             {
-                sbuf = new SecondaryBuffer(hplayer.hsound, fbuf, BufSampleCount, ChannelCount, SamplingRate);
+                Console.WriteLine(".ctor: " + filename);
 
-                fbuf = null;  // ガベージコレクタに回収させる（超重要）
+                fn = filename;
+
+                this.hplayer = hplayer;
+
+                lock (hplayer.soundList)
+                {
+                    if (hplayer.Disposed)
+                    {
+                        Dispose();
+                        return;  // disposeされていたら何もしない
+                    }
+                }
+
+                fbuf = AudioFileReader.ReadAllSamples(filename);  // ここで一度8/16bitから32bitに変換されてしまうんですよね・・・無駄・・・
+                AudioFileReader.ReadAttribute(filename, out SamplingRate, out ChannelCount, out BufSampleCount);
+
+                lock (hplayer.soundList)
+                {
+                    if (!hplayer.Disposed)
+                    {
+                        Console.WriteLine("not D: " + fn);
+
+                        if (hplayer.PlaybackDevice == HatoPlayerDevice.PlaybackDeviceType.DirectSound)
+                        {
+                            sbuf = new SecondaryBuffer(hplayer.hsound, fbuf, BufSampleCount, ChannelCount, SamplingRate);
+
+                            fbuf = null;  // DirectSoundモードではバッファはもう不要なので、ガベージコレクタに回収させる（超重要）
+                        }
+
+                        hplayer.soundList.Add(this);
+                    }
+                    else
+                    {
+                        // やはりDisposeされていたら何もしない
+                        Console.WriteLine("D f C: " + fn);
+                        Dispose();  // コンストラクタからDispose()を呼ぶ人 #いろいろな人
+                    }
+                }
+            }
+            finally
+            {
+                Console.WriteLine(".ctor end: " + filename);
             }
         }
 
@@ -112,6 +172,8 @@ namespace HatoPlayer
         // Protected implementation of Dispose pattern.
         protected virtual void Dispose(bool disposing)
         {
+            Console.WriteLine("sound D called: " + fn + ", " + disposing);
+
             if (disposed)
                 return;
             
@@ -133,6 +195,8 @@ namespace HatoPlayer
         
         ~Sound()
         {
+            System.Threading.Thread.Sleep(1000);
+
             Dispose(false);
         }
         #endregion

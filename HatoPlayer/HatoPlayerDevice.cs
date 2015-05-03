@@ -48,7 +48,8 @@ namespace HatoPlayer
         Dictionary<int, Sound> WavidToBuffer = new Dictionary<int, Sound>();
         Dictionary<int, HatoSynthDevice> MixchToSynth = new Dictionary<int, HatoSynthDevice>();
 
-        internal List<Sound> PlayingSoundList = new List<Sound>();
+        internal readonly List<Sound> PlayingSoundList = new List<Sound>();
+        internal readonly HashSet<Sound> soundList = new HashSet<Sound>();
 
         Sound defkey;
 
@@ -471,6 +472,7 @@ namespace HatoPlayer
         #region implementation of IDisposable
         // Flag: Has Dispose already been called?
         bool disposed = false;
+        public bool Disposed { get { return disposed; } }
 
         // Public implementation of Dispose pattern callable by consumers.
         public void Dispose()
@@ -487,6 +489,8 @@ namespace HatoPlayer
             
             System.Diagnostics.Debug.Assert(disposing, "激おこ");
 
+            disposed = true; // !!!!!!!!!!!!!!!!!!!!
+
             if (disposing)
             {
                 // Free any other managed objects here.
@@ -495,11 +499,25 @@ namespace HatoPlayer
                     asio.Dispose();
                     asio = null;
                 }
+
+                lock (soundList)
+                {
+                    Console.WriteLine("HatoPlayer Lock");
+
+                    disposed = true; // !!!!!!!!!!!!!!!!!!!!
+
+                    if (soundList != null)
+                    {
+                        foreach (var snd in soundList)
+                        {
+                            snd.Dispose();
+                        }
+                    }
+                    Console.WriteLine("HatoPlayer Unlock");
+                }
             }
 
             // Free any unmanaged objects here.
-
-            disposed = true;
         }
         
         ~HatoPlayerDevice()
