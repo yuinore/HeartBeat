@@ -181,6 +181,12 @@ namespace HatoPlayer
             }
         }
 
+        public bool StopSound(int wavid)
+        {
+            // ↓オーバーフローに注意
+            return PlaySound(wavid, false, 1800);  // FIXME: やばい
+        }
+
         /// <summary>
         /// wavidに割り当てられた音を直ちに最初から再生します。
         /// 音声を再生することが出来た場合、trueを返します。（暫定）

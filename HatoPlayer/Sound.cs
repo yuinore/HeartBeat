@@ -54,15 +54,13 @@ namespace HatoPlayer
             //
             //   2. その後、スレッドBで、HatoPlayerDevice.Dispose() が実行される
             //
-            //   3. thisへの参照カウントが0になったので、Soundのデストラクタが（なぜか）実行される
+            //   3. this (== Sound) のデストラクタが（なぜか）実行される
             //      →この時点では、まだスレッドAで実行されていたコンストラクタは終了していない
             //
             //   4. スレッドAのファイル読み込みが終了する。
 
             try
             {
-                Console.WriteLine(".ctor: " + filename);
-
                 fn = filename;
 
                 this.hplayer = hplayer;
@@ -83,8 +81,6 @@ namespace HatoPlayer
                 {
                     if (!hplayer.Disposed)
                     {
-                        Console.WriteLine("not D: " + fn);
-
                         if (hplayer.PlaybackDevice == HatoPlayerDevice.PlaybackDeviceType.DirectSound)
                         {
                             sbuf = new SecondaryBuffer(hplayer.hsound, fbuf, BufSampleCount, ChannelCount, SamplingRate);
@@ -97,14 +93,13 @@ namespace HatoPlayer
                     else
                     {
                         // やはりDisposeされていたら何もしない
-                        Console.WriteLine("D f C: " + fn);
                         Dispose();  // コンストラクタからDispose()を呼ぶ人 #いろいろな人
                     }
                 }
             }
             finally
             {
-                Console.WriteLine(".ctor end: " + filename);
+                GC.KeepAlive(this);  // あっても変わらない・・・？
             }
         }
 
@@ -172,12 +167,14 @@ namespace HatoPlayer
         // Protected implementation of Dispose pattern.
         protected virtual void Dispose(bool disposing)
         {
-            Console.WriteLine("sound D called: " + fn + ", " + disposing);
-
             if (disposed)
                 return;
             
-            System.Diagnostics.Debug.Assert(disposing, "激おこ @ " + this.GetType().ToString());
+            // FIXME: 稀にコンストラクタより前に Finalize() が呼ばれることがあるみたい
+            if (false)
+            {
+                System.Diagnostics.Debug.Assert(disposing, "激おこ @ " + this.GetType().ToString());
+            }
 
             if (disposing)
             {
@@ -195,8 +192,6 @@ namespace HatoPlayer
         
         ~Sound()
         {
-            System.Threading.Thread.Sleep(1000);
-
             Dispose(false);
         }
         #endregion

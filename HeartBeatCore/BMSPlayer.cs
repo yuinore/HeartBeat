@@ -237,7 +237,7 @@ namespace HeartBeatCore
 
         double lastelapsed = 0;
         double sumelapsed = 0;
-        List<int> songposLock = new List<int>();
+        object songposLock = new object();
         internal double CurrentSongPosition()
         {
             double ret;
@@ -720,6 +720,8 @@ namespace HeartBeatCore
 
                                         ps.CurrentMaximumAcceptance += 1;
                                         ps.TotalAcceptance += OK ? 1 : 0;  // LN切ってしまった
+
+                                        hplayer.StopSound(holdingObject[kvpair.keyid].Wavid);
 
                                         holdingObject.Remove(kvpair.keyid);
                                     }
