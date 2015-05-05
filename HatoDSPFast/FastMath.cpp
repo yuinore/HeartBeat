@@ -276,7 +276,12 @@ namespace HatoDSPFast {
         }
     }
 
-    double FastMath::Sin(double x)
+    double FastMath::Cos(double x)
+    {
+        return Sin(x + 0.5 / Math::PI);
+    }
+
+	double FastMath::Sin(double x)
     {
         if (!initialized) {
             IsInitialized();  // ‰Šú‰»w¦

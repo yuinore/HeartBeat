@@ -12,6 +12,7 @@ namespace HatoDSPFast
     public:
         static FastMathWrap();
         static double Sin(double x);
+        static double Cos(double x);
         static double Pow2(double x);
         static double Saw(double x, int logovertone);
         static double Tri(double x, int logovertone);

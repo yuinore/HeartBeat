@@ -15,6 +15,7 @@ namespace HatoDSPFast
     }
 
     double FastMathWrap::Sin(double x){ return FastMath::Sin(x); }
+    double FastMathWrap::Cos(double x){ return FastMath::Cos(x); }
     double FastMathWrap::Pow2(double x){ return FastMath::Pow2(x); }
     double FastMathWrap::Saw(double x, int logovertone){ return FastMath::Saw(x, logovertone); }
     double FastMathWrap::Tri(double x, int logovertone){ return FastMath::Tri(x, logovertone); }
