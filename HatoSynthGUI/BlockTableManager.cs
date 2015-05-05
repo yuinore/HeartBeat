@@ -22,7 +22,7 @@ namespace HatoSynthGUI
         private class CellBlock
         {
             public PictureBox pBox;
-            public BlockPresetLibrary.BlockPreset preset;
+            public BlockPatch bpatch;
             public int y;
             public int x;
         }
@@ -39,6 +39,7 @@ namespace HatoSynthGUI
 
         CellBlock[,] table;
         System.Drawing.Size TableSize;
+        HashSet<string> blockNameList = new HashSet<string>();
 
         /// <summary>
         /// tableをPictureBoxで逆引きします。
@@ -98,10 +99,19 @@ namespace HatoSynthGUI
 
             var cb = new CellBlock();
 
+            int nameIdx = 1;
+            string blockName = "";
+            while (blockNameList.Contains(
+                blockName = preset.DefaultName + " " + nameIdx))
+            {
+                nameIdx++;
+            }
+
             cb.pBox = p;
             cb.x = x;
             cb.y = y;
-            cb.preset = preset;
+            cb.bpatch = new BlockPatch(preset, blockName);
+            blockNameList.Add(blockName);
 
             table[y, x] = cb;
         }
@@ -137,7 +147,7 @@ namespace HatoSynthGUI
             }
         }
 
-        public bool TryGetPreset(int x, int y, out BlockPresetLibrary.BlockPreset preset)
+        public bool TryGetBlockPatch(int x, int y, out BlockPatch preset)
         {
             // ?.演算子、今、ほんのちょっとだけ欲しいと思った
             // return table[x,y]?.preset;
@@ -149,7 +159,7 @@ namespace HatoSynthGUI
             }
             else
             {
-                preset = table[y, x].preset;
+                preset = table[y, x].bpatch;
                 return true;
             }
         }
@@ -158,6 +168,8 @@ namespace HatoSynthGUI
         {
             CellBlock cb = pictureboxToCellblock(pBox);
             table[cb.y, cb.x] = null;
+
+            blockNameList.Remove(cb.bpatch.Name);
         }
     }
 }

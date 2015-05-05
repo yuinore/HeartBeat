@@ -20,10 +20,10 @@ namespace HatoSynthGUI
         //public class BlockPreset<T> where T : Cell, new()
         public class BlockPreset
         {
-            public int GraphicId;
-            public string ModuleName;
-            public string DefaultName;
-            public float[] Ctrl;  // TODO: エクスプレッション
+            public readonly int GraphicId;
+            public readonly string ModuleName;
+            public readonly string DefaultName;
+            public readonly float[] Ctrl;  // TODO: エクスプレッション
 
             public BlockPreset(string moduleName, string defaultName, int graphicId, float[] ctrl)
             {

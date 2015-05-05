@@ -64,6 +64,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlockPatch.cs" />
     <Compile Include="BlockPresetLibrary.cs" />
     <Compile Include="BlockTableManager.cs" />
     <Compile Include="Form1.cs">

@@ -489,9 +489,9 @@ namespace HatoSynthGUI
                 {
                     for (int x = 0; x < TableSize.Width; x++)
                     {
-                        BlockPresetLibrary.BlockPreset preset;
+                        BlockPatch preset;
 
-                        if (btable.TryGetPreset(x, y, out preset))
+                        if (btable.TryGetBlockPatch(x, y, out preset))
                         {
                             // DynamicJsonを編集しようかと思ったけど難しすぎる・・・
                             // DynamicJsonを入れ子にできれば捗るのだけれど、
@@ -499,7 +499,7 @@ namespace HatoSynthGUI
 
                             AAAA cell = new AAAA
                             {
-                                name = preset.DefaultName,  // FIXME: デフォルト名からユニークな名前に変更
+                                name = preset.Name,  // FIXME: デフォルト名からユニークな名前に変更
                                 module = preset.ModuleName,
                                 ctrl = new float[0] { },  // 後から追加できない・・・
                                 children = new string[0] { }
