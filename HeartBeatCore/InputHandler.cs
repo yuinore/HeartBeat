@@ -233,10 +233,13 @@ namespace HeartBeatCore
             if (disposing)
             {
                 // Free any other managed objects here.
-                midiInDev.StopRecording();
-                midiInDev.Close();
-                midiInDev.Dispose();  // 不要かも?
-                midiInDev = null;
+                if (midiInDev != null)
+                {
+                    midiInDev.StopRecording();
+                    midiInDev.Close();
+                    midiInDev.Dispose();  // 不要かも?
+                    midiInDev = null;
+                }
             }
 
             // Free any unmanaged objects here.

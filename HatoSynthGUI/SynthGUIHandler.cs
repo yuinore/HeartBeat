@@ -517,8 +517,6 @@ namespace HatoSynthGUI
                     }
                 }
 
-                // FIXME: ↓ Don't Repeat Yourself!!!!!!!!!!!!!
-
                 // 最下段以外の矢印
                 for (int arrowId = 0; arrowId < arrows.Count; arrowId++)
                 {
