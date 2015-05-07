@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -329,150 +330,110 @@ namespace HatoPlayer
             }
 
             // PreFetch
-            Task.Run(async () =>
-            {
-                while (true)
-                {
-                    if (bufcountL < PrefetchCount || bufcountR < PrefetchCount)
-                    {
-                        int count = 256;  // 一度に取得しに行くサンプル数 256sample ≒ 5.8ms
-
-                        float[][] buf = new float[2][] { new float[count], new float[count] };
-
-                        // シンセの再生
-                        float amp = (float)Math.Pow(10, SynthVolumeInDb * 0.05);
-
-                        foreach (var kvpair in MixchToSynth)
-                        {
-                            var s = kvpair.Value;
-                            float[][] ret = null;
-
-                            await Task.Run(() =>
-                            {
-                                ret = s.Take(count).Select(x => x.ToArray()).ToArray();
-                            });
-
-                            if (ret.Length == 2)
-                            {
-                                for (int i = 0; i < count; i++)
-                                {
-                                    buf[0][i] += ret[0][i] * amp;
-                                    buf[1][i] += ret[1][i] * amp;
-                                }
-                            }
-                            else
-                            {
-                                throw new Exception("フワーッ！");
-                            }
-                        }
-
-                        // wavの再生
-                        Sound[] slist;
-                        lock (PlayingSoundList)
-                        {
-                            slist = PlayingSoundList.ToArray();
-                        }
-
-                        foreach (var snd in slist)
-                        {
-                            int j = 0;
-
-                            if (snd.SamplingRate == 44100)
-                            {
-                                j = (int)snd.playingPosition;
-
-                                if (snd.ChannelCount == 1)
-                                {
-                                    for (int i = 0; i < count && j < snd.BufSampleCount; i++, j++)
-                                    {
-                                        buf[0][i] += snd.fbuf[0][j] * snd.amp;
-                                        buf[1][i] += snd.fbuf[0][j] * snd.amp;
-                                    }
-                                }
-                                else if (snd.ChannelCount == 2)
-                                {
-                                    for (int i = 0; i < count && j < snd.BufSampleCount; i++, j++)
-                                    {
-                                        buf[0][i] += snd.fbuf[0][j] * snd.amp;
-                                        buf[1][i] += snd.fbuf[1][j] * snd.amp;
-                                    }
-                                }
-                                else
-                                {
-                                    throw new Exception("フワーッ！！！");
-                                }
-
-                                snd.playingPosition += count;
-                            }
-                            else
-                            {
-                                double jd = snd.playingPosition;
-
-                                if (snd.ChannelCount == 1)
-                                {
-                                    for (int i = 0; i < count && jd < snd.BufSampleCount - 1; i++)
-                                    {
-                                        int j0 = (int)jd;
-                                        float t = (float)(jd - j0);
-
-                                        buf[0][i] += ((1 - t) * snd.fbuf[0][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
-                                        buf[1][i] += ((1 - t) * snd.fbuf[0][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
-
-                                        jd += snd.SamplingRate / 44100.0;
-                                    }
-                                }
-                                else if (snd.ChannelCount == 2)
-                                {
-                                    for (int i = 0; i < count && jd < snd.BufSampleCount - 1; i++)
-                                    {
-                                        int j0 = (int)jd;
-                                        float t = (float)(jd - j0);
-
-                                        buf[0][i] += ((1 - t) * snd.fbuf[0][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
-                                        buf[1][i] += ((1 - t) * snd.fbuf[1][j0] + t * snd.fbuf[1][j0 + 1]) * snd.amp;
-
-                                        jd += snd.SamplingRate / 44100.0;
-                                    }
-                                }
-                                else
-                                {
-                                    throw new Exception("フワーッ！！！");
-                                }
-
-                                j = (int)jd + 1;
-
-                                snd.playingPosition += count * snd.SamplingRate / 44100.0;
-                            }
-
-                            if (j >= snd.BufSampleCount)
-                            {
-                                lock (PlayingSoundList)
-                                {
-                                    PlayingSoundList.Remove(snd);
-                                }
-                            }
-                        }
-
-                        lock (bufqueueL)
-                        {
-                            for (int i = 0; i < buf[0].Length; i++)
-                            {
-                                bufqueueL.Enqueue(buf[0][i]);
-                                bufqueueR.Enqueue(buf[1][i]);
-                            }
-                            bufcountL += buf[0].Length;
-                            bufcountR += buf[0].Length;
-                        }
-                    }
-                    else
-                    {
-                        await Task.Delay(1);  // 一度Delayすると、15ミリ秒くらいは処理が返ってこないらしい・・・
-                        //Thread.Sleep(1);  // 新しくスレッドを作成したほうが、11ミリ秒くらいになり、若干マシな気がします・・・。
-                    }
-                }
-            });
+            // シンセ音合成のためのスレッドを作成する。
+            // 信号処理はすべてこのスレッド内で行われる。
+            var th = new Thread(new ThreadStart(SynthSignalProcessingThread));
+            th.IsBackground = true;
+            th.Priority = ThreadPriority.AboveNormal;
+            // 冷静に考えると、UIスレッドに優先権を与えたほうがユーザビリティ高い気はする
+            th.Start();
 
             asio.Run(AsioCallback);
+        }
+
+        private void SynthSignalProcessingThread()
+        {
+            // シンセサイザーの信号処理を行うスレッドを表します。
+
+            while (true)
+            {
+                if (bufcountL < PrefetchCount || bufcountR < PrefetchCount)
+                {
+                    int count = 256;  // 一度に取得しに行くサンプル数 256sample ≒ 5.8ms
+
+                    float[][] buf = new float[2][] { new float[count], new float[count] };
+
+                    // シンセの再生
+                    float amp = (float)Math.Pow(10, SynthVolumeInDb * 0.05);
+
+                    foreach (var kvpair in MixchToSynth)
+                    {
+                        var s = kvpair.Value;
+                        float[][] ret = null;
+
+                        ret = s.Take(count).Select(x => x.ToArray()).ToArray();
+
+                        if (ret.Length == 2)
+                        {
+                            for (int i = 0; i < count; i++)
+                            {
+                                buf[0][i] += ret[0][i] * amp;
+                                buf[1][i] += ret[1][i] * amp;
+                            }
+                        }
+                        else
+                        {
+                            throw new Exception("フワーッ！");
+                        }
+                    }
+
+                    // wavの再生
+                    Sound[] slist;
+                    lock (PlayingSoundList)
+                    {
+                        slist = PlayingSoundList.ToArray();
+                    }
+
+                    foreach (var snd in slist)
+                    {
+                        double jd = snd.playingPosition;  // wavファイル先頭からの再生位置[sample]
+                        int chCnt = snd.ChannelCount;
+
+                        Debug.Assert(chCnt == 1 || chCnt == 2, "フワーッ！");
+
+                        for (int i = 0; i < count && jd < snd.BufSampleCount - 1; i++)
+                        {
+                            int j0 = (int)jd;
+                            if (j0 < 0) continue;
+
+                            float t = (float)(jd - j0);
+
+                            buf[0][i] += ((1 - t) * snd.fbuf[0 % chCnt][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
+                            buf[1][i] += ((1 - t) * snd.fbuf[1 % chCnt][j0] + t * snd.fbuf[1][j0 + 1]) * snd.amp;
+
+                            jd += snd.SamplingRate / 44100.0;
+                        }
+
+                        snd.playingPosition += count * snd.SamplingRate / 44100.0;
+
+                        if (((int)jd + 1) >= snd.BufSampleCount)
+                        {
+                            lock (PlayingSoundList)
+                            {
+                                PlayingSoundList.Remove(snd);
+                            }
+                        }
+                    }
+
+                    lock (bufqueueL)
+                    {
+                        for (int i = 0; i < buf[0].Length; i++)
+                        {
+                            bufqueueL.Enqueue(buf[0][i]);
+                            bufqueueR.Enqueue(buf[1][i]);
+                        }
+                        bufcountL += buf[0].Length;
+                        bufcountR += buf[0].Length;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(DateTime.Now.Millisecond + "");
+                    // メモ：await Task.Delay() はレスポンスが良くない
+                    //       Thread.Sleep はレスポンスがとても良い
+                    Thread.Sleep(2);
+                }
+            }
         }
 
         #region implementation of IDisposable
