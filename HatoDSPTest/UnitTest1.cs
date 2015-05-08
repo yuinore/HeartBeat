@@ -5,6 +5,7 @@ using HatoLib;
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics;
+using System.Threading;
 
 namespace HatoDSPTest
 {
@@ -14,6 +15,11 @@ namespace HatoDSPTest
         [TestMethod]
         public void TestMethod1()
         {
+            while (!HatoDSPFast.FastMathWrap.Initialized)
+            {
+                Thread.Sleep(100);
+            }
+
             //Assert.IsTrue
             var sig1 = new ExactSignal(new float[] { 0, 1, 2, 3, 4 });
             var sig2 = new ExactSignal(new float[] { 5, 6, 7, 8, 9 });
@@ -124,7 +130,12 @@ namespace HatoDSPTest
 
                     for (int i = 0; i < 256; i++)  // 以前のバッファが正しく残されているかどうかのテスト
                     {
-                        Assert.IsTrue(Math.Abs(sig[0][i] - (sigB[0][i] + i)) <= 0.000);  // 誤差 -100dB 以下
+                        Assert.IsTrue(
+                            Math.Abs(sig[0][i] - (sigB[0][i] + i))
+                            <= Math.Max(1.0, Math.Abs(sig[0][i])) * 1.0e-5
+                            );
+                        // 誤差 -100dB 以下 (10進数で5桁)
+                        // なお、floatの精度は、10進数で約7桁
                     }
                 }
             }

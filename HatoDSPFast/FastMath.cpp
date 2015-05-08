@@ -231,11 +231,11 @@ namespace HatoDSPFast {
 
         //************* ファイルへのキャッシュの書き込み *************
         if (chacheWavetable) {
-            if (!System::IO::Directory::Exists("cache\\")) {
-                System::IO::Directory::CreateDirectory("cache\\");
+            if (!System::IO::Directory::Exists(HatoLib::HatoPath::FromAppDir("cache\\"))) {  // gcnew String は省略できる？？
+                System::IO::Directory::CreateDirectory(HatoLib::HatoPath::FromAppDir("cache\\"));
             }
-            if (!System::IO::Directory::Exists("cache\\wavetable\\")) {
-                System::IO::Directory::CreateDirectory("cache\\wavetable\\");
+            if (!System::IO::Directory::Exists(HatoLib::HatoPath::FromAppDir("cache\\wavetable\\"))) {
+                System::IO::Directory::CreateDirectory(HatoLib::HatoPath::FromAppDir("cache\\wavetable\\"));
             }
 
             WaveFile::WriteAllSamples("cache\\wavetable\\sin0.wav", &f0, 1, N / 2, 44100, 32);
