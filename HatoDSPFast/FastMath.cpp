@@ -28,6 +28,9 @@ namespace HatoDSPFast {
     const double FastMath::N_2pi = N / (2.0 * Math::PI);
     const double FastMath::log2_N = LOG2 / N;
 
+    bool FastMath::initialized = false;
+    bool FastMath::initializeStarted = false;
+
     //****** 初期化のない変数実体
     float* FastMath::f0;
     float* FastMath::f1;
@@ -51,8 +54,6 @@ namespace HatoDSPFast {
     int* FastMath::WT_SIZE;  // wavetableのサイズ(個)。添字にlogovertoneを取り、この配列の長さはWT_Nである。すべて2のべき乗でなければならない。
     double* FastMath::WT_SIZE_2PI;  // == WT_SIZE / (2.0 * PI)
     int* FastMath::WT_MASK;  // == WT_SIZE.Select(x => x - 1)
-    bool FastMath::initialized;
-    bool FastMath::initializeStarted;
     //******
 
     int FastMath::Get_WT_N() {
@@ -127,7 +128,7 @@ namespace HatoDSPFast {
         }
 
         //************* 既存のキャッシュのチェック（読み込めた場合はreturn） *************
-        if (System::IO::File::Exists("cache\\wavetable\\initialized")) {
+        if (System::IO::File::Exists(HatoLib::HatoPath::FromAppDir("cache\\wavetable\\initialized"))) {
             //Task::Run(gcnew Action(aaa));
             // ボトルネックはファイル読み込みではないらしい。
 

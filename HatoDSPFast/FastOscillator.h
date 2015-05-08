@@ -16,5 +16,11 @@ namespace HatoDSPFast
             float samplingRate,
             bool constantPitch, float lenv_Pitch, array<float>^ pitch,
             bool hasPhaseShift, array<float>^ phaseShiftArr);
+
+        void Skip(int count, array<float>^ buf,
+            float pshift, float amplify, int waveform, float op1,
+            float samplingRate,
+            bool constantPitch, float lenv_Pitch, array<float>^ pitch,
+            bool hasPhaseShift, array<float>^ phaseShiftArr);
     };
 }

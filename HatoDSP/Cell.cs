@@ -19,7 +19,10 @@ namespace HatoDSP
 
         public abstract void Take(int count, LocalEnvironment lenv);
 
-        // public abstract void Skip(int count, LocalEnvironment lenv);
+        public virtual void Skip(int count, LocalEnvironment lenv)  // バッファーに値を格納してもよい。呼び出し側はバッファーを用意しなければならない。
+        {
+            Take(count, lenv);
+        }
 
         // パラメータがない場合でもnullを返してはならない。代わりに new CellParameter[]{} を返すこと。
         public abstract CellParameter[] ParamsList { get; }

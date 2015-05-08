@@ -15,11 +15,59 @@ namespace HatoDSPFast {
     {
     }
 
+    void FastOscillator::Skip(int count, array<float>^ buf,
+        float pshift, float amplify, int waveform, float op1,
+        float samplingRate,
+        bool constantPitch, float lenv_Pitch, array<float>^ pitch,
+        bool hasPhaseShift, array<float>^ phaseShiftArr)
+    {
+        double _2pi_rate = 2.0 * Math::PI / samplingRate;
+        double inv_12 = 1.0 / 12.0;
+
+        double freqoctave = 0;
+        double freqratio = 0;
+        double freq = 0;
+        double phasedelta = 0;
+
+        if (constantPitch)
+        {
+            float constpitch = lenv_Pitch;
+            freqoctave = (constpitch + pshift - 69.0) * inv_12;    // 441HzのAの音からのオクターブ差[oct]
+            freqratio = DSPLib::FastMath::Pow2(freqoctave);        // 441HzのAの音からの音声の周波数比
+            freq = freqratio * 441;                                // 音声の周波数[Hz]
+            phasedelta = freq * _2pi_rate;                         // 音声の角周波数；基音の位相の増分[rad]
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            if (!constantPitch)
+            {
+                freqoctave = (pitch[i] + pshift - 69.0) * inv_12;      // 441HzのAの音からのオクターブ差[oct]
+                freqratio = DSPLib::FastMath::Pow2(freqoctave);        // 441HzのAの音からの音声の周波数比
+                freq = freqratio * 441;                                // 音声の周波数[Hz]
+                phasedelta = freq * _2pi_rate;                         // 音声の角周波数；基音の位相の増分[rad]
+            }
+
+            if (hasPhaseShift){
+                phase += phaseShiftArr[i];  // FIXME: インパルスを飛ばしてしまうかもしれない
+            }
+
+            if (hasPhaseShift){
+                phase -= phaseShiftArr[i];  // FIXME: インパルスを飛ばしてしまうかもしれない
+            }
+
+            phase += phasedelta;
+
+            while (phase >= 16 * Math::PI) phase -= 16 * Math::PI;
+        }
+    }
+
     void FastOscillator::Take(int count, array<float>^ buf,
         float pshift, float amplify, int waveform, float op1,
         float samplingRate,
         bool constantPitch, float lenv_Pitch, array<float>^ pitch,
-        bool hasPhaseShift, array<float>^ phaseShiftArr){
+        bool hasPhaseShift, array<float>^ phaseShiftArr)
+    {
 
         double overtoneBias = 0.36;  // 調整値
 

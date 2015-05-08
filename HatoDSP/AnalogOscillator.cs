@@ -67,6 +67,64 @@ namespace HatoDSP
 
         float[] buf = new float[256];
 
+        public override void Skip(int count, LocalEnvironment lenv)
+        {
+            float pshift = 0;
+            float amp = 1;
+            float op1 = 0;
+
+            // ctrlの解釈
+            // Pitch, Amp, Type, OP1
+            if (ctrl != null)
+            {
+                if (ctrl.Length >= 1) { pshift = ctrl[0].Value; }
+                if (ctrl.Length >= 2) { amp = ctrl[1].Value; }
+                if (ctrl.Length >= 3) { waveform = (Waveform)(int)(ctrl[2].Value + 0.5); }
+                if (ctrl.Length >= 4) { op1 = ctrl[3].Value; }
+            }
+
+            float[] phaseShiftArr = null;
+
+            if (lenv.Locals.ContainsKey("phase"))
+            {
+                phaseShiftArr = lenv.Locals["phase"].ToArray();
+            }
+
+            bool constantPitch = (lenv.Pitch is ConstantSignal);  // メモ：Expressionが導入された場合に修正
+            
+            if (cell != null)
+            {
+                if (buf.Length < count)
+                {
+                    buf = new float[count];
+                }
+
+                fastOsc.Skip(
+                    count, buf,
+                    pshift, amp, (int)waveform, op1,
+                    lenv.SamplingRate,
+                    constantPitch,
+                    constantPitch ? ((ConstantSignal)lenv.Pitch).val : 0,
+                    constantPitch ? null : lenv.Pitch.ToArray(),
+                    phaseShiftArr != null,
+                    phaseShiftArr);
+
+                cell.Skip(count, lenv);  // バッファに加算
+            }
+            else
+            {
+                fastOsc.Skip(
+                    count, lenv.Buffer[0],
+                    pshift, amp, (int)waveform, op1,
+                    lenv.SamplingRate,
+                    constantPitch,
+                    constantPitch ? ((ConstantSignal)lenv.Pitch).val : 0,
+                    constantPitch ? null : lenv.Pitch.ToArray(),
+                    phaseShiftArr != null,
+                    phaseShiftArr);  // 結果を格納
+            }
+        }
+
         public override void Take(int count, LocalEnvironment lenv)
         {
             float pshift = 0;
