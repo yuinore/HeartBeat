@@ -65,7 +65,17 @@ namespace HatoDSP
             }
         }
 
+        public override void Skip(int count, LocalEnvironment lenv)
+        {
+            Take(count, lenv, true);
+        }
+
         public override void Take(int count, LocalEnvironment lenv)
+        {
+            Take(count, lenv, false);
+        }
+
+        private void Take(int count, LocalEnvironment lenv, bool isSkip)
         {
             outChCnt = ChannelCount;  // ←二重代入
 
@@ -105,7 +115,14 @@ namespace HatoDSP
 
                 lenv2.Buffer = tempbuf;
 
-                cel.Take(count, lenv2);
+                if (isSkip)
+                {
+                    cel.Skip(count, lenv2);
+                }
+                else
+                {
+                    cel.Take(count, lenv2);
+                }
 
                 for (int ch = 0; ch < outChCnt; ch++)
                 {

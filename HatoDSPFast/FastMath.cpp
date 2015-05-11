@@ -82,8 +82,15 @@ namespace HatoDSPFast {
         WT_MASK = (int*)calloc(WT_N, sizeof(int));
         char fname[100];
 
+        // ここの値を変更すると、キャッシュが無効になるので注意。手動で削除する必要があります。
+
+        /* //**********************************************
+        //int temp[WT_N] = { 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };  // 演算精度のテスト用
+        int temp[WT_N] = { 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536 };
+        /*/ //**********************************************
         int temp[WT_N] = { 8, 512, 512, 512, 1024, 1024, 2048, 2048, 4096, 4096 };  // あえてわかりやすくするために temp[0]=8 で
         // N_SAW換算で   { 8, 256, 128, 64,  64,   32,   32,   16,   16,   8 };  // 最高周波数の倍音1周期あたりに割かれるサンプル数
+        //*/ //*********************************************
 
         for (int j = 0; j < WT_N; j++) {
             WT_SIZE[j] = temp[j];
@@ -207,9 +214,18 @@ namespace HatoDSPFast {
                 {
                     // n := 倍音のインデックス(1-origin)
 
+                    /* //**** 導関数一致法 ****
                     saw0[j][i] += (float)(Math::Sin(2 * Math::PI * n * (i + 0.5) / N2) / (n * Math::PI / 2));
                     saw1[j][i] += (float)(_2pi_N2 * n * Math::Cos(2 * Math::PI * n * (i + 0.5) / N2) / (n * Math::PI / 2));
                     saw2[j][i] += (float)(-_2pi_N2 * _2pi_N2 * n * n * Math::Sin(2 * Math::PI * n * (i + 0.5) / N2) / (2 * n * Math::PI / 2));
+                    /*/ //**** 全域連続法 ****
+                    double  y1 = Math::Sin(2 * Math::PI * n * (i + 0.0) / N2) / (n * Math::PI / 2);
+                    double  y2 = Math::Sin(2 * Math::PI * n * (i + 0.5) / N2) / (n * Math::PI / 2);
+                    double  y3 = Math::Sin(2 * Math::PI * n * (i + 1.0) / N2) / (n * Math::PI / 2);
+                    saw0[j][i] += (float)y2;
+                    saw1[j][i] += (float)(y3 - y1);
+                    saw2[j][i] += (float)(2 * y1 - 4 * y2 + 2 * y3);
+                    //*/
 
                     imp0[j][i] += (float)(Math::Cos(2 * Math::PI * n * (i + 0.5) / N2));
                     imp1[j][i] += (float)(-_2pi_N2 * n * Math::Sin(2 * Math::PI * n * (i + 0.5) / N2));
