@@ -37,6 +37,11 @@ namespace HatoSynthGUI
         /// </summary>
         readonly int CellMargin = 8;
 
+        /// <summary>
+        /// 画面右の、セルのカタログを配置する表の横の長さ (個)
+        /// </summary>
+        readonly int CatalogWidth = 4;
+
         //************************** 設定項目ここまで **************************
 
         Form form;
@@ -406,8 +411,8 @@ namespace HatoSynthGUI
                 p.Image = Image.FromStream(File.OpenRead(HatoPath.FromAppDir(@"cells\cell_000" +
                     library.Presets[cellId].GraphicId / 10 + library.Presets[cellId].GraphicId % 10 + ".png")), false, false);
                 p.Name = "CellPreset_" + cellId;
-                p.Left = cellId % 2 * 40 + 4;
-                p.Top = cellId / 2 * 40 + 4;
+                p.Left = cellId % CatalogWidth * 40 + 4;
+                p.Top = cellId / CatalogWidth * 40 + 4;
                 p.Size = new System.Drawing.Size(32, 32);
                 p.SizeMode = PictureBoxSizeMode.Zoom;
                 p.BorderStyle = BorderStyle.None;

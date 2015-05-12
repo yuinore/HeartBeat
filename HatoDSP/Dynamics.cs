@@ -41,7 +41,7 @@ namespace HatoDSP
             }
         }
 
-        float inv_drive = 0.1f;
+        float inv_drive = 0.01f;
 
         public override void Take(int count, LocalEnvironment lenv)
         {

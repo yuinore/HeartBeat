@@ -36,10 +36,10 @@ namespace HatoSynthGUI
 
         public List<BlockPreset> Presets = new List<BlockPreset>
         {
-            new BlockPreset("Analog OSC",    "Sawtooth",       1,  new float[] {0, 0.5f, (float)Waveform.Saw, 0}),
-            new BlockPreset("Analog OSC",    "Square",         2,  new float[] {0, 0.5f, (float)Waveform.Square, 0}),
-            new BlockPreset("Analog OSC",    "Triangle",       3,  new float[] {0, 0.5f, (float)Waveform.Tri, 0}),
-            new BlockPreset("Null",          "Echo",           4,  new float[] {}),  // Not Implemented
+            new BlockPreset("Analog OSC",    "Sawtooth",       1,  new float[] {0, 0.05f, (float)Waveform.Saw, 0}),
+            new BlockPreset("Analog OSC",    "Square",         2,  new float[] {0, 0.05f, (float)Waveform.Square, 0}),
+            new BlockPreset("Analog OSC",    "Triangle",       3,  new float[] {0, 0.05f, (float)Waveform.Tri, 0}),
+            new BlockPreset("Null",          "Delay",          4,  new float[] {}),  // Not Implemented
             new BlockPreset("Rainbow",       "Rainbow",        5,  new float[] {7, 0.2f, 1.0f, 1.0f}),
             new BlockPreset("Rainbow",       "Uni",            6,  new float[] {7, 0.0f, 1.0f, 1.0f}),
             new BlockPreset("Analog Filter", "Lowpass",        7,  new float[] {(float)FilterType.LowPass}),
@@ -59,6 +59,24 @@ namespace HatoSynthGUI
             new BlockPreset("Arithmetic",    "Multiply",       20, new float[] {(float)Arithmetic.OperationType.MulDiv}),
             new BlockPreset("Arithmetic",    "Subtract",       21, new float[] {(float)Arithmetic.OperationType.AddSub}),
             new BlockPreset("Arithmetic",    "Add",            22, new float[] {(float)Arithmetic.OperationType.Sidechain}),
+            
+            new BlockPreset("Null",          "Differentiate",  23, new float[] {}),
+            new BlockPreset("Null",          "Integrate",      24, new float[] {}),
+            new BlockPreset("Null",          "Reverb",         25, new float[] {}),
+            new BlockPreset("Null",          "Phaser",         26, new float[] {}),
+            new BlockPreset("Null",          "Chorus",         27, new float[] {}),
+            new BlockPreset("Null",          "?",              28, new float[] {}),
+            new BlockPreset("Null",          "?",              29, new float[] {}),
+            new BlockPreset("Null",          "?",              30, new float[] {}),
+            new BlockPreset("Null",          "Wrap",           31, new float[] {}),
+            new BlockPreset("Dynamics",      "Shaper",         32, new float[] {}),
+            new BlockPreset("Analog OSC",    "Pulse",          33, new float[] {0, 0.05f, (float)Waveform.Pulse, 0.125f}),
+            new BlockPreset("Analog OSC",    "Impulse",        34, new float[] {0, 0.05f, (float)Waveform.Impulse, 0}),
+            new BlockPreset("Analog OSC",    "Sin",            35, new float[] {0, 0.05f, (float)Waveform.Sin, 0}),
+            new BlockPreset("Analog OSC",    "LFO",            36, new float[] {-60, 0.05f, (float)Waveform.Sin, 0}),  // TODO: キーボードトラッキングの無効化
+            new BlockPreset("Null",          "Comb Filter",    37, new float[] {}),
+            new BlockPreset("Null",          "Frequency Mod",  38, new float[] {}),
+            new BlockPreset("Null",          "Phase Mod",      39, new float[] {})
         };
     }
 }

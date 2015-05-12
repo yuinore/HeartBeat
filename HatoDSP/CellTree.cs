@@ -43,6 +43,9 @@ namespace HatoDSP
                 case "arithmetic":
                     generator = () => new Arithmetic();
                     break;
+                case "dynamics":
+                    generator = () => new Dynamics();
+                    break;
                 default:
                     throw new PatchFormatException("モジュール " + module + " は存在しません。");
             }
