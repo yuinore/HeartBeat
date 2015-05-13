@@ -44,6 +44,7 @@
     <Compile Include="BiquadFilter.cs" />
     <Compile Include="AnalogOscillator.cs" />
     <Compile Include="CellWire.cs" />
+    <Compile Include="CombFilter.cs" />
     <Compile Include="Dynamics.cs" />
     <Compile Include="FilterDesigner.cs" />
     <None Include="ButterworthFilterCell.cs" />

@@ -46,6 +46,9 @@ namespace HatoDSP
                 case "dynamics":
                     generator = () => new Dynamics();
                     break;
+                case "comb filter":
+                    generator = () => new CombFilter();
+                    break;
                 default:
                     throw new PatchFormatException("モジュール " + module + " は存在しません。");
             }
