@@ -7,9 +7,15 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class CombFilter : Cell
+    public class CombFilter : SingleInputCell
     {
-        Cell child = new NullCell();
+        Cell child
+        {
+            get
+            {
+                return InputCells[0];
+            }
+        }
 
         public override CellParameter[] ParamsList
         {
@@ -17,14 +23,6 @@ namespace HatoDSP
             {
                 return new CellParameter[] {
                 };
-            }
-        }
-
-        public override void AssignChildren(CellWire[] children)
-        {
-            if (children.Length >= 1)
-            {
-                this.child = children[0].Source.Generate();
             }
         }
 
