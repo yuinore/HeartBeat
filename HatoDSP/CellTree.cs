@@ -49,6 +49,9 @@ namespace HatoDSP
                 case "comb filter":
                     generator = () => new CombFilter();
                     break;
+                case "null":
+                    generator = () => new NullCell();
+                    break;
                 default:
                     throw new PatchFormatException("モジュール " + module + " は存在しません。");
             }

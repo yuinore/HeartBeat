@@ -36,6 +36,8 @@ namespace HatoSynthGUI
 
         public List<BlockPreset> Presets = new List<BlockPreset>
         {
+            // FIXME: OSC の amp をいじると、乗算器による Amp Modulation がうまく行かない
+            // あと、バッファの初期化とか
             new BlockPreset("Analog OSC",    "Sawtooth",       1,  new float[] {0, 0.05f, (float)Waveform.Saw, 0}),
             new BlockPreset("Analog OSC",    "Square",         2,  new float[] {0, 0.05f, (float)Waveform.Square, 0}),
             new BlockPreset("Analog OSC",    "Triangle",       3,  new float[] {0, 0.05f, (float)Waveform.Tri, 0}),
@@ -64,7 +66,7 @@ namespace HatoSynthGUI
             new BlockPreset("Null",          "Integrate",      24, new float[] {}),
             new BlockPreset("Null",          "Reverb",         25, new float[] {}),
             new BlockPreset("Null",          "Phaser",         26, new float[] {}),
-            new BlockPreset("Null",          "Chorus",         27, new float[] {}),
+            new BlockPreset("Comb Filter",   "Chorus/Flanger", 27, new float[] {20.0f}),
             new BlockPreset("Null",          "?",              28, new float[] {}),
             new BlockPreset("Null",          "?",              29, new float[] {}),
             new BlockPreset("Null",          "?",              30, new float[] {}),
@@ -74,7 +76,7 @@ namespace HatoSynthGUI
             new BlockPreset("Analog OSC",    "Impulse",        34, new float[] {0, 0.05f, (float)Waveform.Impulse, 0}),
             new BlockPreset("Analog OSC",    "Sin",            35, new float[] {0, 0.05f, (float)Waveform.Sin, 0}),
             new BlockPreset("Analog OSC",    "LFO",            36, new float[] {-60, 0.05f, (float)Waveform.Sin, 0}),  // TODO: キーボードトラッキングの無効化
-            new BlockPreset("Comb Filter",   "Comb Filter",    37, new float[] {}),
+            new BlockPreset("Comb Filter",   "Comb Filter",    37, new float[] {0.0f}),
             new BlockPreset("Null",          "Frequency Mod",  38, new float[] {}),
             new BlockPreset("Null",          "Phase Mod",      39, new float[] {})
         };

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HatoDSPFast;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -22,12 +23,17 @@ namespace HatoDSP
             get
             {
                 return new CellParameter[] {
+                    new CellParameter("LFO Amount", true, 0.0f, 100.0f, 20.0f, x => x + "")
                 };
             }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
+            if (ctrl.Length >= 1)
+            {
+                LFOAmount = ctrl[0].Value;
+            }
         }
 
         public override int ChannelCount
@@ -38,11 +44,17 @@ namespace HatoDSP
             }
         }
 
-        float a1 = 0.90f;
+        float LFOAmount = 80;
+        float LFOFrequency = 0.5f;  // Hz
+        float LFOPhase = 0;
+        float LFOStereoPhase = (float)Math.PI * 0.5f;
+        float delayTimeMs = 12.0f;
+
+        float a1 = 0.9f;
         float b0 = 1.0f;
-        float b1 = 0.0f;
+        float b1 = 0.0f;  // フィードバックを無くすとFlangerがChorusになる
         float delaySamples = 300;
-        const int maxDelaySamples = 1024;
+        readonly int maxDelaySamples = 65536;
         float[][] delayBuffer;
         int j = 0;
         int j0 = 0;  // 現在のdelayBufferの位置
@@ -73,8 +85,7 @@ namespace HatoDSP
             {
                 for (int ch = 0; ch < outChCnt; ch++)
                 {
-                    // delaySamplesの設定(デバッグ用)
-                    // delaySamples = 100.0f + 50 * (float)Math.Sin(j * 0.0004 + Math.PI * ch * 0.5);
+                    delaySamples = delayTimeMs * lenv.SamplingRate / 1000.0f + (LFOAmount / LFOFrequency) * (float)Math.Sin(LFOPhase + LFOStereoPhase * ch);
 
                     Debug.Assert(delaySamples >= 0 && delaySamples < maxDelaySamples);
 
@@ -85,12 +96,17 @@ namespace HatoDSP
 
                     float t0 = input[ch][i] - a1 * t1;
                     if (-1.1754944e-38 < t0 && t0 < 1.1754944e-38) { t0 = 0; }
-                
-                    delayBuffer[ch][j0] = t0;
-                    input[ch][i] = t0 * b0 + t1 * b1;
 
-                    lenv.Buffer[ch][i] += input[ch][i];  // 出力
+                    delayBuffer[ch][j0] = t0;
+                    float result = t0 * b0 + t1 * b1;
+
+                    lenv.Buffer[ch][i] += result;  // 出力
+
+                    //input[ch][i] = result;  // 無意味？
                 }
+
+                LFOPhase += 2 * (float)Math.PI * LFOFrequency / lenv.SamplingRate;
+                if (LFOPhase > 16 * 2 * Math.PI) LFOPhase -= 16 * (float)Math.PI;
 
                 j++;
                 if (++j0 >= maxDelaySamples) j0 -= maxDelaySamples;
