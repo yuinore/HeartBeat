@@ -114,6 +114,8 @@ namespace HatoSynthGUI
             blockNameList.Add(blockName);
 
             table[y, x] = cb;
+
+            Console.WriteLine("BlockTableManager.Add() called");
         }
 
         /// <summary>
@@ -145,6 +147,13 @@ namespace HatoSynthGUI
                 posy = cb.y;
                 return false;
             }
+        }
+
+        public bool TryGetBlockPatch(PictureBox pBox, out BlockPatch preset)
+        {
+            var c = pictureboxToCellblock(pBox);
+
+            return TryGetBlockPatch(c.x, c.y, out preset);
         }
 
         public bool TryGetBlockPatch(int x, int y, out BlockPatch preset)

@@ -46,6 +46,11 @@ namespace HatoSynthGUI
 
         Form form;
         SplitContainer splitContainer1;
+        TabControl tabControl1;
+        ScrollableControl CellMatrixContainer;
+        ScrollableControl CellCatalogContainer;
+        ScrollableControl CellDetailContainer;
+
         ContextMenuStrip contextMenuStrip2;
         BlockPresetLibrary library;
         AsioHandler asio;
@@ -131,7 +136,7 @@ namespace HatoSynthGUI
                 dragx = e.X;
                 dragy = e.Y;
                 draggingBox = (PictureBox)sender;
-                splitContainer1.Panel1.Controls.SetChildIndex(draggingBox, 0);
+                CellMatrixContainer.Controls.SetChildIndex(draggingBox, 0);
                 dragging = true;
             }
         }
@@ -155,6 +160,61 @@ namespace HatoSynthGUI
                 }
 
                 dragging = false;
+            }
+        }
+
+        PictureBox currentlyDetailOpenedPictureBox = null;
+
+        private void cellParamsTextBox_TextChanged(object sender, EventArgs e)
+        {
+            BlockPatch preset;
+
+            btable.TryGetBlockPatch(currentlyDetailOpenedPictureBox, out preset);
+
+            int paramIdx = Convert.ToInt32(((TextBox)sender).Name);
+
+            float val;
+            if (Single.TryParse(((TextBox)sender).Text, out val))
+            {
+                preset.Ctrl[paramIdx] = val;
+                Console.WriteLine("changed: " + val);
+            }
+            else
+            {
+                Console.WriteLine("not changed");
+            }
+        }
+
+        private void pictureBox1_DoubleClick(object sender, EventArgs e)
+        {
+            PictureBox pBox = sender as PictureBox;
+            BlockPatch preset;
+
+            Debug.Assert(pBox != null, "あれれ～おかしいぞ～");
+
+            currentlyDetailOpenedPictureBox = pBox;
+
+            tabControl1.SelectedIndex = 1;
+
+            while (CellDetailContainer.Controls.Count >= 1)
+            {
+                CellDetailContainer.Controls.RemoveAt(CellDetailContainer.Controls.Count - 1);  // 逆順の方が速いかな？（未検証）
+            }
+
+            btable.TryGetBlockPatch(pBox, out preset);
+
+            CellParameter[] paramsList = (new CellTree(preset.Name, preset.ModuleName)).Generate().ParamsList;  // !?!?!?!?
+
+            for (int i = 0; i < paramsList.Length; i++)
+            {
+                CellParameter p = paramsList[i];
+
+                CellDetailContainer.Controls.Add(new Label() { Text = p.Name });
+
+                TextBox tbox = new TextBox() { Text = preset.Ctrl[i].ToString() };
+                tbox.Name = "" + i;
+                tbox.TextChanged += cellParamsTextBox_TextChanged;
+                CellDetailContainer.Controls.Add(tbox);
             }
         }
 
@@ -197,13 +257,14 @@ namespace HatoSynthGUI
             p.MouseDown += pictureBox1_MouseDown;
             p.MouseMove += pictureBox1_MouseMove;
             p.MouseUp += pictureBox1_MouseUp;
+            p.DoubleClick += pictureBox1_DoubleClick;
 
             p.ContextMenuStrip = contextMenuStrip2;
 
             btable.Add(p, x, y, preset);
 
-            splitContainer1.Panel1.Controls.Add(p);
-            splitContainer1.Panel1.Controls.SetChildIndex(p, 0);
+            CellMatrixContainer.Controls.Add(p);
+            CellMatrixContainer.Controls.SetChildIndex(p, 0);
         }
 
         private void arrowX_Click(object sender, EventArgs e)
@@ -292,7 +353,11 @@ namespace HatoSynthGUI
 
         private void Load()
         {
+            //******** 設定 ********
+            form.KeyPreview = true;
+
             {
+                //******** 右クリックメニュー ********
                 contextMenuStrip2 = new ContextMenuStrip();
 
                 ToolStripMenuItem item1 = new ToolStripMenuItem() { Text = "削除(&D)" };
@@ -314,12 +379,43 @@ namespace HatoSynthGUI
                 form.Controls.Add(spc);
 
                 splitContainer1 = spc;
+
+                {
+                    TabControl tab = new TabControl();
+                    tab.Dock = DockStyle.Fill;
+
+                    TabPage tpage1 = new TabPage();
+                    tpage1.Name = "tab1";
+                    tpage1.Text = "Catalog";
+                    tpage1.Padding = new System.Windows.Forms.Padding(3);
+                    tpage1.UseVisualStyleBackColor = true;
+                    tab.Controls.Add(tpage1);
+
+                    TabPage tpage2 = new TabPage();
+                    tpage2.Name = "tab2";
+                    tpage2.Text = "Detail";
+                    tpage2.Padding = new System.Windows.Forms.Padding(3);
+                    tpage2.UseVisualStyleBackColor = true;
+                    tab.Controls.Add(tpage2);
+
+                    FlowLayoutPanel flow = new FlowLayoutPanel();
+                    flow.Dock = DockStyle.Fill;
+                    flow.FlowDirection = FlowDirection.TopDown;
+                    tpage2.Controls.Add(flow);
+
+                    splitContainer1.Panel2.Controls.Add(tab);
+
+                    CellMatrixContainer = splitContainer1.Panel1;
+                    CellCatalogContainer = tpage1;
+                    CellDetailContainer = flow;
+                    tabControl1 = tab;
+                }
             }
 
-            //form.KeyDown += form_KeyDown;
+            form.KeyDown += form_KeyDown;
             //splitContainer1.KeyDown += form_KeyDown;
-            splitContainer1.KeyDown += form_KeyDown;
             //splitContainer1.Panel1.KeyDown += form_KeyDown;
+            //splitContainer1.Panel2.KeyDown += form_KeyDown;
 
             // 画像ファイルを高速に読み込むには？［2.0のみ、C#、VB］
             // http://www.atmarkit.co.jp/fdotnet/dotnettips/597fastloadimg/fastloadimg.html
@@ -353,7 +449,7 @@ namespace HatoSynthGUI
 
                     p.MouseDown += arrowX_Click;
 
-                    splitContainer1.Panel1.Controls.Add(p);
+                    CellMatrixContainer.Controls.Add(p);
 
                     arrows.Add(new ArrowSummary(x1, y1, x1 + 1, y1));
                 }
@@ -380,7 +476,7 @@ namespace HatoSynthGUI
 
                     p.MouseDown += arrowY_Click;
 
-                    splitContainer1.Panel1.Controls.Add(p);
+                    CellMatrixContainer.Controls.Add(p);
 
                     arrows.Add(new ArrowSummary(x1, y1, x1, y1 + 1));
                 }
@@ -399,7 +495,7 @@ namespace HatoSynthGUI
                 p.SizeMode = PictureBoxSizeMode.Zoom;
                 p.BorderStyle = BorderStyle.None;
 
-                splitContainer1.Panel1.Controls.Add(p);
+                CellMatrixContainer.Controls.Add(p);
             }
 
             // 画面右のセル一覧
@@ -420,7 +516,7 @@ namespace HatoSynthGUI
 
                 p.DoubleClick += pictureBox2_DoubleClick;
 
-                splitContainer1.Panel2.Controls.Add(p);
+                CellCatalogContainer.Controls.Add(p);
             }
         }
 
@@ -708,7 +804,7 @@ namespace HatoSynthGUI
             {
                 btable.Remove(source);
 
-                splitContainer1.Panel1.Controls.Remove(source);
+                CellMatrixContainer.Controls.Remove(source);
             }
         }
 
