@@ -20,18 +20,8 @@ namespace HatoDSP
         {
             this.children = null;
 
-            list = new List<Cell>();  // 初期化
-            for (int i = 0; i < rainbowN; i++)
-            {
-                list.Add(new NullCell());
-            }
-
-            Random r = new Random(57923741);
-            rand = new float[rainbowN];
-            for (int i = 0; i < rainbowN; i++)
-            {
-                rand[i] = (float)r.NextDouble();
-            }
+            children = new CellTree(() => new NullCell());
+            UpdateRainbowN();
         }
 
         public override void AssignChildren(CellWire[] children)
@@ -40,21 +30,43 @@ namespace HatoDSP
             {
                 this.children = children[0].Source;  // FIXME: 複数指定
 
-                list = new List<Cell>();  // 既存の割り当ては破棄
-
-                for (int i = 0; i < rainbowN; i++)
-                {
-                    list.Add(children[0].Source.Generate());
-                }
+                UpdateRainbowN();  // ここで初期化するべきではない
             }
+        }
+
+        private void UpdateRainbowN()
+        {
+            List<Cell> list2 = new List<Cell>();  // 既存の割り当ては破棄
+
+            for (int i = 0; i < rainbowN; i++)
+            {
+                list2.Add(children.Generate());
+            }
+
+            list = list2;
+
+            Random r = new Random(57923741);
+            float[] rand2 = new float[rainbowN];
+            for (int i = 0; i < rainbowN; i++)
+            {
+                rand2[i] = (float)r.NextDouble();
+            }
+
+            rand = rand2;
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            // TODO:
+            // メモ：AssignControllersを呼んでいる間に、Takeを呼ばないでね！！
+
             if (ctrl.Length >= 1)
             {
-                rainbowN = Math.Min(32, (int)(ctrl[0].Value + 0.5f));
+                int newRainbowN = Math.Max(1, Math.Min(32, (int)(ctrl[0].Value + 0.5f)));
+                if (rainbowN != newRainbowN)
+                {
+                    rainbowN = newRainbowN;
+                    UpdateRainbowN();
+                }
             }
             if (ctrl.Length >= 2)
             {
@@ -76,6 +88,7 @@ namespace HatoDSP
             {
                 return new CellParameter[]
                 {
+                    new CellParameter("Count", true, 0.0f, 32.0f, 7.0f, x => (int)(x + 0.5) + ""),
                     new CellParameter("Detune", true, 0.0f, 1.0f, 0.2f, x => (int)(x * 10000) * 0.01 + "%"),
                     new CellParameter("Unison", true, 0.0f, 1.0f, 0.0f, x => (int)(x * 10000) * 0.01 + "cent"),
                     new CellParameter("Stereo", true, 0.0f, 2.0f, 1.0f, x => (int)(x * 10000) * 0.01 + "%")
@@ -94,7 +107,7 @@ namespace HatoDSP
         {
             float entireamp = (float)(1.0 / Math.Sqrt(rainbowN));
             // 正規分布の和の分散は分散の和になる
-            // 従って振幅の期待値はその平方根に比例（適当な推論）
+            // 従って振幅の期待値はその平方根に比例（雑な推論）
             // ただし、デチューン量が大きい場合はこの限りではない
 
             for (int j = 0; j < list.Count; j++)
@@ -118,10 +131,11 @@ namespace HatoDSP
                 }
 
                 float width = (rainbowN - 1.0f) / 2.0f;  // 片側幅
+                float width_inv = (rainbowN <= 1) ? 1.0f : 1 / width;
 
                 LocalEnvironment lenv2 = lenv.Clone();
                 lenv2.Buffer = buf2;
-                lenv2.Pitch =  Signal.Add(lenv.Pitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.9228f) / width, count));
+                lenv2.Pitch = Signal.Add(lenv.Pitch, new ConstantSignal(detuneAmount * (j - width + (rand[j] - 0.5f) * 0.9228f) * width_inv, count));
 
                 if (unisoneAmount != 0)
                 {
@@ -130,8 +144,8 @@ namespace HatoDSP
 
                 x.Take(count, lenv2);
 
-                var panL = (1 - stereoAmount * ((j - width) / width)) * entireamp;
-                var panR = (1 + stereoAmount * ((j - width) / width)) * entireamp;
+                var panL = (1 - stereoAmount * ((j - width) * width_inv)) * entireamp;
+                var panR = (1 + stereoAmount * ((j - width) * width_inv)) * entireamp;
 
                 if (chCount == 1)
                 {
