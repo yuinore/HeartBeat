@@ -177,11 +177,14 @@ namespace HatoSynthGUI
             if (Single.TryParse(((TextBox)sender).Text, out val))
             {
                 preset.Ctrl[paramIdx] = val;
-                Console.WriteLine("changed: " + val);
             }
-            else
+        }
+
+        private void ClearDetailContainer()
+        {
+            while (CellDetailContainer.Controls.Count >= 1)
             {
-                Console.WriteLine("not changed");
+                CellDetailContainer.Controls.RemoveAt(CellDetailContainer.Controls.Count - 1);  // 逆順の方が速いかな？（未検証）
             }
         }
 
@@ -195,11 +198,8 @@ namespace HatoSynthGUI
             currentlyDetailOpenedPictureBox = pBox;
 
             tabControl1.SelectedIndex = 1;
-
-            while (CellDetailContainer.Controls.Count >= 1)
-            {
-                CellDetailContainer.Controls.RemoveAt(CellDetailContainer.Controls.Count - 1);  // 逆順の方が速いかな？（未検証）
-            }
+            
+            ClearDetailContainer();
 
             btable.TryGetBlockPatch(pBox, out preset);
 
@@ -802,9 +802,14 @@ namespace HatoSynthGUI
             PictureBox source = (PictureBox)contextMenuStrip2.SourceControl;  // メモ：うまく取得できないことがあるらしい
             if (source != null)
             {
-                btable.Remove(source);
+                btable.Remove(source);  // テーブル管理から削除
 
-                CellMatrixContainer.Controls.Remove(source);
+                CellMatrixContainer.Controls.Remove(source);  // pictureBoxを削除
+
+                if (currentlyDetailOpenedPictureBox == source)
+                {
+                    ClearDetailContainer();
+                }
             }
         }
 
