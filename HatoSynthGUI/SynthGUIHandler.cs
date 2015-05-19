@@ -372,6 +372,27 @@ namespace HatoSynthGUI
             }
 
             {
+                //******** メニューバーを配置するための枠 ********
+                ToolStripContainer tsc = new ToolStripContainer();  // ToolStripPanelでも可！！！！
+                tsc.Dock = DockStyle.Fill;
+
+                {
+                    //******** メニューバー ********
+                    MenuStrip ms = new MenuStrip();
+
+                    ToolStripMenuItem item1 = new ToolStripMenuItem() { Text = "ファイル(&F)" };
+                    {
+                        ToolStripMenuItem item1_1 = new ToolStripMenuItem() { Text = "クイックセーブ" };
+                        item1_1.Click += savePatchToolStripMenuItem_Click;
+                        item1.DropDownItems.Add(item1_1);
+                    }
+                    ms.Items.Add(item1);
+
+                    tsc.TopToolStripPanel.Controls.Add(ms);
+                }
+                form.Controls.Add(tsc);
+
+                //******** 左右に２分割するコンテナ ********
                 SplitContainer spc = new SplitContainer();
                 spc.Name = "splitContainer1";
                 spc.BorderStyle = BorderStyle.Fixed3D;
@@ -379,7 +400,7 @@ namespace HatoSynthGUI
                 spc.Orientation = Orientation.Vertical;
                 spc.SplitterDistance = spc.Size.Width * 3 / 4;
 
-                form.Controls.Add(spc);
+                tsc.ContentPanel.Controls.Add(spc);
 
                 splitContainer1 = spc;
 
@@ -521,6 +542,11 @@ namespace HatoSynthGUI
 
                 CellCatalogContainer.Controls.Add(p);
             }
+        }
+
+        private void savePatchToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("やったねたえちゃん！");
         }
 
         class AAAA
