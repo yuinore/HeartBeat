@@ -368,9 +368,13 @@ namespace HatoSynthGUI
 
                     ToolStripMenuItem item1 = new ToolStripMenuItem() { Text = "ファイル(&F)" };
                     {
-                        ToolStripMenuItem item1_1 = new ToolStripMenuItem() { Text = "クイックセーブ" };
-                        item1_1.Click += savePatchToolStripMenuItem_Click;
+                        ToolStripMenuItem item1_1 = new ToolStripMenuItem() { Text = "名前を付けて保存(&S)" };
+                        item1_1.Click += saveAsPatchToolStripMenuItem_Click;
                         item1.DropDownItems.Add(item1_1);
+
+                        ToolStripMenuItem item1_2 = new ToolStripMenuItem() { Text = "クイックセーブ" };
+                        item1_2.Click += savePatchToolStripMenuItem_Click;
+                        item1.DropDownItems.Add(item1_2);
                     }
                     ms.Items.Add(item1);
 
@@ -530,6 +534,58 @@ namespace HatoSynthGUI
             }
         }
 
+        /// <summary>
+        /// ファイル → 名前を付けて保存
+        /// </summary>
+        private void saveAsPatchToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string patch = PatchIO.Serialize(TableSize, btable, arrows);
+
+            if (patch != null)
+            {
+                // 「名前を付けて保存」ダイアログボックスを表示する
+                // http://dobon.net/vb/dotnet/form/savefiledialog.html
+
+                string filename;
+                {
+                    SaveFileDialog sfd = new SaveFileDialog();
+                    sfd.Title = "Save Patch File As";
+                    sfd.FileName = "patch 1.hatp";
+                    sfd.Filter = "HatoSynth Patch (*.hatp)|*.hatp";
+                    sfd.FilterIndex = 0;
+                    sfd.InitialDirectory = HatoPath.FromAppDir("");  // TODO: カレントディレクトリを記憶するようにする。
+
+                    //ダイアログボックスを閉じる前に現在のディレクトリを復元するようにする
+                    sfd.RestoreDirectory = true;
+
+                    //ダイアログを表示する
+                    if (sfd.ShowDialog() != DialogResult.OK)
+                    {
+                        return;
+                    }
+                    filename = sfd.FileName;
+                }
+
+                try
+                {
+                    File.WriteAllText(filename, patch);
+
+                    MessageBox.Show("保存が完了しました。", "保存", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("保存に失敗しました：" + ex.ToString(), "保存", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("保存するパッチがありません。", "保存", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        /// <summary>
+        /// ファイル → クイックセーブ
+        /// </summary>
         private void savePatchToolStripMenuItem_Click(object sender, EventArgs e)
         {
             string patch = PatchIO.Serialize(TableSize, btable, arrows);
@@ -540,11 +596,11 @@ namespace HatoSynthGUI
                 {
                     File.WriteAllText(HatoPath.FromAppDir("quicksave.hatp"), patch);
 
-                    MessageBox.Show("保存が完了しました。");
+                    MessageBox.Show("保存が完了しました。", "保存", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("保存に失敗しました：" + ex.ToString());
+                    MessageBox.Show("保存に失敗しました：" + ex.ToString(), "保存", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
