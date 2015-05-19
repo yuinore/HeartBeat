@@ -202,6 +202,9 @@ namespace HatoSynthGUI
             ClearDetailContainer();
 
             btable.TryGetBlockPatch(pBox, out preset);
+            
+            CellDetailContainer.Controls.Add(new Label() { Text = preset.Name });
+            CellDetailContainer.Controls.Add(new Label() { Text = "" });
 
             CellParameter[] paramsList = (new CellTree(preset.Name, preset.ModuleName)).Generate().ParamsList;  // !?!?!?!?
 
