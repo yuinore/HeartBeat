@@ -1,6 +1,7 @@
 ﻿using Codeplex.Data;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -22,17 +23,44 @@ namespace HatoDSP
                 return cells[root];
             }
         }
+
+        public static string RemoveComments(string jsonWithComments)
+        {
+            // jsonではコメント使えないんですか！？！？
+            //json = Regex.Replace(json, @"//.*$", "", RegexOptions.Multiline);
+            //json = Regex.Replace(json, @"/\*.*\*/", "");  // これだと /* /* */ もアレしてしまう気がする
+            //json = Regex.Replace(json, @"/\*.*?\*/", "");  // これだと /* // */ もアレしてしまう
+            //return Regex.Replace(jsonWithComments, @"(/\*.*?\*/|//.*?$)", "", RegexOptions.Multiline | RegexOptions.Singleline);
+            // FIXME: ↑これだと文字列定数中のコメントも削除されそう・・・
+
+            // ^((?:[^\"]*?\"(\\\"|[^\"\\])*?\")*?[^\"]*?)(/\*.*?\*/|//.*?\r\n)
+            string pattern = @"^((?:[^\""]*?\""(?:\\\""|[^\""\\])*?\"")*?[^\""]*?)(/\*.*?\*/|//.*?(\r\n|\Z))";  // 改行文字は\r\n
+            // これでどうでしょうか
+            // 処理時間的な意味での改善の余地はあるかもしれない。
+
+            int recursionLimit = 1000;
+
+            while (true)
+            {
+                string replaced = Regex.Replace(jsonWithComments, pattern, "$1\r\n", RegexOptions.Singleline | RegexOptions.Compiled);  // 空白文字に置換してもよい
+                // jsonは改行と空白を区別しない
+
+                if (jsonWithComments == replaced) break;
+
+                jsonWithComments = replaced;
+
+                if (--recursionLimit <= 0) break;
+            }
+
+            Debug.Assert(recursionLimit > 0, "正規表現は難しいよねｗ");
+            return jsonWithComments;
+        }
+
         public PatchReader(string json)
         {
             try
             {
-                // jsonではコメント使えないんですか！？！？
-                //json = Regex.Replace(json, @"//.*$", "", RegexOptions.Multiline);
-                //json = Regex.Replace(json, @"/\*.*\*/", "");  // これだと /* /* */ もアレしてしまう気がする
-                //json = Regex.Replace(json, @"/\*.*?\*/", "");  // これだと /* // */ もアレしてしまう
-                json = Regex.Replace(json, @"(/\*.*?\*/|//.*?$)", "", RegexOptions.Multiline | RegexOptions.Singleline);
-                // FIXME: ↑これだと文字列定数中のコメントも削除されそう・・・
-                // これだと単独の/*はコメント化されないですが構いませんよね？
+                json = RemoveComments(json);
 
                 dynamic dj = DynamicJson.Parse(json);
 

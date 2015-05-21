@@ -85,7 +85,7 @@ namespace HatoDSPTest
 
             foreach (Type t in types)
             {
-                if (t.IsSubclassOf(typeof(Cell)))
+                if (t.IsSubclassOf(typeof(Cell)) && t.IsAbstract != true)
                 {
                     // Debug.Assert ではなく Assert.IsTrue を使うこと
 
