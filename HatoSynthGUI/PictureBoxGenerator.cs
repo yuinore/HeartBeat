@@ -45,6 +45,22 @@ namespace HatoSynthGUI
             return p;
         }
 
+        public PictureBox GenerateCellBlock(int graphicId, int x, int y)
+        {
+            var p = new PictureBox();
+            //p.Image = (Image)((PictureBox)sender).Image.Clone();
+            p.Image = Image.FromStream(File.OpenRead(HatoPath.FromAppDir(@"cells\cell_" +
+                String.Format("{0:00000}", graphicId) + ".png")), false, false);
+            p.Left = x * CellTableInterval + CellMargin;
+            p.Top = y * CellTableInterval + CellMargin;
+            p.Size = new System.Drawing.Size(CellSize, CellSize);
+            p.SizeMode = PictureBoxSizeMode.Zoom;
+            p.BorderStyle = BorderStyle.None;
+            p.Cursor = Cursors.SizeAll;
+
+            return p;
+        }
+
         public PictureBox GenerateEmptyCellBlock(int cellId)
         {
             var p = new PictureBox();

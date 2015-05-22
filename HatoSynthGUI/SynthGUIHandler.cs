@@ -132,10 +132,17 @@ namespace HatoSynthGUI
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.Button == System.Windows.Forms.MouseButtons.Left)
+            if (draggingBox != null)
             {
-                draggingBox.Left += e.X - dragx;
-                draggingBox.Top += e.Y - dragy;
+                if (e.Button == System.Windows.Forms.MouseButtons.Left)
+                {
+                    draggingBox.Left += e.X - dragx;
+                    draggingBox.Top += e.Y - dragy;
+                }
+            }
+            else
+            {
+                // カーソルがホバリングしただけ
             }
         }
 
@@ -239,6 +246,15 @@ namespace HatoSynthGUI
             PictureBox p = pBoxGen.GenerateCellBlock((PictureBox)sender, x, y);
             btable.Add(p, x, y, preset);
 
+            CellBlockArrangement(p);
+        }
+
+        /// <summary>
+        /// イベントハンドラ・右クリックメニューを設定し、
+        /// 親コンテナにPictureBoxを追加します。
+        /// </summary>
+        private void CellBlockArrangement(PictureBox p)
+        {
             p.MouseDown += pictureBox1_MouseDown;
             p.MouseMove += pictureBox1_MouseMove;
             p.MouseUp += pictureBox1_MouseUp;
@@ -265,31 +281,7 @@ namespace HatoSynthGUI
                 arrowId = 0;
             }
 
-            if (p.ImageLocation == @"cells\arrow_00000.png" || p.ImageLocation == null)
-            {
-                p.ImageLocation = @"cells\arrow_00002.png";
-                arrows[arrowId].direction = ArrowDirection.Right;
-            }
-            else if (p.ImageLocation == @"cells\arrow_00002.png")
-            {
-                p.ImageLocation = @"cells\arrow_00004.png";
-                arrows[arrowId].direction = ArrowDirection.Left;
-            }
-            else if (p.ImageLocation == @"cells\arrow_00004.png")
-            {
-                p.ImageLocation = @"cells\arrow_00006.png";
-                arrows[arrowId].direction = ArrowDirection.RightAlt;
-            }
-            else if (p.ImageLocation == @"cells\arrow_00006.png")
-            {
-                p.ImageLocation = @"cells\arrow_00008.png";
-                arrows[arrowId].direction = ArrowDirection.LeftAlt;
-            }
-            else
-            {
-                p.ImageLocation = @"cells\arrow_00000.png";
-                arrows[arrowId].direction = ArrowDirection.None;
-            }
+            arrows[arrowId].Toggle();
         }
 
         private void arrowY_Click(object sender, EventArgs e)
@@ -307,31 +299,7 @@ namespace HatoSynthGUI
                 arrowId = 0;
             }
 
-            if (p.ImageLocation == @"cells\arrow_00000.png" || p.ImageLocation == null)
-            {
-                p.ImageLocation = @"cells\arrow_00003.png";
-                arrows[arrowId].direction = ArrowDirection.Down;
-            }
-            else if (p.ImageLocation == @"cells\arrow_00003.png")
-            {
-                p.ImageLocation = @"cells\arrow_00001.png";
-                arrows[arrowId].direction = ArrowDirection.Up;
-            }
-            else if (p.ImageLocation == @"cells\arrow_00001.png")
-            {
-                p.ImageLocation = @"cells\arrow_00007.png";
-                arrows[arrowId].direction = ArrowDirection.DownAlt;
-            }
-            else if (p.ImageLocation == @"cells\arrow_00007.png")
-            {
-                p.ImageLocation = @"cells\arrow_00005.png";
-                arrows[arrowId].direction = ArrowDirection.UpAlt;
-            }
-            else
-            {
-                p.ImageLocation = @"cells\arrow_00000.png";
-                arrows[arrowId].direction = ArrowDirection.None;
-            }
+            arrows[arrowId].Toggle();
         }
 
         private void Load()
@@ -362,13 +330,17 @@ namespace HatoSynthGUI
 
                     ToolStripMenuItem item1 = new ToolStripMenuItem() { Text = "ファイル(&F)" };
                     {
-                        ToolStripMenuItem item1_1 = new ToolStripMenuItem() { Text = "名前を付けて保存(&S)" };
+                        ToolStripMenuItem item1_1 = new ToolStripMenuItem() { Text = "パッチに名前を付けて保存(&S)" };
                         item1_1.Click += saveAsPatchToolStripMenuItem_Click;
                         item1.DropDownItems.Add(item1_1);
 
                         ToolStripMenuItem item1_2 = new ToolStripMenuItem() { Text = "クイックセーブ" };
                         item1_2.Click += savePatchToolStripMenuItem_Click;
                         item1.DropDownItems.Add(item1_2);
+
+                        ToolStripMenuItem item1_3 = new ToolStripMenuItem() { Text = "パッチを開く(&O)" };
+                        item1_3.Click += openPatchToolStripMenuItem_Click;
+                        item1.DropDownItems.Add(item1_3);
                     }
                     ms.Items.Add(item1);
 
@@ -446,7 +418,7 @@ namespace HatoSynthGUI
 
                     CellMatrixContainer.Controls.Add(p);
 
-                    arrows.Add(new ArrowSummary(x1, y1, x1 + 1, y1));
+                    arrows.Add(new ArrowSummary(p, x1, y1, x1 + 1, y1));
                 }
 
                 Debug.Assert(arrowId2 == (TableSize.Width - 1) * TableSize.Height);
@@ -462,7 +434,7 @@ namespace HatoSynthGUI
 
                     CellMatrixContainer.Controls.Add(p);
 
-                    arrows.Add(new ArrowSummary(x1, y1, x1, y1 + 1));
+                    arrows.Add(new ArrowSummary(p, x1, y1, x1, y1 + 1));
                 }
             }
 
@@ -480,6 +452,36 @@ namespace HatoSynthGUI
                 p.DoubleClick += pictureBox2_DoubleClick;
                 CellCatalogContainer.Controls.Add(p);
             }
+        }
+
+        /// <summary>
+        /// ファイル → 開く
+        /// </summary>
+        private void openPatchToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string patch;
+
+            {
+                OpenFileDialog ofd = new OpenFileDialog();
+                ofd.Title = "Open Patch File";
+                ofd.FileName = "";
+                ofd.Filter = "HatoSynth Patch (*.hatp)|*.hatp";
+                ofd.FilterIndex = 0;
+                ofd.InitialDirectory = HatoPath.FromAppDir("");  // TODO: カレントディレクトリを記憶するようにする。
+
+                //ダイアログボックスを閉じる前に現在のディレクトリを復元するようにする
+                ofd.RestoreDirectory = true;
+
+                //ダイアログを表示する
+                if (ofd.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                patch = File.ReadAllText(ofd.FileName);
+            }
+
+            PatchIO.Deserialize(patch, btable, arrows, pBoxGen, CellBlockArrangement);
         }
 
         /// <summary>

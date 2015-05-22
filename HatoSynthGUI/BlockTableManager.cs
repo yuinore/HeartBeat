@@ -81,6 +81,29 @@ namespace HatoSynthGUI
         /// <summary>
         /// ブロックを挿入します。
         /// 空ではない位置に挿入しようとすると、例外をスローします。
+        /// 同じ名前のセルが既に存在していた場合にも例外をスローします。
+        /// </summary>
+        public void Add(PictureBox p, int x, int y, BlockPatch patch)
+        {
+            if (table[y, x] != null) throw new ArgumentException("空ではない位置にセルを挿入しようとしました。");
+            if (blockNameList.Contains(patch.Name)) throw new ArgumentException("名前の等しいセルが既に存在します。");
+
+            var cb = new CellBlock();
+
+            cb.pBox = p;
+            cb.x = x;
+            cb.y = y;
+            cb.bpatch = patch.Clone();
+            blockNameList.Add(patch.Name);
+
+            table[y, x] = cb;
+
+            Console.WriteLine("BlockTableManager.Add() called");
+        }
+
+        /// <summary>
+        /// ブロックを挿入します。
+        /// 空ではない位置に挿入しようとすると、例外をスローします。
         /// </summary>
         public void Add(PictureBox p, int x, int y, BlockPresetLibrary.BlockPreset preset)
         {
@@ -103,8 +126,6 @@ namespace HatoSynthGUI
             blockNameList.Add(blockName);
 
             table[y, x] = cb;
-
-            Console.WriteLine("BlockTableManager.Add() called");
         }
 
         /// <summary>

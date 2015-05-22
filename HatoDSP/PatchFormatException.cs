@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    class PatchFormatException : Exception
+    public class PatchFormatException : Exception
     {
         public PatchFormatException()
             : base("HatoSynthのパッチファイルの書式に誤りがある可能性があります。")

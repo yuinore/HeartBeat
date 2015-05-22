@@ -1,4 +1,5 @@
 ﻿using Codeplex.Data;
+using HatoDSP;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -19,6 +20,35 @@ namespace HatoSynthGUI
             public string[] children { get; set; }
             public int pos { get; set; }
 
+            public PatchEntry()
+            {
+            }
+
+            public PatchEntry(dynamic obj)
+            {
+                this.name = obj.name;
+
+                if (obj.IsDefined("module"))
+                {
+                    this.module = obj.module;
+                }
+
+                if (obj.IsDefined("children"))
+                {
+                    this.children = obj.children;
+                }
+
+                if (obj.IsDefined("ctrl"))
+                {
+                    this.ctrl = ((double[])obj.ctrl).Select(y => (float)y).ToArray();
+                }
+
+                if (obj.IsDefined("pos"))
+                {
+                    this.pos = (int)(double)obj.pos;  // posが定義されていない場合はGUI上に読み込むことができない。
+                }
+            }
+
             public int SetPos(int x, int y)  // どうしてこうなった？
             {
                 if (x > 0xFFF || y > 0xFFF || x < 0 || y < 0) throw new Exception();
@@ -34,21 +64,19 @@ namespace HatoSynthGUI
                     ((y & 0xD00) << 12));
             }
 
-            public Tuple<int, int> GetPos()
+            public void GetPos(out int x, out int y)
             {
-                int x = (
+                x = (
                     ((pos & 0x000007) >> 0) |
                     ((pos & 0x0001C0) >> 3) |
                     ((pos & 0x007000) >> 6) |
                     ((pos & 0x1C0000) >> 9));
 
-                int y = (
+                y = (
                     ((pos & 0x000038) >> 3) |
                     ((pos & 0x000D00) >> 6) |
                     ((pos & 0x038000) >> 9) |
                     ((pos & 0xD00000) >> 12));
-
-                return new Tuple<int, int>(x, y);
             }
         }
 
@@ -193,6 +221,139 @@ namespace HatoSynthGUI
             else
             {
                 return null;
+            }
+        }
+
+        public static void Deserialize(
+            string patch, 
+            BlockTableManager btable,
+            List<ArrowSummary> arrows,
+            PictureBoxGenerator pBoxGen,
+            Action<PictureBox> CellBlockArrangementCallback)
+        {
+            var cellNameToCellBlock = new Dictionary<string, CellBlock>();
+            var children = new Dictionary<string, string[]>();
+
+            try
+            {
+                PatchEntry[] entries = null;
+
+                {
+                    // json から PatchEntry[] を読み込む
+
+                    string json = PatchReader.RemoveComments(patch);
+
+                    dynamic dj = DynamicJson.Parse(json);
+
+                    if (!dj.IsArray) throw new PatchFormatException();
+
+                    entries = ((dynamic[])dj).Select(obj => new PatchEntry(obj)).ToArray();
+                }
+
+                foreach (var entry in entries)
+                {
+                    if (entry.name == "$synth")
+                    {
+                        if (entry.children.Length != 1) new NotImplementedException("あー");
+
+                        string cld = entry.children[0];
+                        int idx = cld.LastIndexOf(":");
+                        if (idx < 0 || cld.Substring(idx + 1) != "0") throw new Exception("あー");
+
+                        children.Add("$synth", new string[] { cld });
+                    }
+                    else
+                    {
+                        var cel = new CellBlock();
+                        cel.bpatch = new BlockPatch(
+                                1,  // FIXME:
+                                entry.module,
+                                entry.name,
+                                entry.ctrl
+                            );
+                        entry.GetPos(out cel.x, out cel.y);
+
+                        cel.pBox = pBoxGen.GenerateCellBlock(cel.bpatch.GraphicId, cel.x, cel.y);
+
+                        btable.Add(cel.pBox, cel.x, cel.y, cel.bpatch);
+
+                        // イベントハンドラ・右クリックメニューを設定し、親コンテナにPictureBoxを追加します。
+                        CellBlockArrangementCallback(cel.pBox);
+
+                        children.Add(entry.name, (string[])entry.children);
+
+                        cellNameToCellBlock.Add(entry.name, cel);
+                    }
+                }
+
+                foreach (var entry in children)
+                {
+                    CellBlock start0 = null;
+                    CellBlock[] targetList = entry.Value.Select(y => cellNameToCellBlock[y.Substring(0, y.LastIndexOf(":"))]).ToArray();
+                    int[] portList = entry.Value.Select(y => Convert.ToInt32(y.Substring(y.LastIndexOf(":") + 1))).ToArray();
+
+                    if (entry.Key == "$synth")
+                    {
+                    }
+                    else
+                    {
+                        start0 = cellNameToCellBlock[entry.Key];
+                    }
+
+                    for(int i = 0; i < targetList.Length; i++)
+                    {
+                        CellBlock target = targetList[i];
+                        int port = portList[i];
+
+                        CellBlock start = start0;
+
+                        if (start == null)
+                        {
+                            start = new CellBlock();
+                            start.x = target.x;
+                            start.y = target.y + 1;
+                        }
+
+                        bool horizontal = start.y == target.y;
+
+                        if ((start.x - target.x) * (start.x - target.x) + (start.y - target.y) * (start.y - target.y) != 1)  // 隣接していなければエラー
+                        {
+                            throw new PatchFormatException();
+                        }
+
+                        foreach (var arr in arrows)
+                        {
+                            if (
+                                arr.pos1x == start.x &&
+                                arr.pos1y == start.y &&
+                                arr.pos2x == target.x &&
+                                arr.pos2y == target.y)
+                            {
+                                if (arr.direction != ArrowDirection.None) throw new PatchFormatException();
+
+                                arr.direction = horizontal ?
+                                    (port == 0 ? ArrowDirection.Left : ArrowDirection.LeftAlt) :
+                                    (port == 0 ? ArrowDirection.Up : ArrowDirection.UpAlt);  // Altの実装な
+                            }
+                            else if (
+                               arr.pos2x == start.x &&
+                               arr.pos2y == start.y &&
+                               arr.pos1x == target.x &&
+                               arr.pos1y == target.y)
+                            {
+                                if (arr.direction != ArrowDirection.None) throw new PatchFormatException();
+
+                                arr.direction = horizontal ?
+                                    (port == 0 ? ArrowDirection.Right : ArrowDirection.RightAlt) :
+                                    (port == 0 ? ArrowDirection.Down : ArrowDirection.DownAlt);  // Altの実装な
+                            }
+                        }
+                    }
+                }
+            }
+            catch (System.Xml.XmlException ex)
+            {
+                MessageBox.Show("パッチを読み込むことができませんでした：" + ex.ToString());
             }
         }
     }
