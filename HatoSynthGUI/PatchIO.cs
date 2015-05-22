@@ -19,9 +19,11 @@ namespace HatoSynthGUI
             public float[] ctrl { get; set; }
             public string[] children { get; set; }
             public int pos { get; set; }
+            public int gid { get; set; }
 
             public PatchEntry()
             {
+                this.gid = 1;
             }
 
             public PatchEntry(dynamic obj)
@@ -46,6 +48,15 @@ namespace HatoSynthGUI
                 if (obj.IsDefined("pos"))
                 {
                     this.pos = (int)(double)obj.pos;  // posが定義されていない場合はGUI上に読み込むことができない。
+                }
+
+                if (obj.IsDefined("gid"))
+                {
+                    this.gid = (int)(double)obj.gid;
+                }
+                else
+                {
+                    this.gid = 1;
                 }
             }
 
@@ -104,7 +115,8 @@ namespace HatoSynthGUI
                             name = preset.Name,
                             module = preset.ModuleName,
                             ctrl = new float[0] { },  // 後から追加できない・・・
-                            children = new string[0] { }
+                            children = new string[0] { },
+                            gid = preset.GraphicId
                         };
 
                         if (preset.Ctrl != null)
@@ -266,7 +278,7 @@ namespace HatoSynthGUI
                     {
                         var cel = new CellBlock();
                         cel.bpatch = new BlockPatch(
-                                1,  // FIXME:
+                                entry.gid,
                                 entry.module,
                                 entry.name,
                                 entry.ctrl
