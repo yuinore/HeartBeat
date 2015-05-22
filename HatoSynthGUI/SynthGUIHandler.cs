@@ -55,6 +55,7 @@ namespace HatoSynthGUI
         BlockPresetLibrary library;
         AsioHandler asio;
         BlockTableManager btable;
+        PictureBoxGenerator pBoxGen;
 
         /// <summary>
         /// それぞれのマスにどのセルが入っているか。
@@ -84,6 +85,8 @@ namespace HatoSynthGUI
             library = new BlockPresetLibrary();
 
             btable = new BlockTableManager(TableSize);
+
+            pBoxGen = new PictureBoxGenerator(TableSize, CellSize, CellMargin, CatalogWidth);
 
             this.Load();
         }
@@ -233,15 +236,8 @@ namespace HatoSynthGUI
                 preset = library.Presets[0];
             }
 
-            var p = new PictureBox();
-            //p.Image = (Image)((PictureBox)sender).Image.Clone();
-            p.Image = ((PictureBox)sender).Image;
-            p.Left = x * CellTableInterval + CellMargin;
-            p.Top = y * CellTableInterval + CellMargin;
-            p.Size = new System.Drawing.Size(CellSize, CellSize);
-            p.SizeMode = PictureBoxSizeMode.Zoom;
-            p.BorderStyle = BorderStyle.None;
-            p.Cursor = Cursors.SizeAll;
+            PictureBox p = pBoxGen.GenerateCellBlock((PictureBox)sender, x, y);
+            btable.Add(p, x, y, preset);
 
             p.MouseDown += pictureBox1_MouseDown;
             p.MouseMove += pictureBox1_MouseMove;
@@ -249,8 +245,6 @@ namespace HatoSynthGUI
             p.DoubleClick += pictureBox1_DoubleClick;
 
             p.ContextMenuStrip = contextMenuStrip2;
-
-            btable.Add(p, x, y, preset);
 
             CellMatrixContainer.Controls.Add(p);
             CellMatrixContainer.Controls.SetChildIndex(p, 0);
@@ -438,28 +432,15 @@ namespace HatoSynthGUI
             // （と思ったけれど ImageLocation を使ってたのが遅かったっぽい）
 
             {
-                var size = CellMargin * 2;
-
-                int arrowId;
-                int arrowId2 = 0;
+                int arrowId;  // 縦、または横のそれぞれにおけるインデックス
+                int arrowId2 = 0;  // 通し番号
 
                 for (arrowId = 0; arrowId < (TableSize.Width - 1) * TableSize.Height; arrowId++, arrowId2++)
                 {
                     int x1 = arrowId % (TableSize.Width - 1);
                     int y1 = arrowId / (TableSize.Width - 1);
 
-                    // 水平方向（左右向き）の矢印
-                    var p = new PictureBox();
-                    //p.Image = Image.FromFile(@"cells\arrow_00000.png");
-                    //p.ImageLocation = @"cells\arrow_00000.png";
-                    p.Image = Image.FromStream(File.OpenRead(@"cells\arrow_00000.png"), false, false);
-                    p.Name = "ArrowX_" + arrowId2;
-                    p.Left = (x1 + 1) * CellTableInterval - CellMargin;
-                    p.Top = y1 * CellTableInterval + CellTableInterval / 2 - CellMargin;
-                    p.Size = new System.Drawing.Size(size, size);
-                    p.SizeMode = PictureBoxSizeMode.Zoom;
-                    p.BorderStyle = BorderStyle.None;
-                    p.Cursor = Cursors.Hand;
+                    PictureBox p = pBoxGen.GenerateArrow(arrowId2, x1, y1, true);
 
                     p.MouseDown += arrowX_Click;
 
@@ -475,18 +456,7 @@ namespace HatoSynthGUI
                     int x1 = arrowId % TableSize.Width;
                     int y1 = arrowId / TableSize.Width;
 
-                    // 垂直方向（左右向き）の矢印
-                    var p = new PictureBox();
-                    //p.Image = Image.FromFile(@"cells\arrow_00000.png");
-                    //p.ImageLocation = @"cells\arrow_00000.png";
-                    p.Image = Image.FromStream(File.OpenRead(@"cells\arrow_00000.png"), false, false);
-                    p.Name = "ArrowY_" + arrowId2;
-                    p.Left = x1 * CellTableInterval + CellTableInterval / 2 - CellMargin;
-                    p.Top = (y1 + 1) * CellTableInterval - CellMargin;
-                    p.Size = new System.Drawing.Size(size, size);
-                    p.SizeMode = PictureBoxSizeMode.Zoom;
-                    p.BorderStyle = BorderStyle.None;
-                    p.Cursor = Cursors.Hand;
+                    PictureBox p = pBoxGen.GenerateArrow(arrowId2, x1, y1, false);
 
                     p.MouseDown += arrowY_Click;
 
@@ -499,37 +469,15 @@ namespace HatoSynthGUI
             // 画面左のセル置き場
             for (int cellId = 0; cellId < TableSize.Width * TableSize.Height; cellId++)
             {
-                var p = new PictureBox();
-                //p.Image = Image.FromFile(@"cells\cell_00000.png");
-                //p.ImageLocation = @"cells\cell_00000.png";
-                p.Image = Image.FromStream(File.OpenRead(@"cells\cell_00000.png"), false, false);
-                p.Left = cellId % TableSize.Width * CellTableInterval + CellMargin;
-                p.Top = cellId / TableSize.Width * CellTableInterval + CellMargin;
-                p.Size = new System.Drawing.Size(CellSize, CellSize);
-                p.SizeMode = PictureBoxSizeMode.Zoom;
-                p.BorderStyle = BorderStyle.None;
-
+                PictureBox p = pBoxGen.GenerateEmptyCellBlock(cellId);
                 CellMatrixContainer.Controls.Add(p);
             }
 
             // 画面右のセル一覧
             for (int cellId = 0; cellId < library.Presets.Count; cellId++)
             {
-                var p = new PictureBox();
-                //p.Image = Image.FromFile(@"cells\cell_0000" + (cellId + 1) + ".png");
-                //p.ImageLocation = @"cells\cell_0000" + (cellId + 1) + ".png";
-                p.Image = Image.FromStream(File.OpenRead(HatoPath.FromAppDir(@"cells\cell_" +
-                    String.Format("{0:00000}", library.Presets[cellId].GraphicId) + ".png")), false, false);
-                p.Name = "CellPreset_" + cellId;
-                p.Left = cellId % CatalogWidth * 40 + 4;
-                p.Top = cellId / CatalogWidth * 40 + 4;
-                p.Size = new System.Drawing.Size(32, 32);
-                p.SizeMode = PictureBoxSizeMode.Zoom;
-                p.BorderStyle = BorderStyle.None;
-                p.Cursor = Cursors.Hand;
-
+                PictureBox p = pBoxGen.GenerateCatalog(cellId, library.Presets[cellId].GraphicId);
                 p.DoubleClick += pictureBox2_DoubleClick;
-
                 CellCatalogContainer.Controls.Add(p);
             }
         }
