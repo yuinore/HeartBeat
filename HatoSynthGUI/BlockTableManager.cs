@@ -17,17 +17,6 @@ namespace HatoSynthGUI
         // Cell と CellTree の命名も微妙だし
 
         /// <summary>
-        /// PictureBox と、その位置の組
-        /// </summary>
-        private class CellBlock
-        {
-            public PictureBox pBox;
-            public BlockPatch bpatch;
-            public int y;
-            public int x;
-        }
-
-        /// <summary>
         /// Blockの表を管理します。
         /// sizeには、表の縦と横の向きのブロックの個数を指定します。
         /// </summary>

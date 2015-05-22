@@ -76,7 +76,7 @@ namespace HatoDSP
                         if (cldrn.Length != 1) new NotImplementedException("あー");
 
                         string cld = (string)cldrn[0];
-                        if (cld.Substring(cld.LastIndexOf(":") + 1) != "0") throw new Exception("あー");
+                        if (cld.LastIndexOf(":") < 0 || cld.Substring(cld.LastIndexOf(":") + 1) != "0") throw new Exception("あー");
                         root = cld.Substring(0, cld.LastIndexOf(":"));
                     }
                     else

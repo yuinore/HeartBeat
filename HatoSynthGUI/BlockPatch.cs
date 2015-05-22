@@ -23,5 +23,18 @@ namespace HatoSynthGUI
             Name = blockName;
             Ctrl = preset.Ctrl.ToArray();
         }
+
+        public BlockPatch(int graphicId, string moduleName, string blockName, float[] ctrls)
+        {
+            GraphicId = graphicId;
+            ModuleName = moduleName;
+            Name = blockName;
+            Ctrl = ctrls.ToArray();
+        }
+
+        public BlockPatch Clone()
+        {
+            return new BlockPatch(GraphicId, ModuleName, Name, Ctrl);
+        }
     }
 }
