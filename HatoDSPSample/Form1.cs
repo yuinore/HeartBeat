@@ -345,7 +345,7 @@ namespace HatoDSPSample
 
             dev.NoteOn(63 + 9);
 
-            int N = 400;
+            int N = 400;  // この値を変更して、実行時間を調整してね！！
 
             for (int k = 0; k < N; k++)
             {
@@ -361,6 +361,7 @@ namespace HatoDSPSample
             label1.Text = "" + s.ElapsedMilliseconds + "ms,\r\n"
                 + "1% == " + 0.01 * (CPU_CLK * (s.ElapsedMilliseconds * 0.001)) / (200 * 100 * N) + " clk/smp,\r\n"  // 注：ステレオなら1/2倍だし、Rainbowの子になっていれば1/7倍となる
                 + "calc_rate == " + (200 * 100 * N / 44100.0) / (s.ElapsedMilliseconds * 0.001) + "倍";
+            // 注：シングルスレッドで計算をしているという前提
         }
     }
 }

@@ -1,30 +1,177 @@
-﻿[{
-  "name":"$synth",
-  "children":["amp envelope:0"]
-},{
-  "name":"rainbow",
-  "module":"rainbow",
-  "children":["osc 2:0"]
-},{
-  "name":"filter 1",
-  "module":"analog filter",
-  "children":["rainbow:0", "filter envelope:1"]
-},{
-  "name":"osc 1",
-  "module":"analog osc",
-  "ctrl":[0,0.5,0]         // pitch, amp, waveform
-},{
-  "name":"osc 2",
-  "module":"analog osc",
-  "children":["osc 1:0"],
-  "ctrl":[-12,0.05,0]      // pitch, amp, waveform
-},{
-  "name":"filter envelope",
-  "module":"ADSR",
-  "ctrl":[0.1,2,0.5,0.1]    // ADSR
-},{
-  "name":"amp envelope",
-  "module":"ADSR",
-  "children":["filter 1:0"],
-  "ctrl":[0.01,2,0.5,0.1]    // ADSR
-}]
+﻿[
+  {
+    "name": "Sawtooth 2",
+    "module": "Analog OSC",
+    "ctrl": [
+      -12,
+      0.008,
+      0,
+      0
+    ],
+    "children": [],
+    "pos": 2,
+    "gid": 1
+  },
+  {
+    "name": "Impulse 1",
+    "module": "Analog OSC",
+    "ctrl": [
+      24,
+      0.05,
+      5,
+      0
+    ],
+    "children": [],
+    "pos": 3,
+    "gid": 34
+  },
+  {
+    "name": "Sawtooth 1",
+    "module": "Analog OSC",
+    "ctrl": [
+      0,
+      0.03,
+      0,
+      0
+    ],
+    "children": [
+      "Sawtooth 2:0"
+    ],
+    "pos": 10,
+    "gid": 1
+  },
+  {
+    "name": "Impulse 2",
+    "module": "Analog OSC",
+    "ctrl": [
+      12,
+      0.05,
+      5,
+      0
+    ],
+    "children": [
+      "Impulse 1:0"
+    ],
+    "pos": 11,
+    "gid": 34
+  },
+  {
+    "name": "Add 1",
+    "module": "Arithmetic",
+    "ctrl": [
+      2
+    ],
+    "children": [
+      "Pad Envelope 2:0",
+      "Sawtooth 1:0"
+    ],
+    "pos": 18,
+    "gid": 22
+  },
+  {
+    "name": "Pad Envelope 2",
+    "module": "ADSR",
+    "ctrl": [
+      8,
+      1,
+      1,
+      8
+    ],
+    "children": [
+      "Impulse 2:0"
+    ],
+    "pos": 19,
+    "gid": 19
+  },
+  {
+    "name": "Rainbow 1",
+    "module": "Rainbow",
+    "ctrl": [
+      7,
+      0.2,
+      1,
+      1
+    ],
+    "children": [
+      "Add 1:0"
+    ],
+    "pos": 26,
+    "gid": 5
+  },
+  {
+    "name": "Add 2",
+    "module": "Arithmetic",
+    "ctrl": [
+      2
+    ],
+    "children": [
+      "Rainbow 1:0"
+    ],
+    "pos": 27,
+    "gid": 22
+  },
+  {
+    "name": "Pad Envelope 3",
+    "module": "ADSR",
+    "ctrl": [
+      4,
+      1,
+      1,
+      4
+    ],
+    "children": [],
+    "pos": 33,
+    "gid": 19
+  },
+  {
+    "name": "Lowpass 1",
+    "module": "Analog Filter",
+    "ctrl": [
+      2
+    ],
+    "children": [
+      "Pad Envelope 3:1",
+      "Rainbow 1:0"
+    ],
+    "pos": 34,
+    "gid": 7
+  },
+  {
+    "name": "Add 3",
+    "module": "Arithmetic",
+    "ctrl": [
+      2
+    ],
+    "children": [
+      "Lowpass 1:0",
+      "Add 2:0"
+    ],
+    "pos": 35,
+    "gid": 22
+  },
+  {
+    "name": "Pad Envelope 1",
+    "module": "ADSR",
+    "ctrl": [
+      4,
+      1,
+      1,
+      8
+    ],
+    "children": [
+      "Add 3:0"
+    ],
+    "pos": 36,
+    "gid": 19
+  },
+  {
+    "name": "$synth",
+    "module": "",
+    "ctrl": [],
+    "children": [
+      "Pad Envelope 1:0"
+    ],
+    "pos": 0,
+    "gid": 1
+  }
+]
