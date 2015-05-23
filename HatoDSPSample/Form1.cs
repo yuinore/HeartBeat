@@ -342,16 +342,18 @@ namespace HatoDSPSample
             string json = System.IO.File.ReadAllText(HatoPath.FromAppDir("patch.txt"));
 
             HatoSynthDevice dev = new HatoSynthDevice(json);
+            dev.Polyphony = 1;
+            dev.ReleasePolyphony = 0;
 
-            dev.NoteOn(63 + 9);
-
-            int N = 400;  // この値を変更して、実行時間を調整してね！！
+            int N = 10;  // この値を変更して、実行時間を調整してね！！
 
             for (int k = 0; k < N; k++)
             {
                 Signal[] sig2 = null;
 
-                for (int j = 0; j < 100; j++)
+                dev.NoteOn(63 + 9);
+
+                for (int j = 0; j < 4000; j++)
                 {
                     sig2 = dev.Take(200);
                 }

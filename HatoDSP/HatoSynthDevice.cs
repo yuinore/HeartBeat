@@ -13,7 +13,7 @@ namespace HatoDSP
         List<MyNoteEvent> releasedNotes = new List<MyNoteEvent>();
 
         public int Polyphony = 4;
-        public int ReleasePolyphony = 2;
+        public int ReleasePolyphony = 4;
 
         int pitchBend = 0;
         int bendrange = 1;
@@ -137,15 +137,15 @@ namespace HatoDSP
         {
             NoteOff(n);
 
-            if (notes.Count >= Polyphony)
-            {
-                NoteOff(notes[0].n);
-            }
-
-            var cell = rootTree.Generate();
-
             lock (notes)
             {
+                if (notes.Count >= Polyphony)
+                {
+                    NoteOff(notes[0].n);
+                }
+
+                var cell = rootTree.Generate();
+
                 notes.Add(new MyNoteEvent()
                 {
                     cell = cell,
@@ -164,11 +164,19 @@ namespace HatoDSP
                 var list = notes.FindAll(x => x.n == n).ToArray();
                 foreach (var item in list)
                 {
-                    if (releasedNotes.Count >= ReleasePolyphony)
+                    if (ReleasePolyphony >= 1)
                     {
-                        releasedNotes.RemoveAt(0);
+                        if (releasedNotes.Count >= ReleasePolyphony)
+                        {
+                            releasedNotes.RemoveAt(0);
+                        }
+                        releasedNotes.Add(item);
                     }
-                    releasedNotes.Add(item);
+                    else
+                    {
+                        // 鍵盤を離したらすぐに発音をやめる、極端な場合。
+                    }
+
                     notes.Remove(item);  // 遅いかも？
                 }
             }
