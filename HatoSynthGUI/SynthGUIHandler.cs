@@ -341,6 +341,10 @@ namespace HatoSynthGUI
                         ToolStripMenuItem item1_3 = new ToolStripMenuItem() { Text = "パッチを開く(&O)" };
                         item1_3.Click += openPatchToolStripMenuItem_Click;
                         item1.DropDownItems.Add(item1_3);
+
+                        ToolStripMenuItem item1_4 = new ToolStripMenuItem() { Text = "パッチをクリア" };
+                        item1_4.Click += clearPatchToolStripMenuItem_Click;
+                        item1.DropDownItems.Add(item1_4);
                     }
                     ms.Items.Add(item1);
 
@@ -454,6 +458,14 @@ namespace HatoSynthGUI
             }
         }
 
+        private void clearPatchToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("保存していないデータは消えてしまいます。よろしいですか？", "確認", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                Clear();
+            }
+        }
+
         /// <summary>
         /// ファイル → 開く
         /// </summary>
@@ -481,6 +493,7 @@ namespace HatoSynthGUI
                 patch = File.ReadAllText(ofd.FileName);
             }
 
+            Clear();
             PatchIO.Deserialize(patch, btable, arrows, pBoxGen, CellBlockArrangement);
         }
 
@@ -552,6 +565,46 @@ namespace HatoSynthGUI
                 {
                     MessageBox.Show("保存に失敗しました：" + ex.ToString(), "保存", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+            }
+        }
+
+        /// <summary>
+        /// すべてのPictureBoxを削除して、パッチを空にします。
+        /// </summary>
+        public void Clear()
+        {
+            ClearDetailContainer();
+
+            // 何か他にforeachの良い書き方はありませんか？　(ToT)
+            // 少なくともforで書いた方が良さそうではある
+            // ↓↓↓↓↓↓ 
+
+            List<Control> removeList = new List<Control>();
+
+            foreach (Control ctrl in CellMatrixContainer.Controls)
+            {
+                if (ctrl is PictureBox && ctrl.Name.StartsWith("BlockPictureBox"))
+                {
+                    removeList.Add(ctrl);
+                    btable.Remove((PictureBox)ctrl);
+                }
+                else if (ctrl is PictureBox && ctrl.Name.StartsWith("Arrow"))
+                {
+                    if (((PictureBox)ctrl).ImageLocation != @"cells\arrow_00000.png")
+                    {
+                        ((PictureBox)ctrl).ImageLocation = @"cells\arrow_00000.png";
+                    }
+                }
+            }
+
+            foreach (Control ctrl in removeList)
+            {
+                CellMatrixContainer.Controls.Remove(ctrl);
+            }
+
+            foreach (ArrowSummary arr in arrows)
+            {
+                arr.direction = ArrowDirection.None;
             }
         }
 

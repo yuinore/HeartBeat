@@ -34,6 +34,7 @@ namespace HatoSynthGUI
         {
             var p = new PictureBox();
             //p.Image = (Image)((PictureBox)sender).Image.Clone();
+            p.Name = "BlockPictureBox_";
             p.Image = ((PictureBox)sender).Image;
             p.Left = x * CellTableInterval + CellMargin;
             p.Top = y * CellTableInterval + CellMargin;
@@ -49,6 +50,7 @@ namespace HatoSynthGUI
         {
             var p = new PictureBox();
             //p.Image = (Image)((PictureBox)sender).Image.Clone();
+            p.Name = "BlockPictureBox_";
             p.Image = Image.FromStream(File.OpenRead(HatoPath.FromAppDir(@"cells\cell_" +
                 String.Format("{0:00000}", graphicId) + ".png")), false, false);
             p.Left = x * CellTableInterval + CellMargin;
@@ -61,7 +63,7 @@ namespace HatoSynthGUI
             return p;
         }
 
-        public PictureBox GenerateEmptyCellBlock(int cellId)
+        public PictureBox GenerateEmptyCellBlock(int cellId)  // 背景
         {
             var p = new PictureBox();
             //p.Image = Image.FromFile(@"cells\cell_00000.png");
@@ -76,7 +78,7 @@ namespace HatoSynthGUI
             return p;
         }
 
-        public PictureBox GenerateCatalog(int cellId, int graphicId)
+        public PictureBox GenerateCatalog(int cellId, int graphicId)  // カタログ
         {
             var p = new PictureBox();
             //p.Image = Image.FromFile(@"cells\cell_0000" + (cellId + 1) + ".png");
@@ -94,7 +96,7 @@ namespace HatoSynthGUI
             return p;
         }
 
-        public PictureBox GenerateArrow(int arrowId2, int x1, int y1, bool isHorizontal)
+        public PictureBox GenerateArrow(int arrowId2, int x1, int y1, bool isHorizontal)  // 矢印（と見せかけて三角形）
         {
             var size = CellMargin * 2;
 
