@@ -8,9 +8,9 @@ namespace HatoDSP
 {
     internal class NullCell : Cell
     {
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
-            get { return new CellParameter[] { }; }
+            get { return new CellParameterInfo[] { }; }
         }
 
         public override void AssignChildren(CellWire[] children)

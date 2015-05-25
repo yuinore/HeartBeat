@@ -45,12 +45,12 @@ namespace HatoDSP
             }
         }
 
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
             get
             {
-                return new CellParameter[]{
-                    new CellParameter(
+                return new CellParameterInfo[]{
+                    new CellParameterInfo(
                         "Filter Type", false, 0, (float)(FilterType.Count - 1), (float)FilterType.LowPass,
                         x => ((FilterType)(x + 0.5)).ToString())
                 };

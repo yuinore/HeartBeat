@@ -10,11 +10,11 @@ namespace HatoDSP
     {
         Cell child = new NullCell();
 
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
             get
             {
-                return new CellParameter[] {
+                return new CellParameterInfo[] {
                 };
             }
         }

@@ -82,16 +82,16 @@ namespace HatoDSP
             }
         }
 
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
             get
             {
-                return new CellParameter[]
+                return new CellParameterInfo[]
                 {
-                    new CellParameter("Count", true, 0.0f, 32.0f, 7.0f, x => (int)(x + 0.5) + ""),
-                    new CellParameter("Detune", true, 0.0f, 1.0f, 0.2f, x => (int)(x * 10000) * 0.01 + "%"),
-                    new CellParameter("Unison", true, 0.0f, 1.0f, 0.0f, x => (int)(x * 10000) * 0.01 + "cent"),
-                    new CellParameter("Stereo", true, 0.0f, 2.0f, 1.0f, x => (int)(x * 10000) * 0.01 + "%")
+                    new CellParameterInfo("Count", true, 0.0f, 32.0f, 7.0f, x => (int)(x + 0.5) + ""),
+                    new CellParameterInfo("Detune", true, 0.0f, 1.0f, 0.2f, x => (int)(x * 10000) * 0.01 + "%"),
+                    new CellParameterInfo("Unison", true, 0.0f, 1.0f, 0.0f, x => (int)(x * 10000) * 0.01 + "cent"),
+                    new CellParameterInfo("Stereo", true, 0.0f, 2.0f, 1.0f, x => (int)(x * 10000) * 0.01 + "%")
                 };
             }
         }

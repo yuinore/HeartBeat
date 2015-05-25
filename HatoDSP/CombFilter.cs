@@ -18,12 +18,12 @@ namespace HatoDSP
             }
         }
 
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
             get
             {
-                return new CellParameter[] {
-                    new CellParameter("LFO Amount", true, 0.0f, 100.0f, 20.0f, x => x + "")
+                return new CellParameterInfo[] {
+                    new CellParameterInfo("LFO Amount", true, 0.0f, 100.0f, 20.0f, x => x + "")
                 };
             }
         }

@@ -9,7 +9,7 @@ namespace HatoDSP
     /// <summary>
     /// セルに付いているツマミやスイッチの実装を表す。
     /// </summary>
-    public class CellParameter
+    public class CellParameterInfo
     {
         // TODO: オシレーターの選択やトグルスイッチのような、整数値から選択するコントロールに対応
 
@@ -43,7 +43,7 @@ namespace HatoDSP
         /// </summary>
         public Func<float, string> Label;
 
-        public CellParameter(string name, bool expr, float min, float max, float def, Func<float, string> label)
+        public CellParameterInfo(string name, bool expr, float min, float max, float def, Func<float, string> label)
         {
             Name = name;
             ExpressionAvailable = expr;

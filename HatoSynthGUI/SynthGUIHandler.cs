@@ -202,11 +202,11 @@ namespace HatoSynthGUI
             CellDetailContainer.Controls.Add(new Label() { Text = preset.Name });
             CellDetailContainer.Controls.Add(new Label() { Text = "" });
 
-            CellParameter[] paramsList = (new CellTree(preset.Name, preset.ModuleName)).Generate().ParamsList;  // !?!?!?!?
+            CellParameterInfo[] paramsList = (new CellTree(preset.Name, preset.ModuleName)).Generate().ParamsList;  // !?!?!?!?
 
             for (int i = 0; i < paramsList.Length; i++)
             {
-                CellParameter p = paramsList[i];
+                CellParameterInfo p = paramsList[i];
 
                 CellDetailContainer.Controls.Add(new Label() { Text = p.Name });
 

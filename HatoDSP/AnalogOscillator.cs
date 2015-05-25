@@ -35,17 +35,17 @@ namespace HatoDSP
             this.ctrl = ctrl;
         }
 
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
             get
             {
                 // GUIに関しては、もう少しいろいろしないといけない感じはしますね・・・
                 // 何ていうか、工夫が必要だと思います    
-                return new CellParameter[]{
-                    new CellParameter("Pitch", true, -60, 60, 0, x => (x * 100) + "cents"),
-                    new CellParameter("Amp", true, 0, 1, 0.5f, x => (x * 100) + "%"),
-                    new CellParameter("Type", true, 0, (int)Waveform.Count - 1, (int)Waveform.Saw, x => ((Waveform)(int)(x + 0.5)).ToString()),  // 例外？
-                    new CellParameter("PW", true, 0, 1, 0.125f, x => (x * 100) + "%")
+                return new CellParameterInfo[]{
+                    new CellParameterInfo("Pitch", true, -60, 60, 0, x => (x * 100) + "cents"),
+                    new CellParameterInfo("Amp", true, 0, 1, 0.5f, x => (x * 100) + "%"),
+                    new CellParameterInfo("Type", true, 0, (int)Waveform.Count - 1, (int)Waveform.Saw, x => ((Waveform)(int)(x + 0.5)).ToString()),  // 例外？
+                    new CellParameterInfo("PW", true, 0, 1, 0.125f, x => (x * 100) + "%")
                 };
             }
         }

@@ -21,12 +21,12 @@ namespace HatoDSP
         int[] port;
         OperationType op = OperationType.AddSub;
 
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
             get
             {
-                return new CellParameter[] {
-                    new CellParameter("Operation", false, 0, (float)OperationType.Count, (float)OperationType.AddSub, x => ((OperationType)(x + 0.5f)).ToString())
+                return new CellParameterInfo[] {
+                    new CellParameterInfo("Operation", false, 0, (float)OperationType.Count, (float)OperationType.AddSub, x => ((OperationType)(x + 0.5f)).ToString())
                 };
             }
         }
@@ -78,6 +78,8 @@ namespace HatoDSP
 
         private void Take(int count, LocalEnvironment lenv, bool isSkip)
         {
+            // TODO: 入力が1個のみだった場合、加算のみだった場合の最適化
+
             outChCnt = ChannelCount;  // ←二重代入
 
             LocalEnvironment lenv2 = lenv.Clone();

@@ -27,16 +27,16 @@ namespace HatoDSP
         {
         }
 
-        public override CellParameter[] ParamsList
+        public override CellParameterInfo[] ParamsList
         {
             get
             {
                 // TODO: パラメータの対数化
-                return new CellParameter[]{
-                    new CellParameter("Attack", true, 0, 1, 0.01f, x => x + "s"),
-                    new CellParameter("Decay", true, 0, 1, 0.5f, x => x + "s"),
-                    new CellParameter("Sustain", true, 0, 1, 0.1f, x => x + "s"),
-                    new CellParameter("Release", true, 0, 1, 0.01f, x => x + "s")
+                return new CellParameterInfo[]{
+                    new CellParameterInfo("Attack", true, 0, 1, 0.01f, x => x + "s"),
+                    new CellParameterInfo("Decay", true, 0, 1, 0.5f, x => x + "s"),
+                    new CellParameterInfo("Sustain", true, 0, 1, 0.1f, x => x + "s"),
+                    new CellParameterInfo("Release", true, 0, 1, 0.01f, x => x + "s")
                 };
             }
         }

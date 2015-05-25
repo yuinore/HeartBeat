@@ -25,7 +25,7 @@ namespace HatoDSP
         }
 
         // パラメータがない場合でもnullを返してはならない。代わりに new CellParameter[]{} を返すこと。
-        public abstract CellParameter[] ParamsList { get; }
+        public abstract CellParameterInfo[] ParamsList { get; }
 
         public abstract int ChannelCount { get; }
     }
