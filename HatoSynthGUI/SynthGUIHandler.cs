@@ -330,14 +330,6 @@ namespace HatoSynthGUI
 
                     ToolStripMenuItem item1 = new ToolStripMenuItem() { Text = "ファイル(&F)" };
                     {
-                        ToolStripMenuItem item1_1 = new ToolStripMenuItem() { Text = "パッチに名前を付けて保存(&S)" };
-                        item1_1.Click += saveAsPatchToolStripMenuItem_Click;
-                        item1.DropDownItems.Add(item1_1);
-
-                        ToolStripMenuItem item1_2 = new ToolStripMenuItem() { Text = "クイックセーブ" };
-                        item1_2.Click += savePatchToolStripMenuItem_Click;
-                        item1.DropDownItems.Add(item1_2);
-
                         ToolStripMenuItem item1_3 = new ToolStripMenuItem() { Text = "パッチを開く(&O)" };
                         item1_3.Click += openPatchToolStripMenuItem_Click;
                         item1.DropDownItems.Add(item1_3);
@@ -345,6 +337,14 @@ namespace HatoSynthGUI
                         ToolStripMenuItem item1_4 = new ToolStripMenuItem() { Text = "パッチをクリア" };
                         item1_4.Click += clearPatchToolStripMenuItem_Click;
                         item1.DropDownItems.Add(item1_4);
+
+                        ToolStripMenuItem item1_1 = new ToolStripMenuItem() { Text = "パッチに名前を付けて保存(&S)" };
+                        item1_1.Click += saveAsPatchToolStripMenuItem_Click;
+                        item1.DropDownItems.Add(item1_1);
+
+                        ToolStripMenuItem item1_2 = new ToolStripMenuItem() { Text = "クイックセーブ" };
+                        item1_2.Click += savePatchToolStripMenuItem_Click;
+                        item1.DropDownItems.Add(item1_2);
                     }
                     ms.Items.Add(item1);
 
