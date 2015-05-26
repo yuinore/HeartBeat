@@ -49,6 +49,9 @@ namespace HatoDSP
                 case "comb filter":
                     generator = () => new CombFilter();
                     break;
+                case "chorus":
+                    generator = () => new Chorus();
+                    break;
                 case "null":
                     generator = () => new NullCell();
                     break;
