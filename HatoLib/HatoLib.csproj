@@ -49,6 +49,9 @@
   <ItemGroup>
     <Compile Include="ArrayExtension.cs" />
     <Compile Include="AudioFileReader.cs" />
+    <Compile Include="BitPacker.cs" />
+    <Compile Include="BitPackingDictionary.cs" />
+    <Compile Include="BitUnpacker.cs" />
     <Compile Include="Complex.cs" />
     <Compile Include="DictionaryExtension.cs" />
     <Compile Include="DragDropHandler.cs" />
