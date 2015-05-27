@@ -95,14 +95,15 @@ namespace HatoDSP
                 for (int ch = 0; ch < outChCnt; ch++)
                 {
                     delaySamples = delayTimeMs * lenv.SamplingRate / 1000.0f + (LFOAmount / LFOFrequency) * (float)Math.Sin(LFOPhase + LFOStereoPhase * ch);
+                    if (delaySamples > maxDelaySamples - 1) delaySamples = maxDelaySamples - 1;
+                    if (delaySamples < 0) delaySamples = 0;
 
                     Debug.Assert(delaySamples >= 0 && delaySamples < maxDelaySamples);
 
                     int j1 = j0 - (int)delaySamples + maxDelaySamples;  // delaySamplesは変数
-                    while (j1 >= maxDelaySamples) j1 -= maxDelaySamples;  // FIXME: delay量がmaxDelaySamplesを超えた場合はその値で一定としたい
-                    while (j1 < 0) j1 += maxDelaySamples;
+                    if (j1 >= maxDelaySamples) j1 -= maxDelaySamples;
 
-                    float t1 = delayBuffer[ch][j1];
+                    float t1 = delayBuffer[ch][j1];  // TODO:線形補間
 
                     float t0 = input[ch][i] - a1 * t1;
                     if (-1.1754944e-38 < t0 && t0 < 1.1754944e-38) { t0 = 0; }

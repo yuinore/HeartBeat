@@ -10,6 +10,7 @@ namespace HatoDSP
 {
     public class CombFilter : SingleInputCell
     {
+        // [NotNull]
         Cell child
         {
             get
@@ -18,22 +19,31 @@ namespace HatoDSP
             }
         }
 
+        // [CanBeNull]
+        Cell child2
+        {
+            get
+            {
+                if (InputCells.Length >= 2)
+                {
+                    return InputCells[1];
+                }
+
+                return null;
+            }
+        }
+
         public override CellParameterInfo[] ParamsList
         {
             get
             {
                 return new CellParameterInfo[] {
-                    new CellParameterInfo("LFO Amount", true, 0.0f, 100.0f, 20.0f, x => x + "")
                 };
             }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            if (ctrl.Length >= 1)
-            {
-                LFOAmount = ctrl[0].Value;
-            }
         }
 
         public override int ChannelCount
@@ -44,19 +54,14 @@ namespace HatoDSP
             }
         }
 
-        float LFOAmount = 80;
-        float LFOFrequency = 0.5f;  // Hz
-        float LFOPhase = 0;
-        float LFOStereoPhase = (float)Math.PI * 0.5f;
         float delayTimeMs = 12.0f;
 
-        float a1 = 0.9f;
-        float b0 = 1.0f;
-        float b1 = 0.0f;  // フィードバックを無くすとFlangerがChorusになる
+        float a1 = -0.75f;  // feedback信号. a1 < 0 のとき、低周波帯域が共振する。（強調される）
+        float b0 = 1.0f;  // dry(through)信号
+        float b1 = 0.0f;  // delayed信号
         float delaySamples = 300;
         readonly int maxDelaySamples = 65536;
         float[][] delayBuffer;
-        int j = 0;
         int j0 = 0;  // 現在のdelayBufferの位置
 
         public override void Take(int count, LocalEnvironment lenv)
@@ -71,28 +76,43 @@ namespace HatoDSP
             }
 
             float[][] input = new float[outChCnt][];
-
             for (int ch = 0; ch < outChCnt; ch++)
             {
                 input[ch] = new float[count];
             }
-
             lenv2.Buffer = input;
-
             child.Take(count, lenv2);
+
+            float[][] sidechain = null;
+            if (child2 != null)
+            {
+                sidechain = new float[outChCnt][];
+                for (int ch = 0; ch < outChCnt; ch++)
+                {
+                    sidechain[ch] = new float[count];
+                }
+                lenv2.Buffer = sidechain;
+                child2.Take(count, lenv2);
+            }
 
             for (int i = 0; i < count; i++)
             {
                 for (int ch = 0; ch < outChCnt; ch++)
                 {
-                    delaySamples = delayTimeMs * lenv.SamplingRate / 1000.0f + (LFOAmount / LFOFrequency) * (float)Math.Sin(LFOPhase + LFOStereoPhase * ch);
+                    delaySamples = delayTimeMs * lenv.SamplingRate * 1e-3f;
+                    if (sidechain != null)
+                    {
+                        delaySamples += sidechain[ch][i] * 100;
+                    }
+                    if (delaySamples > maxDelaySamples - 1) delaySamples = maxDelaySamples - 1;
+                    if (delaySamples < 0) delaySamples = 0;
 
                     Debug.Assert(delaySamples >= 0 && delaySamples < maxDelaySamples);
 
                     int j1 = j0 - (int)delaySamples + maxDelaySamples;  // delaySamplesは変数
                     if (j1 >= maxDelaySamples) j1 -= maxDelaySamples;
 
-                    float t1 = delayBuffer[ch][j1];
+                    float t1 = delayBuffer[ch][j1];  // TODO:線形補間
 
                     float t0 = input[ch][i] - a1 * t1;
                     if (-1.1754944e-38 < t0 && t0 < 1.1754944e-38) { t0 = 0; }
@@ -105,10 +125,6 @@ namespace HatoDSP
                     //input[ch][i] = result;  // 無意味？
                 }
 
-                LFOPhase += 2 * (float)Math.PI * LFOFrequency / lenv.SamplingRate;
-                if (LFOPhase > 16 * 2 * Math.PI) LFOPhase -= 16 * (float)Math.PI;
-
-                j++;
                 if (++j0 >= maxDelaySamples) j0 -= maxDelaySamples;
             }
         }
