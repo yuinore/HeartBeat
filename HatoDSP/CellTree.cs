@@ -26,38 +26,15 @@ namespace HatoDSP
         {
             Name = name;
 
-            switch (module.ToLower())
+            string moduleLower = module.ToLower();
+            var first = ModuleList.Modules.FirstOrDefault(x => x.NameLowerCase == moduleLower);
+
+            if (first == null)
             {
-                case "analog filter":
-                    generator = () => new BiquadFilter();
-                    break;
-                case "analog osc":
-                    generator = () => new AnalogOscillator();
-                    break;
-                case "adsr":
-                    generator = () => new ADSR();
-                    break;
-                case "rainbow":
-                    generator = () => new Rainbow();
-                    break;
-                case "arithmetic":
-                    generator = () => new Arithmetic();
-                    break;
-                case "dynamics":
-                    generator = () => new Dynamics();
-                    break;
-                case "comb filter":
-                    generator = () => new CombFilter();
-                    break;
-                case "chorus":
-                    generator = () => new Chorus();
-                    break;
-                case "null":
-                    generator = () => new NullCell();
-                    break;
-                default:
-                    throw new PatchFormatException("モジュール " + module + " は存在しません。");
+                throw new PatchFormatException("モジュール " + module + " は存在しません。");
             }
+
+            generator = first.Generator;
         }
 
         public void AddChildren(CellWire[] children)

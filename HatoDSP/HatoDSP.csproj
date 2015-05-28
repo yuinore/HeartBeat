@@ -30,6 +30,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -59,8 +63,10 @@
     <Compile Include="IIRFilter.cs" />
     <Compile Include="JoinedSignal.cs" />
     <Compile Include="CellParameterInfo.cs" />
+    <Compile Include="ModuleList.cs" />
     <Compile Include="NullCell.cs" />
     <Compile Include="PatchFormatException.cs" />
+    <Compile Include="PatchPacker.cs" />
     <Compile Include="PatchReader.cs" />
     <Compile Include="LocalEnvironment.cs" />
     <Compile Include="Rainbow.cs" />
@@ -68,6 +74,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SingleInputCell.cs" />
     <Compile Include="Waveform.cs" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HatoDSPFast\HatoDSPFast.vcxproj">

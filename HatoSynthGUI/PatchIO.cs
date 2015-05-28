@@ -16,8 +16,8 @@ namespace HatoSynthGUI
         {
             public string name { get; set; }
             public string module { get; set; }
-            public float[] ctrl { get; set; }
             public string[] children { get; set; }
+            public float[] ctrl { get; set; }
             public int pos { get; set; }
             public int gid { get; set; }
 

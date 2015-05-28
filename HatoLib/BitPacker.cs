@@ -131,7 +131,7 @@ namespace HatoLib
                 if (word == null)
                 {
                     long chcode = Convert.ToInt64(ch);
-                    Console.WriteLine("character:" + ch + ", code:" + chcode);
+                    //Console.WriteLine("character:" + ch + ", code:" + chcode);
 
                     Debug.Assert(chcode != 0, "ヌル文字はエンコードできません。");
 
@@ -240,6 +240,39 @@ namespace HatoLib
                 (0 << 0));
 
             return BitConverter.ToSingle(bytes, 0);
+        }
+
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            foreach (var seg in segments)
+            {
+                if (seg.IsFloat)
+                {
+                    builder.Append("float: " + seg.FloatValue + "\r\n");
+                }
+                else
+                {
+                    if (seg.IsLinked)
+                    {
+                        if (32 <= seg.IntValue && seg.IntValue <= 126 && seg.Bits == 8)
+                        {
+                            builder.Append("linked[" + seg.Bits + "]: " + seg.IntValue + " '" + Convert.ToChar(seg.IntValue) +"'\r\n");
+                        }
+                        else
+                        {
+                            builder.Append("linked[" + seg.Bits + "]: " + seg.IntValue + "\r\n");
+                        }
+                    }
+                    else
+                    {
+                        builder.Append("fixed[" + seg.Bits + "]: " + seg.IntValue + "\r\n");
+                    }
+                }
+            }
+
+            return builder.ToString();
         }
     }
 }

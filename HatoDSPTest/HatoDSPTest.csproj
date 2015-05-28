@@ -53,6 +53,7 @@
     <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UnitTest2.cs" />
+    <Compile Include="UnitTest3.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HatoDSPFast\HatoDSPFast.vcxproj">
@@ -67,6 +68,11 @@
       <Project>{9c573aae-1884-4de0-854f-bc31f1fd65e0}</Project>
       <Name>HatoLib</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="patch.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
