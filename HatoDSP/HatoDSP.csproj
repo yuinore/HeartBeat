@@ -69,6 +69,7 @@
     <Compile Include="PatchPacker.cs" />
     <Compile Include="PatchReader.cs" />
     <Compile Include="LocalEnvironment.cs" />
+    <Compile Include="PhaseModulation.cs" />
     <Compile Include="Rainbow.cs" />
     <Compile Include="Signal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
