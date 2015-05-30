@@ -32,27 +32,19 @@ namespace HatoDSP
             get { return InputCells[0].ChannelCount; }
         }
 
+        JovialBuffer buf = new JovialBuffer();
+
         public override void Take(int count, LocalEnvironment lenv)
         {
             if (InputCells.Length >= 2)
             {
                 var lenv2 = lenv.Clone();
-
-                int outChCnt = InputCells[0].ChannelCount;
-
-                float[][] input = new float[outChCnt][];
-
-                for (int ch = 0; ch < outChCnt; ch++)
-                {
-                    input[ch] = new float[count];
-                }
-
-                lenv2.Buffer = input;
-
+                int xchainChCnt = InputCells[0].ChannelCount;
+                lenv2.Buffer = buf.GetReference(xchainChCnt, count);  // バッファを確保
                 InputCells[1].Take(count, lenv2);
 
                 // todo: ステレオ
-                Signal phaseSignal = new ExactSignal(input[0], 1.0f, false);
+                Signal phaseSignal = new ExactSignal(lenv2.Buffer[0], 1.0f, false);
 
                 if (lenv.Locals.ContainsKey("phase"))
                 {
@@ -65,9 +57,7 @@ namespace HatoDSP
                 }
 
                 var lenv3 = lenv.Clone();
-
                 lenv3.Locals["phase"] = phaseSignal;
-
                 InputCells[0].Take(count, lenv3);
             }
             else

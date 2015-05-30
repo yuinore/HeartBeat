@@ -139,7 +139,16 @@ namespace HatoDSP
 
                 if (unisoneAmount != 0)
                 {
-                    lenv2.Locals["phase"] = new ConstantSignal(unisoneAmount * 2.0f * (float)Math.PI * (j + (rand[j] - 0.5f) * 0.5392f) / (float)rainbowN, count);
+                    Signal phShift = new ConstantSignal(unisoneAmount * 2.0f * (float)Math.PI * (j + (rand[j] - 0.5f) * 0.5392f) / (float)rainbowN, count);
+
+                    if (lenv2.Locals.ContainsKey("phase"))
+                    {
+                        lenv2.Locals["phase"] = Signal.Add(lenv2.Locals["phase"], phShift);
+                    }
+                    else
+                    {
+                        lenv2.Locals["phase"] = phShift;
+                    }
                 }
 
                 x.Take(count, lenv2);
