@@ -471,30 +471,64 @@ namespace HatoSynthGUI
         /// </summary>
         private void openPatchToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string patch;
-
+            try
             {
-                OpenFileDialog ofd = new OpenFileDialog();
-                ofd.Title = "Open Patch File";
-                ofd.FileName = "";
-                ofd.Filter = "HatoSynth Patch (*.hatp)|*.hatp";
-                ofd.FilterIndex = 0;
-                ofd.InitialDirectory = HatoPath.FromAppDir("");  // TODO: カレントディレクトリを記憶するようにする。
+                string patch;
 
-                //ダイアログボックスを閉じる前に現在のディレクトリを復元するようにする
-                ofd.RestoreDirectory = true;
-
-                //ダイアログを表示する
-                if (ofd.ShowDialog() != DialogResult.OK)
                 {
-                    return;
+                    OpenFileDialog ofd = new OpenFileDialog();
+                    ofd.Title = "Open Patch File";
+                    ofd.FileName = "";
+                    ofd.Filter = "HatoSynth Patch (*.hatp; *.hacp)|*.hatp;*.hacp";
+                    ofd.FilterIndex = 0;
+                    ofd.InitialDirectory = HatoPath.FromAppDir("");  // TODO: カレントディレクトリを記憶するようにする。
+
+                    //ダイアログボックスを閉じる前に現在のディレクトリを復元するようにする
+                    ofd.RestoreDirectory = true;
+
+                    //ダイアログを表示する
+                    if (ofd.ShowDialog() != DialogResult.OK)
+                    {
+                        return;
+                    }
+
+                    string ext = Path.GetExtension(ofd.FileName);
+                    if (ext == ".hatp")
+                    {
+                        patch = File.ReadAllText(ofd.FileName);
+                    }
+                    else if (ext == ".hacp")
+                    {
+                        List<float> compressed = new List<float>();
+                        using (BinaryReader br = new BinaryReader(new FileStream(ofd.FileName, FileMode.Open, FileAccess.Read)))
+                        {
+                            try
+                            {
+                                while (true)
+                                {
+                                    compressed.Add(br.ReadSingle());
+                                }
+                            }
+                            catch (EndOfStreamException)  // ！？！？！？
+                            {
+                            }
+                        }
+
+                        patch = PatchPacker.Unpack(compressed.ToArray());
+                    }
+                    else
+                    {
+                        throw new PatchFormatException();
+                    }
                 }
 
-                patch = File.ReadAllText(ofd.FileName);
+                Clear();
+                PatchIO.Deserialize(patch, btable, arrows, pBoxGen, CellBlockArrangement);
             }
-
-            Clear();
-            PatchIO.Deserialize(patch, btable, arrows, pBoxGen, CellBlockArrangement);
+            catch (Exception ex)
+            {
+                MessageBox.Show("パッチが開けませんでした：\r\n" + ex.ToString());
+            }
         }
 
         /// <summary>
@@ -508,14 +542,17 @@ namespace HatoSynthGUI
             {
                 // 「名前を付けて保存」ダイアログボックスを表示する
                 // http://dobon.net/vb/dotnet/form/savefiledialog.html
+                
+                    SaveFileDialog sfd = new SaveFileDialog();
 
                 string filename;
                 {
-                    SaveFileDialog sfd = new SaveFileDialog();
                     sfd.Title = "Save Patch File As";
                     sfd.FileName = "patch 1.hatp";
-                    sfd.Filter = "HatoSynth Patch (*.hatp)|*.hatp";
-                    sfd.FilterIndex = 0;
+                    sfd.Filter = "HatoSynth Patch (*.hatp)|*.hatp|HatoSynth Compressed Patch (*.hacp)|*.hacp";
+                    sfd.FilterIndex = 1;
+                    // ＞＞このインデックスは、0 からではなく 1 から始まります
+                    // な、なんだってー！？
                     sfd.InitialDirectory = HatoPath.FromAppDir("");  // TODO: カレントディレクトリを記憶するようにする。
 
                     //ダイアログボックスを閉じる前に現在のディレクトリを復元するようにする
@@ -531,7 +568,22 @@ namespace HatoSynthGUI
 
                 try
                 {
-                    File.WriteAllText(filename, patch);
+                    if (sfd.FilterIndex == 1)
+                    {
+                        File.WriteAllText(filename, patch);
+                    }
+                    else
+                    {
+                        using (BinaryWriter bw = new BinaryWriter(new FileStream(filename, FileMode.Create, FileAccess.Write)))
+                        {
+                            float[] compressed = PatchPacker.Pack(patch).ToFloatList();
+
+                            foreach (var f in compressed)
+                            {
+                                bw.Write((float)f);
+                            }
+                        }
+                    }
 
                     MessageBox.Show("保存が完了しました。", "保存", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
