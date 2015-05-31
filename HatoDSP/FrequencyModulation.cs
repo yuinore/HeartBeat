@@ -6,17 +6,18 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    class PhaseModulation : SingleInputCell
+    class FrequencyModulation : SingleInputCell
     {
         // Cell[] base.InputCells;
 
-        float phaseShift = 0.0f;
+        float freqShift = 0.0f;
 
         public override CellParameterInfo[] ParamsList
         {
-            get {
+            get
+            {
                 return new CellParameterInfo[] {
-                    new CellParameterInfo("phase shift", true, 0.0f, 2.0f*(float)Math.PI, 0.0f, CellParameterInfo.IdLabel)
+                    new CellParameterInfo("pitch shift", true, 0.0f, 2.0f*(float)Math.PI, 0.0f, CellParameterInfo.IdLabel)
                 };
             }
         }
@@ -25,7 +26,7 @@ namespace HatoDSP
         {
             if (ctrl.Length >= 1)
             {
-                phaseShift = ctrl[0].Value;
+                freqShift = ctrl[0].Value;
             }
         }
 
@@ -46,20 +47,17 @@ namespace HatoDSP
                 InputCells[1].Take(count, lenv2);
 
                 // todo: ステレオ
-                Signal phaseSignal = new ExactSignal(lenv2.Buffer[0], 1.0f, false);
+                Signal freqSignal = new ExactSignal(lenv2.Buffer[0], 1.0f, false);
 
-                if (lenv.Locals.ContainsKey("phase"))
-                {
-                    phaseSignal = Signal.Add(lenv.Locals["phase"], phaseSignal);
-                }
+                freqSignal = Signal.Add(lenv.Pitch, freqSignal);
 
-                if (phaseShift != 0.0f)
+                if (freqShift != 0.0f)
                 {
-                    phaseSignal = Signal.Add(phaseSignal, new ConstantSignal(phaseShift, count));
+                    freqSignal = Signal.Add(freqSignal, new ConstantSignal(freqShift, count));
                 }
 
                 var lenv3 = lenv.Clone();
-                lenv3.Locals["phase"] = phaseSignal;
+                lenv3.Pitch = freqSignal;
                 InputCells[0].Take(count, lenv3);
             }
             else

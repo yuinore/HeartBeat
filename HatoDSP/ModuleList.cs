@@ -35,7 +35,8 @@ namespace HatoDSP
             new ModuleInfo(6, "Dynamics", () => new Dynamics()),
             new ModuleInfo(7, "Comb Filter", () => new CombFilter()),
             new ModuleInfo(8, "Chorus", () => new Chorus()),
-            new ModuleInfo(9, "Phase Mod", () => new PhaseModulation())
+            new ModuleInfo(9, "Phase Mod", () => new PhaseModulation()),
+            new ModuleInfo(10, "Freq Mod", () => new FrequencyModulation())
         };
     }
 }

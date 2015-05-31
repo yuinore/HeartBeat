@@ -59,6 +59,7 @@
     <Compile Include="CellParameterValue.cs" />
     <Compile Include="ExactSignal.cs" />
     <Compile Include="FilterType.cs" />
+    <Compile Include="FrequencyModulation.cs" />
     <Compile Include="HatoSynthDevice.cs" />
     <Compile Include="IIRFilter.cs" />
     <Compile Include="JoinedSignal.cs" />
