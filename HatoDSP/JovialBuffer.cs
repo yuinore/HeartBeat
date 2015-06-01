@@ -16,11 +16,13 @@ namespace HatoDSP
         }
 
         /// <summary>
-        /// バッファを作成し、0で初期化します。
+        /// バッファを作成し、initialValueで初期化します。
         /// 必要に応じて、配列を再確保します。
+        /// initialValueが0のときは、少し高速に処理をすることができます。
         /// このバッファは、次にGetReferenceが呼ばれるまで有効です。
+        /// sampleCountを1ずつ増やしながらGetReferenceを呼んだりすると困ってしまいます。
         /// </summary>
-        public float[][] GetReference(int channelCount, int sampleCount)
+        public float[][] GetReference(int channelCount, int sampleCount, float initialValue = 0.0f)
         {
             if (buf.Length < channelCount)
             {
@@ -29,11 +31,16 @@ namespace HatoDSP
                 int ch = 0;
                 for (; ch < buf.Length; ch++)
                 {
-                    buf2[ch] = InitArray(buf[ch], sampleCount);
+                    buf2[ch] = InitArray(buf[ch], sampleCount, initialValue);
                 }
                 for (; ch < channelCount; ch++)
                 {
                     buf2[ch] = new float[sampleCount];
+
+                    if (initialValue != 0.0f)
+                    {
+                        InitArray(buf2[ch], sampleCount, initialValue);
+                    }
                 }
 
                 buf = buf2;
@@ -44,23 +51,33 @@ namespace HatoDSP
             {
                 for (int ch = 0; ch < channelCount; ch++)
                 {
-                    buf[ch] = InitArray(buf[ch], sampleCount);
+                    buf[ch] = InitArray(buf[ch], sampleCount, initialValue);
                 }
 
                 return buf;
             }
         }
 
-        private float[] InitArray(float[] arr, int sampleCount)
+        private float[] InitArray(float[] arr, int sampleCount, float initialValue)
         {
             if (arr.Length < sampleCount)
             {
-                return new float[sampleCount];
+                var arr2 = new float[sampleCount];
+
+                if (initialValue != 0.0f)
+                {
+                    for (int i = 0; i < sampleCount; i++)
+                    {
+                        arr2[i] = initialValue;
+                    }
+                }
+
+                return arr2;
             }
 
             for (int i = 0; i < sampleCount; i++)
             {
-                arr[i] = 0;
+                arr[i] = initialValue;
             }
 
             return arr;
