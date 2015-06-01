@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,8 +20,19 @@ namespace HatoDSP
             Count
         }
 
-        Cell[] child = new Cell[] { };
-        int[] port;
+        // assignChildrenで初期化
+        Cell[] childX = new Cell[] { };  // port == 0
+        Cell[] childY = new Cell[] { };  // port == 1
+        int childCount;
+
+        // chCntXを最初に使うときに初期化
+        int[] chCntX = null;
+        int[] chCntY = null;
+
+        // outChCntの初期化時に初期化
+        bool allSameCh;  // 子供を持たないか、またはすべての子供のチャンネル数が等しい時true
+        int outChCnt = 0;
+
         OperationType op = OperationType.AddSub;
 
         public override CellParameterInfo[] ParamsList
@@ -35,8 +47,12 @@ namespace HatoDSP
 
         public override void AssignChildren(CellWire[] children)
         {
-            this.child = children.Select(x => x.Source.Generate()).ToArray();
-            this.port = children.Select(x => x.Port).ToArray();
+            childX = children.Where(x => x.Port == 0).Select(x => x.Source.Generate()).ToArray();
+            childY = children.Where(x => x.Port != 0).Select(x => x.Source.Generate()).ToArray();
+
+            childCount = childX.Length + childY.Length;
+
+            // この時点では、child.ChannelCountを呼ぶことは可能か？？ (多分ダメ)
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
@@ -47,25 +63,38 @@ namespace HatoDSP
             }
         }
 
-        int outChCnt = 0;
 
         public override int ChannelCount
         {
             get
             {
-                if (outChCnt == 0)
-                {
-                    if (child.Length == 0)
-                    {
-                        outChCnt = 1;
-                    }
-                    else
-                    {
-                        outChCnt = child.Select(x => x.ChannelCount).Max();
-                    }
-                }
-                return outChCnt;
+                return AssignAndGetChannelCount();
             }
+        }
+
+        private int AssignAndGetChannelCount()
+        {
+            if (outChCnt == 0)
+            {
+                if (chCntX == null)
+                {
+                    chCntX = childX.Select(x => x.ChannelCount).ToArray();
+                    chCntY = childY.Select(x => x.ChannelCount).ToArray();
+                }
+
+                if (chCntX.Length == 0 && chCntY.Length == 0)
+                {
+                    outChCnt = 1;
+                }
+                else
+                {
+                    outChCnt = chCntX.Concat(chCntY).Max();
+                }
+
+                // 子供を持たないか、またはすべての子供のチャンネル数が等しい時true
+                allSameCh = chCntX.Concat(chCntY).Select(x => x == outChCnt ? 0 : 1).Sum() == 0;
+            }
+            return outChCnt;
         }
 
         public override void Skip(int count, LocalEnvironment lenv)
@@ -80,64 +109,74 @@ namespace HatoDSP
 
         private void Take(int count, LocalEnvironment lenv, bool isSkip)
         {
-            outChCnt = ChannelCount;  // ←二重代入
-
-            if (child.Length == 0)
+            if (outChCnt == 0)
             {
-                if (op == OperationType.AddSub || op == OperationType.Sidechain)
+                AssignAndGetChannelCount();  // ここでchCntXも初期化される
+            }
+
+            Debug.Assert(chCntX != null);
+
+            if (childCount == 0)
+            {
+                if (op != OperationType.MulDiv)
                 {
                     return;  // 入力が無い場合は0になる。
                 }
-                // MulDivに入力が無い場合は、1になる。
-            }
-            else if (child.Length == 1)
-            {
-                // 子供が1個だった場合。
-                if (port[0] == 0)
-                {
-                    child[0].Take(count, lenv);  // そのまま加算して返る
-                    return;
-                }
                 else
                 {
+                    // MulDivに入力が無い場合は、1になる。
+                    Debug.Assert(outChCnt == 1);
+
+                    for (int ch = 0; ch < outChCnt; ch++)
+                    {
+                        for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += 1f; }
+                    }
+                    return;
+                }
+            }
+            else if (childCount == 1)  // 子供が1個だった場合。
+            {
+                if (childY.Length == 0)  // その唯一の入力ポートが0だった場合
+                {
+                    Debug.Assert(chCntX[0] == outChCnt);
+
+                    childX[0].Take(count, lenv);  // そのまま加算して返る
+                    return;
+                }
+                else  // その唯一の入力ポートが1だった場合
+                {
+                    Debug.Assert(chCntY[0] == outChCnt);
+
                     switch (op)
                     {
-                        case OperationType.MulDiv:
-                            // y = 1 / x
-                            // 一般化された処理に任せる
-                            break;
                         case OperationType.Sidechain:
                             // do nothing 何もせずに返る
                             return;
-                        case OperationType.AddSub:
-                        default:
-                            // y = -x
-                            // 一般化された処理に任せる
-                            break;
                     }
                 }
             }
-            else
+            else  // 子供が2個以上だった場合
             {
-                if (op == OperationType.AddSub || op == OperationType.Sidechain)
+                if (childY.Length == 0)  // すべて port 0 の場合
                 {
-                    int j;
-                    for (j = 0; j < child.Length; j++)
+                    if (allSameCh && op != OperationType.MulDiv)
                     {
-                        if (port[j] != 0)
+                        // 2個以上の子供の、すべてのポートが0で、
+                        // かつMulDivではなく、
+                        // なおかつすべての子供のチャンネル数が一緒だった場合
+
+                        for (int j = 0; j < childX.Length; j++)
                         {
-                            break;
+                            childX[j].Take(count, lenv);
                         }
+                        return;
                     }
-
-                    if (j == child.Length)
+                }
+                else if (childY.Length == 0)  // すべて port 1 の場合
+                {
+                    if (op == OperationType.Sidechain)
                     {
-                        // 2個以上の子供の、すべてのポートが0だった場合(MulDivを除く)
-
-                        for (j = 0; j < child.Length; j++)
-                        {
-                            child[j].Take(count, lenv);
-                        }
+                        return;  // サイドチェインモードなのに主入力信号がない場合
                     }
                 }
             }
@@ -166,9 +205,14 @@ namespace HatoDSP
                 }
             }
 
+            // TODO: ここから先、未最適化。
+
+            Cell[] child = childX.Concat(childY).ToArray();
+
             for (int celId = 0; celId < child.Length; celId++)
             {
                 var cel = child[celId];
+                int port = celId < childX.Length ? 0 : 1;
 
                 float[][] tempbuf = new float[cel.ChannelCount][];
 
@@ -179,20 +223,14 @@ namespace HatoDSP
 
                 lenv2.Buffer = tempbuf;
 
-                if (isSkip)
-                {
-                    cel.Skip(count, lenv2);
-                }
-                else
-                {
-                    cel.Take(count, lenv2);
-                }
+                cel.Take(count, lenv2);
 
                 for (int ch = 0; ch < outChCnt; ch++)
                 {
-                    int srcch = cel.ChannelCount == 1 ? 0 : ch;  // 送り元チャンネル
+                    int ccc = cel.ChannelCount;
+                    int srcch = ccc == 1 ? 0 : ch % ccc;  // 送り元チャンネル
 
-                    if (port[celId] == 0)
+                    if (port == 0)
                     {
                         switch (op)
                         {
