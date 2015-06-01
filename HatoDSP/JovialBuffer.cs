@@ -12,7 +12,7 @@ namespace HatoDSP
 
         public JovialBuffer()
         {
-            buf = new float[1][] { new float[1024] };
+            buf = new float[1][] { new float[256] };
         }
 
         /// <summary>

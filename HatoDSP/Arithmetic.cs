@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
+    // メモ：このセルで、SingleInputCellを継承してはならない。
+    // なぜなら、SingleInputCell自身の実装に、Arithmeticを使用しているからである。
     public class Arithmetic : Cell
     {
         public enum OperationType
@@ -78,9 +80,68 @@ namespace HatoDSP
 
         private void Take(int count, LocalEnvironment lenv, bool isSkip)
         {
-            // TODO: 入力が1個のみだった場合、加算のみだった場合の最適化
-
             outChCnt = ChannelCount;  // ←二重代入
+
+            if (child.Length == 0)
+            {
+                if (op == OperationType.AddSub || op == OperationType.Sidechain)
+                {
+                    return;  // 入力が無い場合は0になる。
+                }
+                // MulDivに入力が無い場合は、1になる。
+            }
+            else if (child.Length == 1)
+            {
+                // 子供が1個だった場合。
+                if (port[0] == 0)
+                {
+                    child[0].Take(count, lenv);  // そのまま加算して返る
+                    return;
+                }
+                else
+                {
+                    switch (op)
+                    {
+                        case OperationType.MulDiv:
+                            // y = 1 / x
+                            // 一般化された処理に任せる
+                            break;
+                        case OperationType.Sidechain:
+                            // do nothing 何もせずに返る
+                            return;
+                        case OperationType.AddSub:
+                        default:
+                            // y = -x
+                            // 一般化された処理に任せる
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                if (op == OperationType.AddSub || op == OperationType.Sidechain)
+                {
+                    int j;
+                    for (j = 0; j < child.Length; j++)
+                    {
+                        if (port[j] != 0)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (j == child.Length)
+                    {
+                        // 2個以上の子供の、すべてのポートが0だった場合(MulDivを除く)
+
+                        for (j = 0; j < child.Length; j++)
+                        {
+                            child[j].Take(count, lenv);
+                        }
+                    }
+                }
+            }
+            // TODO: int lenv.FromEndOfStream の実装。-1で未了？
 
             LocalEnvironment lenv2 = lenv.Clone();
 
