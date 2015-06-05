@@ -35,6 +35,10 @@ namespace HatoDSP
 
         OperationType op = OperationType.AddSub;
 
+        JovialBuffer jTempbuf = new JovialBuffer();
+        JovialBuffer jBufX = new JovialBuffer();
+        JovialBuffer jBufY = new JovialBuffer();
+
         public override CellParameterInfo[] ParamsList
         {
             get
@@ -186,49 +190,42 @@ namespace HatoDSP
 
             float[][] bufx = null, bufy = null;
 
-            if (op == OperationType.MulDiv || op == OperationType.Sidechain)
+            if (op == OperationType.MulDiv)
             {
-                bufx = new float[outChCnt][];  // TODO: optimization
-                bufy = new float[outChCnt][];
-                for (int ch = 0; ch < outChCnt; ch++)
-                {
-                    bufx[ch] = new float[count];
-                    bufy[ch] = new float[count];
-                    for (int i = 0; i < count; i++)
-                    {
-                        if (op == OperationType.MulDiv)
-                        {
-                            bufx[ch][i] = 1;
-                        }
-                        bufy[ch][i] = 1;
-                    }
-                }
+                bufx = jBufX.GetReference(outChCnt, count, 1.0f);
+                bufy = (childY.Length == 0) ? null : jBufY.GetReference(outChCnt, count, 1.0f);
+            }
+            else if (op == OperationType.Sidechain)
+            {
+                bufx = jBufX.GetReference(outChCnt, count);
+                bufy = (childY.Length == 0) ? null : jBufY.GetReference(outChCnt, count, 1.0f);
             }
 
             // TODO: ここから先、未最適化。
 
             Cell[] child = childX.Concat(childY).ToArray();
+            int[] chCnts = chCntX.Concat(chCntY).ToArray();
 
             for (int celId = 0; celId < child.Length; celId++)
             {
                 var cel = child[celId];
                 int port = celId < childX.Length ? 0 : 1;
 
-                float[][] tempbuf = new float[cel.ChannelCount][];
-
-                for (int ch = 0; ch < cel.ChannelCount; ch++)
+                if (op == OperationType.AddSub && chCnts[celId] == outChCnt && port == 0)
                 {
-                    tempbuf[ch] = new float[count];
+                    // AddSubモードで、出力とチャンネル数が一致し、portが0（つまり加算）の場合
+                    cel.Take(count, lenv);  // 直接 lenv.Buffer に送り込む
+                    continue;
                 }
 
+                float[][] tempbuf = jTempbuf.GetReference(chCnts[celId], count);
                 lenv2.Buffer = tempbuf;
-
                 cel.Take(count, lenv2);
 
                 for (int ch = 0; ch < outChCnt; ch++)
                 {
-                    int ccc = cel.ChannelCount;
-                    int srcch = ccc == 1 ? 0 : ch % ccc;  // 送り元チャンネル
+                    int srcch = chCnts[celId] == 1 ? 0 : ch;  // 送り元チャンネル
+                    if (srcch >= chCnts[celId]) continue;  // 循環はさせない
 
                     if (port == 0)
                     {
@@ -268,16 +265,27 @@ namespace HatoDSP
             switch (op)
             {
                 case OperationType.MulDiv:
-                    for (int ch = 0; ch < outChCnt; ch++)
+                    if (childY.Length == 0)
                     {
-                        for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += Math.Max(Math.Min(bufx[ch][i] / bufy[ch][i], 1.0f), -1.0f); }
+                        for (int ch = 0; ch < outChCnt; ch++) { for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += bufx[ch][i]; } }
+                    }
+                    else
+                    {
+                        for (int ch = 0; ch < outChCnt; ch++)
+                        {
+                            for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += Math.Max(Math.Min(bufx[ch][i] / bufy[ch][i], 1.0f), -1.0f); }  // 出力を発散させないための苦肉の策
+                        }
                     }
                     break;
                 case OperationType.Sidechain:
-                    for (int ch = 0; ch < outChCnt; ch++)
-                    {
-                        for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += bufx[ch][i] * bufy[ch][i]; }
-                    }
+                        if (childY.Length == 0)
+                        {
+                            for (int ch = 0; ch < outChCnt; ch++) { for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += bufx[ch][i]; } }
+                        }
+                        else
+                        {
+                            for (int ch = 0; ch < outChCnt; ch++) { for (int i = 0; i < count; i++) { lenv.Buffer[ch][i] += bufx[ch][i] * bufy[ch][i]; } }
+                        }
                     break;
                 case OperationType.AddSub:
                 default:
