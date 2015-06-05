@@ -6,9 +6,17 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class ADSR : Cell
+    public class ADSR : SingleInputCell
     {
-        Cell cell;
+        Cell cell
+        {
+            get
+            {
+                Cell x = base.InputCells[0];
+                return (x is NullCell) ? null : x;  // NullCellに対してTakeをすることを防ぐ
+            }
+        }
+
         CellParameterValue[] ctrl;
 
         double time = 0;  // 累積時間
@@ -22,6 +30,11 @@ namespace HatoDSP
         float lastgain = 0.0f;
         double releasedAt = 0.0f;
         bool releaseFinished = false;
+
+        JovialBuffer jEnvelope = new JovialBuffer();
+        JovialBuffer jBuf2 = new JovialBuffer();
+
+        double log2a = Math.Log(0.00001, 2);  // -100dB (1 / 10^5)
 
         public ADSR()
         {
@@ -38,15 +51,6 @@ namespace HatoDSP
                     new CellParameterInfo("Sustain", true, 0, 1, 0.1f, x => x + "s"),
                     new CellParameterInfo("Release", true, 0, 1, 0.01f, x => x + "s")
                 };
-            }
-        }
-
-        public override void AssignChildren(CellWire[] children)
-        {
-            if (children.Length >= 1)
-            {
-                //this.child0 = children[0].Source;  // FIXME: 複数指定
-                cell = children[0].Source.Generate();
             }
         }
 
@@ -70,9 +74,6 @@ namespace HatoDSP
             }
         }
 
-        float[] ret = new float[256];
-        float[][] buf2;
-
         public override void Take(int count, LocalEnvironment lenv)
         {
             if (releaseFinished) return;
@@ -87,24 +88,20 @@ namespace HatoDSP
                 if (ctrl.Length >= 4) { R = ctrl[3].Value; }
             }
 
-            float[] gate = lenv.Gate.ToArray();
+            float[] gate = lenv.Gate is ConstantSignal ? null : lenv.Gate.ToArray();
+            bool gate_lt_05 = lenv.Gate is ConstantSignal && ((ConstantSignal)lenv.Gate).val > 0.5;
 
-            if (ret.Length < count)
-            {
-                ret = new float[count];  // ゼロ初期化はしない
-            }
+            float[] envelope = jEnvelope.GetReference(1, count)[0];  // メモ：0初期化は不要
 
             double dt = 1.0 / lenv.SamplingRate;
 
-            double log2a = Math.Log(0.00001, 2);  // -100dB (1 / 10^5)
-
             for (int i = 0; i < count; n++, i++, time += dt)
             {
-                if (gate[i] > 0.5)
+                if (gate == null ? gate_lt_05 : gate[i] > 0.5)
                 {
                     if (time < A)
                     {
-                        lastgain = ret[i] = (float)(time / A);
+                        lastgain = envelope[i] = (float)(time / A);
                     }
                     else if (time < A + D)
                     {
@@ -115,11 +112,11 @@ namespace HatoDSP
                         // (0.01)^t * (0.5+0.5*cos(3.1415*t))
                         // ↑エンベロープにはこれが良いと思う
                         double t = (time - A) / D;
-                        lastgain = ret[i] = (float)((1.0f - S) * Math.Pow(0.01, t) * (0.5 + 0.5 * Math.Cos(Math.PI * t)) + S);  // -40dB
+                        lastgain = envelope[i] = (float)((1.0f - S) * Math.Pow(0.01, t) * (0.5 + 0.5 * Math.Cos(Math.PI * t)) + S);  // -40dB
                     }
                     else
                     {
-                        lastgain = ret[i] = S;  // TODO: ConstantSignal化
+                        lastgain = envelope[i] = S;  // TODO: ConstantSignal化
                     }
                     releasedAt = time;
                 }
@@ -129,11 +126,11 @@ namespace HatoDSP
                     {
                         //double rate = Math.Pow(0.00001, (time - releasedAt) / R);
                         double rate = HatoDSPFast.FastMathWrap.Pow2(log2a * (time - releasedAt) / R); // 0dB to -100dB
-                        ret[i] = (float)(lastgain * rate);
+                        envelope[i] = (float)(lastgain * rate);
                     }
                     else
                     {
-                        ret[i] = 0;  // TODO: ConstantSignal化
+                        envelope[i] = 0;  // TODO: ConstantSignal化
                         releaseFinished = true;
                     }
                 }
@@ -142,31 +139,19 @@ namespace HatoDSP
 
             if (cell != null)
             {
-                if (cell != null && (buf2 == null || buf2.Length < cell.ChannelCount || buf2[0].Length < count))
-                {
-                    buf2 = (new float[cell.ChannelCount][]).Select(x => new float[count]).ToArray();
-                }
+                int carrierChCnt = cell.ChannelCount;
 
-                for (int ch = 0; ch < cell.ChannelCount; ch++)
-                {
-                    for (int i = 0; i < count; i++)
-                    {
-                        buf2[ch][i] = 0;
-                    }
-                }
-
-                // TODO: LocalEnvironment.Clone() の実装 (←MemberwiseCloneで良くないですか)
                 LocalEnvironment lenv2 = lenv.Clone();
+                float[][] buf2 = jBuf2.GetReference(carrierChCnt, count);
                 lenv2.Buffer = buf2;  // 別に用意した空のバッファを与える
 
                 cell.Take(count, lenv2);  // バッファに加算
 
-                int chCount = cell.ChannelCount;
-                for (int ch = 0; ch < chCount; ch++)
+                for (int i = 0; i < count; i++)
                 {
-                    for (int i = 0; i < count; i++)
+                    for (int ch = 0; ch < carrierChCnt; ch++)  // どっちの順序が速い？？
                     {
-                        lenv.Buffer[ch][i] += buf2[ch][i] * ret[i];  // 結果を格納
+                        lenv.Buffer[ch][i] += buf2[ch][i] * envelope[i];  // 結果を格納
                     }
                 }
             }
@@ -174,7 +159,7 @@ namespace HatoDSP
             {
                 for (int i = 0; i < count; i++)
                 {
-                    lenv.Buffer[0][i] += ret[i];  // 結果を格納
+                    lenv.Buffer[0][i] += envelope[i];  // 結果を格納
                 }
             }
         }

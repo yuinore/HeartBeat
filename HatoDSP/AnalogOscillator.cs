@@ -7,10 +7,18 @@ using DSPLib = HatoDSPFast;  // 実行時間に差は無し、プロファイラ
 
 namespace HatoDSP
 {
-    public class AnalogOscillator : Cell
+    public class AnalogOscillator : SingleInputCell
     {
-        //CellTree child0;
-        Cell cell;
+        // Cell[] base.InputCells;
+
+        Cell cell
+        {
+            get {
+                Cell x = base.InputCells[0];
+                return (x is NullCell) ? null : x;  // NullCellに対してTakeをすることを防ぐ
+            }
+        }
+
         CellParameterValue[] ctrl;
 
         HatoDSPFast.FastOscillator fastOsc;
@@ -20,14 +28,6 @@ namespace HatoDSP
         public AnalogOscillator()
         {
             fastOsc = new HatoDSPFast.FastOscillator();
-        }
-
-        public override void AssignChildren(CellWire[] children)
-        {
-            if (children.Length >= 1) {
-                //this.child0 = children[0].Source;  // FIXME: 複数指定
-                cell = children[0].Source.Generate();
-            }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)

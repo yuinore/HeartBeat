@@ -71,7 +71,7 @@ namespace HatoSynthGUI
             new BlockPreset("Null",          "?",              29, new float[] {}),
             new BlockPreset("Null",          "?",              30, new float[] {}),
             new BlockPreset("Null",          "Wrap",           31, new float[] {}),
-            new BlockPreset("Dynamics",      "Shaper",         32, new float[] {}),
+            new BlockPreset("Dynamics",      "Shaper",         32, new float[] {100}),
             new BlockPreset("Analog OSC",    "Pulse",          33, new float[] {0, 0.05f, (float)Waveform.Pulse, 0.125f}),
             new BlockPreset("Analog OSC",    "Impulse",        34, new float[] {0, 0.05f, (float)Waveform.Impulse, 0}),
             new BlockPreset("Analog OSC",    "Sin",            35, new float[] {0, 0.05f, (float)Waveform.Sin, 0}),
