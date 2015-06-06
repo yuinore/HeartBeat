@@ -27,6 +27,11 @@ namespace HeartBeatCore
         public EventHandler<int> KeyUp;
 
         /// <summary>
+        /// 
+        /// </summary>
+        public EventHandler<int> PitchBendChanged;
+
+        /// <summary>
         /// 各キーidに対応する、最後に押したキーの時刻。キーフラッシュ用。
         /// </summary>
         public Dictionary<int, double> LastKeyDownEventDict = new Dictionary<int, double>();
@@ -202,6 +207,11 @@ namespace HeartBeatCore
                 case ChannelCommand.NoteOff:
                     AnyKeyUp(sender, MidiNoteNumberToKeyid(n));
                     break;
+                case ChannelCommand.PitchWheel:
+                    int bend = (n | (vel << 7)) - 8192;  // ピッチベンド(-8192～8191)
+                    PitchBendChanged(this, bend);
+                    break;
+
             }
         }
 

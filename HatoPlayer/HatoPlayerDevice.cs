@@ -276,6 +276,13 @@ namespace HatoPlayer
             }
         }
 
+        public void ChangeAllPitchBend(int bend) {
+            foreach (var kvpair in MixchToSynth)
+            {
+                kvpair.Value.PitchBend(bend);
+            }
+        }
+
         //SecondaryBuffer synthmix;
         AsioHandler asio;
         //readonly int BufferSamples = 2048;

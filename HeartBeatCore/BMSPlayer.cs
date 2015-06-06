@@ -337,6 +337,10 @@ namespace HeartBeatCore
             ih.KeyUp += (o, keyid) =>
             {
             };
+            ih.PitchBendChanged += (o, bend) =>
+            {
+                hplayer.ChangeAllPitchBend(bend);
+            };
             // TODO: LoadAndPlayが2回呼ばれると、イベントハンドラが重複登録されたりしないかどうかチェック
 
             b = new BMSStruct(path);

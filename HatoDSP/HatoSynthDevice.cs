@@ -16,6 +16,7 @@ namespace HatoDSP
         public int ReleasePolyphony = 4;
 
         int pitchBend = 0;
+        int lastPitchBend = 0;
         int bendrange = 1;
 
         class MyNoteEvent
@@ -59,11 +60,37 @@ namespace HatoDSP
             {
                 float[][] ret = new float[note.cell.ChannelCount][].Select(x => new float[count]).ToArray();
 
+                Signal pitchSig = null;
+
+                if (pitchBend == lastPitchBend)
+                {
+                    pitchSig = new ConstantSignal((float)(note.n + pitchBend * bendrange / 8192.0), count);
+                }
+                else
+                {
+                    // 一度にtakeする数によって結果が異なる疑惑
+                    float[] pitch = new float[count];
+                    int i = 0;
+                    int imax = Math.Min(256, count);
+
+                    for (; i < imax; i++)
+                    {
+                        double pb2 = ((imax - i) * (double)lastPitchBend + i * (double)pitchBend) / (double)imax;
+                        pitch[i] = (float)(note.n + pb2 * bendrange / 8192.0);
+                    }
+                    for (; i < count; i++)
+                    {
+                        pitch[i] = (float)(note.n + pitchBend * bendrange / 8192.0);
+                    }
+                    pitchSig = new ExactSignal(pitch, 1.0f, false);
+                }
+                lastPitchBend = pitchBend;
+
                 var lenv = new LocalEnvironment()
                 {
                     Buffer = ret,
                     Freq = new ConstantSignal(0, count),
-                    Pitch = new ConstantSignal((float)(note.n + pitchBend * bendrange / 8192.0), count),
+                    Pitch = pitchSig,
                     Locals = new Dictionary<string, Signal>(),
                     Gate = new ConstantSignal(1, count),  // ここが違う！！
                     SamplingRate = 44100
