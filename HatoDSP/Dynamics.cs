@@ -6,29 +6,29 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class Dynamics : Cell
+    public class Dynamics : SingleInputCell
     {
-        Cell child = new NullCell();
+        float inv_drive = 0.01f;
+        JovialBuffer jBuf = new JovialBuffer();
+
+        Cell child
+        {
+            get { return base.InputCells[0]; }
+        }
 
         public override CellParameterInfo[] ParamsList
         {
             get
             {
                 return new CellParameterInfo[] {
+                    new CellParameterInfo("Drive", true, 0, 1000, 100, CellParameterInfo.IdLabel)
                 };
-            }
-        }
-
-        public override void AssignChildren(CellWire[] children)
-        {
-            if (children.Length >= 1)
-            {
-                this.child = children[0].Source.Generate();
             }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
+            if (ctrl.Length >= 1) { inv_drive = 1f / ctrl[0].Value; }
         }
 
         // メモ：入力を自動で加算し、1in-1out演算ができるようなアレ
@@ -41,21 +41,12 @@ namespace HatoDSP
             }
         }
 
-        float inv_drive = 0.01f;
-
         public override void Take(int count, LocalEnvironment lenv)
         {
             int outChCnt = child.ChannelCount;
 
             LocalEnvironment lenv2 = lenv.Clone();
-
-            float[][] tempbuf = new float[outChCnt][];
-
-            for (int ch = 0; ch < outChCnt; ch++)
-            {
-                tempbuf[ch] = new float[count];
-            }
-
+            float[][] tempbuf = jBuf.GetReference(outChCnt, count);
             lenv2.Buffer = tempbuf;
 
             child.Take(count, lenv2);
@@ -66,7 +57,7 @@ namespace HatoDSP
                 {
                     float x = tempbuf[ch][i];
 
-                    if (x > inv_drive) x = inv_drive;
+                    if (x > inv_drive) x = inv_drive;  // Hard Clip
                     if (x < -inv_drive) x = -inv_drive;
 
                     lenv.Buffer[ch][i] += x;

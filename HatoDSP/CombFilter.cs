@@ -24,12 +24,11 @@ namespace HatoDSP
         {
             get
             {
-                if (InputCells.Length >= 2)
+                if (base.InputCells.Length <= 1 || base.InputCells[1] is NullCell)
                 {
-                    return InputCells[1];
+                    return null;
                 }
-
-                return null;
+                return base.InputCells[0];
             }
         }
 
@@ -61,36 +60,26 @@ namespace HatoDSP
         float b1 = 0.0f;  // delayed信号
         float delaySamples = 300;
         readonly int maxDelaySamples = 65536;
-        float[][] delayBuffer;
+        JovialBuffer jDelayBuffer = new JovialBuffer();
+        JovialBuffer jInput = new JovialBuffer();
+        JovialBuffer jSidechain = new JovialBuffer();
         int j0 = 0;  // 現在のdelayBufferの位置
 
         public override void Take(int count, LocalEnvironment lenv)
         {
             int outChCnt = child.ChannelCount;
 
+            float[][] delayBuffer = jDelayBuffer.GetReference(outChCnt, maxDelaySamples);  // 注：countではない
+
             LocalEnvironment lenv2 = lenv.Clone();
-
-            if (delayBuffer == null || delayBuffer.Length < outChCnt)
-            {
-                delayBuffer = (new int[outChCnt]).Select(x => new float[maxDelaySamples]).ToArray();
-            }
-
-            float[][] input = new float[outChCnt][];
-            for (int ch = 0; ch < outChCnt; ch++)
-            {
-                input[ch] = new float[count];
-            }
+            float[][] input = jInput.GetReference(outChCnt, count);
             lenv2.Buffer = input;
             child.Take(count, lenv2);
 
             float[][] sidechain = null;
             if (child2 != null)
             {
-                sidechain = new float[outChCnt][];
-                for (int ch = 0; ch < outChCnt; ch++)
-                {
-                    sidechain[ch] = new float[count];
-                }
+                sidechain = jSidechain.GetReference(outChCnt, count);
                 lenv2.Buffer = sidechain;
                 child2.Take(count, lenv2);
             }

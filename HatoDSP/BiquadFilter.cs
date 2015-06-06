@@ -6,35 +6,33 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    public class BiquadFilter : Cell
+    public class BiquadFilter : SingleInputCell
     {
         FilterType type = FilterType.LowPass;
 
-        Cell waveCell = new NullCell();
-        Cell cutoffCell;
+        Cell waveCell
+        {
+            get { return base.InputCells[0]; }
+        }
+
+        Cell cutoffCell
+        {
+            get
+            {
+                if (base.InputCells.Length <= 1 || base.InputCells[1] is NullCell)
+                {
+                    return null;
+                }
+                return base.InputCells[0];
+            }
+        }
+
         IIRFilter[] filt;
 
         int slope = 2;
 
         public BiquadFilter()
         {
-        }
-
-        public override void AssignChildren(CellWire[] children)
-        {
-            // FIXME: 複数指定
-
-            foreach (var wire in children)
-            {
-                if (wire.Port == 0)
-                {
-                    waveCell = wire.Source.Generate();
-                }
-                else if (wire.Port == 1)
-                {
-                    cutoffCell = wire.Source.Generate();
-                }
-            }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
@@ -66,7 +64,8 @@ namespace HatoDSP
             }
         }
 
-        float[][] input, cutoffsignal;
+        JovialBuffer jInput = new JovialBuffer();
+        JovialBuffer jCutoffSignal = new JovialBuffer();
         float[] a0 = new float[256];
         float[] a1 = new float[256];
         float[] a2 = new float[256];
@@ -78,44 +77,21 @@ namespace HatoDSP
         {
             float[][] retbuf = lenv.Buffer;
 
-            if (input == null || input.Length < waveCell.ChannelCount || input[0].Length < count)
-            {
-                input = (new float[waveCell.ChannelCount][]).Select(x => new float[count]).ToArray();
-            }
-            for (int ch = 0; ch < waveCell.ChannelCount; ch++)
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    input[ch][i] = 0;
-                }
-            }
             LocalEnvironment lenv2 = lenv.Clone();
+            float[][] input = jInput.GetReference(waveCell.ChannelCount, count);
             lenv2.Buffer = input;
-
             waveCell.Take(count, lenv2);  // バッファにデータを格納
 
+            float[][] cutoffsignal = null;
             if (cutoffCell != null)
             {
-                if (cutoffsignal == null || cutoffsignal.Length < cutoffCell.ChannelCount || cutoffsignal[0].Length < count)
-                {
-                    cutoffsignal = (new float[cutoffCell.ChannelCount][]).Select(x => new float[count]).ToArray();
-                }
-                for (int ch = 0; ch < cutoffCell.ChannelCount; ch++)
-                {
-                    for (int i = 0; i < count; i++)
-                    {
-                        cutoffsignal[ch][i] = 0;
-                    }
-                }
                 LocalEnvironment lenv3 = lenv.Clone();
+                cutoffsignal = jCutoffSignal.GetReference(cutoffCell.ChannelCount, count);
                 lenv3.Buffer = cutoffsignal;  // 別に用意した空のバッファを与える
                 cutoffCell.Take(count, lenv3);  // バッファにデータを格納
             }
 
             filt = filt ?? (new int[slope]).Select(x => new IIRFilter(waveCell.ChannelCount, 1, 0, 0, 0, 0, 0)).ToArray();
-
-            //Signal[] input = waveCell.Take(count, lenv);
-            //var cutoffsignal = cutoffCell == null ? new ConstantSignal(0, count) : cutoffCell.Take(count, lenv)[0];
 
             if (cutoffCell == null)
             {
