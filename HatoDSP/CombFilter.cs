@@ -28,7 +28,7 @@ namespace HatoDSP
                 {
                     return null;
                 }
-                return base.InputCells[0];
+                return base.InputCells[1];
             }
         }
 
@@ -53,14 +53,14 @@ namespace HatoDSP
             }
         }
 
-        float delayTimeMs = 12.0f;
+        float delayTimeMs = 2.0f;
 
-        float a1 = -0.75f;  // feedback信号. a1 < 0 のとき、低周波帯域が共振する。（強調される）
+        float a1 = -0.75f;  // feedback信号. a1 < 0 のとき、低周波帯域(直流成分)が共振する。（強調される）
         float b0 = 1.0f;  // dry(through)信号
         float b1 = 0.0f;  // delayed信号
-        float delaySamples = 300;
+        float delaySamples = 30;
         readonly int maxDelaySamples = 65536;
-        JovialBuffer jDelayBuffer = new JovialBuffer();
+        float[][] delayBuffer = null;
         JovialBuffer jInput = new JovialBuffer();
         JovialBuffer jSidechain = new JovialBuffer();
         int j0 = 0;  // 現在のdelayBufferの位置
@@ -69,7 +69,10 @@ namespace HatoDSP
         {
             int outChCnt = child.ChannelCount;
 
-            float[][] delayBuffer = jDelayBuffer.GetReference(outChCnt, maxDelaySamples);  // 注：countではない
+            if (delayBuffer == null)
+            {
+                delayBuffer = (new float[outChCnt][]).Select(_ => new float[maxDelaySamples]).ToArray();  // JovialBufferを使うな#####
+            }
 
             LocalEnvironment lenv2 = lenv.Clone();
             float[][] input = jInput.GetReference(outChCnt, count);
@@ -98,10 +101,13 @@ namespace HatoDSP
 
                     Debug.Assert(delaySamples >= 0 && delaySamples < maxDelaySamples);
 
-                    int j1 = j0 - (int)delaySamples + maxDelaySamples;  // delaySamplesは変数
+                    float j1 = j0 - delaySamples + maxDelaySamples;  // delaySamplesは変数
                     if (j1 >= maxDelaySamples) j1 -= maxDelaySamples;
 
-                    float t1 = delayBuffer[ch][j1];  // TODO:線形補間
+                    // j1 は多分 0 以上(要検証)
+                    int intj1 = (int)j1;
+                    float delta = j1 - intj1;
+                    float t1 = (1 - delta) * delayBuffer[ch][intj1] + delta * delayBuffer[ch][(intj1 + 1) % maxDelaySamples];
 
                     float t0 = input[ch][i] - a1 * t1;
                     if (-1.1754944e-38 < t0 && t0 < 1.1754944e-38) { t0 = 0; }

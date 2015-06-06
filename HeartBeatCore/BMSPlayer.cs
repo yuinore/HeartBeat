@@ -25,7 +25,7 @@ namespace HeartBeatCore
         /// キー音の演奏可能時刻からの差分ではなく適正演奏時間からの差分であるため、注意が必要。
         /// 1.0くらいで読み込みミスが発生しないくらいがちょうどいいと思う。
         /// </summary>
-        double WavFileLoadingDelayTime = 999;//10.0;
+        double WavFileLoadingDelayTime = 10.0;
 
         /// <summary>
         /// 読み込み完了から曲が再生されるまでの時間

@@ -100,10 +100,13 @@ namespace HatoDSP
 
                     Debug.Assert(delaySamples >= 0 && delaySamples < maxDelaySamples);
 
-                    int j1 = j0 - (int)delaySamples + maxDelaySamples;  // delaySamplesは変数
+                    float j1 = j0 - delaySamples + maxDelaySamples;  // delaySamplesは変数
                     if (j1 >= maxDelaySamples) j1 -= maxDelaySamples;
 
-                    float t1 = delayBuffer[ch][j1];  // TODO:線形補間
+                    // j1 は多分 0 以上(要検証)
+                    int intj1 = (int)j1;
+                    float delta = j1 - intj1;
+                    float t1 = (1 - delta) * delayBuffer[ch][intj1] + delta * delayBuffer[ch][(intj1 + 1) % maxDelaySamples];
 
                     float t0 = input[ch][i] - a1 * t1;
                     if (-1.1754944e-38 < t0 && t0 < 1.1754944e-38) { t0 = 0; }
