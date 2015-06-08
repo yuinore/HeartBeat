@@ -256,6 +256,9 @@
     <Content Include="cells\cell_00039.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="cells\cell_00040.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HatoDSP\HatoDSP.csproj">

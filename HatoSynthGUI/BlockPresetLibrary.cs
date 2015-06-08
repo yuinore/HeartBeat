@@ -78,7 +78,8 @@ namespace HatoSynthGUI
             new BlockPreset("Analog OSC",    "LFO",            36, new float[] {-60, 0.05f, (float)Waveform.Sin, 0}),  // TODO: キーボードトラッキングの無効化
             new BlockPreset("Comb Filter",   "Comb Filter",    37, new float[] {0.0f}),
             new BlockPreset("Freq Mod",      "Frequency Mod",  38, new float[] {0.0f}),
-            new BlockPreset("Phase Mod",     "Phase Mod",      39, new float[] {0.0f})
+            new BlockPreset("Phase Mod",     "Phase Mod",      39, new float[] {0.0f}),
+            new BlockPreset("Const",         "Constant",       40, new float[] {1.0f})
         };
     }
 }

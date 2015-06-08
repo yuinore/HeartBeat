@@ -45,7 +45,8 @@ namespace HatoLib
             "Comb Filter",
             "Frequency Mod",
             "Phase Mod",
-            "$synth"
+            "$synth",
+            "Constant"
         };
     }
 }
