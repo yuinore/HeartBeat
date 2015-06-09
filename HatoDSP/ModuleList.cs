@@ -37,7 +37,8 @@ namespace HatoDSP
             new ModuleInfo(8, "Chorus", () => new Chorus()),
             new ModuleInfo(9, "Phase Mod", () => new PhaseModulation()),
             new ModuleInfo(10, "Freq Mod", () => new FrequencyModulation()),
-            new ModuleInfo(11, "Const", () => new ConstantCell())
+            new ModuleInfo(11, "Const", () => new ConstantCell()),
+            new ModuleInfo(12, "Tiny Mixer", () => new TinyMixer())
         };
     }
 }
