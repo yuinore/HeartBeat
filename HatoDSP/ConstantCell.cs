@@ -38,7 +38,7 @@ namespace HatoDSP
 
             for (int i = 0; i < count; i++)
             {
-                buf[i] = val;
+                buf[i] += val;
             }
         }
     }

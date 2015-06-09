@@ -77,6 +77,8 @@
     <Compile Include="Signal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SingleInputCell.cs" />
+    <Compile Include="SlowMath.cs" />
+    <Compile Include="TinyMixer.cs" />
     <Compile Include="Waveform.cs" />
     <None Include="packages.config" />
   </ItemGroup>

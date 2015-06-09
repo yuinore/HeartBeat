@@ -112,7 +112,7 @@ namespace HatoDSP
                         // (0.01)^t * (0.5+0.5*cos(3.1415*t))
                         // ↑エンベロープにはこれが良いと思う
                         double t = (time - A) / D;
-                        lastgain = envelope[i] = (float)((1.0f - S) * Math.Pow(0.01, t) * (0.5 + 0.5 * Math.Cos(Math.PI * t)) + S);  // -40dB
+                        lastgain = envelope[i] = (float)((1.0f - S) * SlowMath.Envelope((float)t) + S);  // -40dB
                     }
                     else
                     {
