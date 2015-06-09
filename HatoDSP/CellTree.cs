@@ -12,18 +12,22 @@ namespace HatoDSP
         // GUI による CellParameterValue の変更があった場合は[お察し下さい]。
 
         Func<Cell> generator;
-        public string Name;  // must be unique
+        public string Name;  // must be unique, but can be null??
         List<CellWire> children = new List<CellWire>();
         CellParameterValue[] ctrl;
         bool constructed = false;
         
         public CellTree(Func<Cell> generator)
         {
+            Console.WriteLine("CellTree.ctor() " + Name);
+
             this.generator = generator;  // CellTree<T> where T:Cell にして new T() しても良かったかもしれないですね・・・。
         }
 
         public CellTree(string name, string module)
         {
+            Console.WriteLine("CellTree.ctor() " + Name);
+
             Name = name;
 
             string moduleLower = module.ToLower();
@@ -39,6 +43,8 @@ namespace HatoDSP
 
         public void AddChildren(CellWire[] children)
         {
+            Console.WriteLine("CellTree.AddChildren() " + Name);
+
             if (constructed) throw new Exception("CellTreeの呼び出しに誤りがある可能性があります。");
 
             this.children.AddRange(children);
@@ -56,6 +62,8 @@ namespace HatoDSP
 
         public void AssignControllers(CellParameterValue[] ctrl)
         {
+            Console.WriteLine("CellTree.AssignControllers() " + Name);
+
             if (constructed) throw new Exception("CellTreeの呼び出しに誤りがある可能性があります。");
 
             this.ctrl = ctrl;  // カプセル化は？？
@@ -70,6 +78,8 @@ namespace HatoDSP
 
         public Cell Generate()
         {
+            Console.WriteLine("CellTree.Generate() " + Name);
+
             constructed = true;
 
             if (generator == null)

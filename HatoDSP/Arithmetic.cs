@@ -51,6 +51,10 @@ namespace HatoDSP
 
         public override void AssignChildren(CellWire[] children)
         {
+            Console.WriteLine("-- AssignChildren " + this.GetType().ToString());
+
+            // 初回呼び出しの場合
+
             childX = children.Where(x => x.Port == 0).Select(x => x.Source.Generate()).ToArray();
             childY = children.Where(x => x.Port != 0).Select(x => x.Source.Generate()).ToArray();
 
@@ -61,6 +65,8 @@ namespace HatoDSP
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
+            Console.WriteLine("-- AssignControllers " + this.GetType().ToString());
+
             if (ctrl.Length >= 1)
             {
                 op = (OperationType)(ctrl[0].Value + 0.5f);
@@ -72,6 +78,8 @@ namespace HatoDSP
         {
             get
             {
+                Console.WriteLine("-- get ChannelCount " + this.GetType().ToString());
+
                 return AssignAndGetChannelCount();
             }
         }
@@ -113,6 +121,8 @@ namespace HatoDSP
 
         private void Take(int count, LocalEnvironment lenv, bool isSkip)
         {
+            Console.WriteLine("-- Take " + this.GetType().ToString());
+
             if (outChCnt == 0)
             {
                 AssignAndGetChannelCount();  // ここでchCntXも初期化される
@@ -184,6 +194,9 @@ namespace HatoDSP
                     }
                 }
             }
+
+            // それ以外の、一般の場合。
+
             // TODO: int lenv.FromEndOfStream の実装。-1で未了？
 
             LocalEnvironment lenv2 = lenv.Clone();

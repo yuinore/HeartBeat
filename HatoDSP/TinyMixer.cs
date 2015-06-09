@@ -67,9 +67,9 @@ namespace HatoDSP
             
             Cell ch2Cell = InputCells.Length >= 2 ? InputCells[1] : new NullCell();
             int ch2chCnt = ch2Cell.ChannelCount;
-            float[][] ch2 = jCh2.GetReference(ch2Cell.ChannelCount, count);
+            float[][] ch2 = jCh2.GetReference(ch2chCnt, count);
             lenv2.Buffer = ch2;
-            InputCells[0].Take(count, lenv2);
+            ch2Cell.Take(count, lenv2);
 
             float ch1rawgain = SlowMath.DecibelToRaw(ch1gain) * (1 - balance);
             float ch2rawgain = SlowMath.DecibelToRaw(ch2gain) * balance;

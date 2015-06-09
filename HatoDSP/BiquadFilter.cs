@@ -23,7 +23,8 @@ namespace HatoDSP
                 {
                     return null;
                 }
-                return base.InputCells[0];
+                //return base.InputCells[0];  // ←！？！？！？！？！？！？！？！？！？！？！？！？！？
+                return base.InputCells[1];
             }
         }
 

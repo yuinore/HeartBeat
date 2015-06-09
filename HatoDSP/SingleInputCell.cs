@@ -36,7 +36,9 @@ namespace HatoDSP
 
             int portCount = maxport + 1;  // 子セルが存在しない場合は、この値は0ではなく1となる。
 
-            var lst = (new int[portCount]).Select(x => new List<CellTree>()).ToArray();
+            // それぞれのポート番号に対応するCellTreeの一覧
+            // lst[i] ... ポート番号がiのCellTree一覧
+            List<CellTree>[] lst = (new int[portCount]).Select(x => new List<CellTree>()).ToArray();
 
             for (int i = 0; i < children.Length; i++)
             {
@@ -54,13 +56,13 @@ namespace HatoDSP
                 }
                 else if (lst[i].Count == 1)
                 {
-                    InputCells[i] = lst[i][0].Generate();
+                    InputCells[i] = lst[i][0].Generate();  // FIXME: ここでgenerateしてはならないのでは？
                 }
                 else
                 {
                     Arithmetic cel = new Arithmetic();
-                    cel.AssignChildren(lst[i].Select(x => new CellWire(x, 0)).ToArray());
                     cel.AssignControllers(new CellParameterValue[] { new CellParameterValue((float)Arithmetic.OperationType.AddSub) });
+                    cel.AssignChildren(lst[i].Select(x => new CellWire(x, 0)).ToArray());
 
                     InputCells[i] = cel;
                 }

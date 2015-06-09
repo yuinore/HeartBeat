@@ -8,6 +8,8 @@ namespace HatoDSP
 {
     // Take や ChannelCount を呼んだ後に、 AssignChildren を呼んではならない
     // 一度 ChannelCount が呼ばれたら、 ChannelCount は同じ値を返し続けなければならない。
+    //
+    // さらに言うと、 AssignChildren から、 ChannelCount.get や Take を呼んではならない。
 
     public abstract class Cell
     {
