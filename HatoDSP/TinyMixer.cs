@@ -19,7 +19,9 @@ namespace HatoDSP
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            throw new NotImplementedException();
+            if (ctrl.Length >= 1) { ch1gain = ctrl[0].Value; }
+            if (ctrl.Length >= 2) { ch2gain = ctrl[1].Value; }
+            if (ctrl.Length >= 3) { balance = ctrl[2].Value; }
         }
 
         public override CellParameterInfo[] ParamsList
