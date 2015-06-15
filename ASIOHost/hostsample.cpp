@@ -215,10 +215,21 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	// buffer size in samples
 	long buffSize = asioDriverInfo.preferredSize;
 
+    // 入力をC#側に送信
+    for (int i = 0; i < asioDriverInfo.inputBuffers + asioDriverInfo.outputBuffers; i++)
+    {
+        // TODO: ASIO入力の取得（i==2のときなど）
+
+        if (asioDriverInfo.bufferInfos[i].isInput != ASIOFalse)
+        {
+            asioCallback((void*)(asioDriverInfo.bufferInfos[i].buffers[index]), i, buffSize, (int)asioDriverInfo.channelInfos[i].type);
+        }
+    }
+
 	// perform the processing
 	for (int i = 0; i < asioDriverInfo.inputBuffers + asioDriverInfo.outputBuffers; i++)
 	{
-		if (asioDriverInfo.bufferInfos[i].isInput == false)
+		if (asioDriverInfo.bufferInfos[i].isInput == ASIOFalse)
         {
             // printf("buffer %d: type =%d\r\n", i, (int)asioDriverInfo.channelInfos[i].type);  // ASIOSTInt32LSB = 18
             // printf("buffer %d: samplerequired = %d\r\n", i, buffSize);  // buffSizeはAsioのコントロールパネルで設定可能

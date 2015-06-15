@@ -46,24 +46,6 @@ namespace HatoPlayer
             ASIOSTLastEntry
         }
 
-        /// <summary>
-        /// ASIOへオーディオデータを返すためのバッファーを示します。
-        /// </summary>
-        // デリゲートを作るのが面倒だったが、デリゲートを作らないと変数名を明示できなかったため、こうなった。
-        public struct AsioBuffer
-        {
-            public readonly float[][] Buffer;
-            public readonly int ChannelCount;
-            public readonly int SampleCount;
-
-            public AsioBuffer(float[][] buffer, int ch, int count)
-            {
-                Buffer = buffer;
-                ChannelCount = ch;
-                SampleCount = count;
-            }
-        }
-
         private delegate void D_UnsafeAsioCallback(IntPtr buf, int chIdx, int count, int asioSampleType);
         //public delegate void D_AsioCallback(float[][] buf, int channelCount, int sampleCount);
         // メモ：channelsCountではなくchannelCountの方が英語として良さそう
@@ -79,11 +61,14 @@ namespace HatoPlayer
         private extern static int asiomain(D_UnsafeAsioCallback Callback);
 
         D_UnsafeAsioCallback UnsafeCallback;
-        Action<AsioBuffer> SafeCallback;
+        Action<AsioIOBuffers> SafeCallback;
 
         float[][] buffer = new float[2][] {  // bufferを保管しておき、毎回バッファを作成することを防ぐ。
                 new float[1024],
                 new float[1024],
+        };
+        float[][] recordBuffer = new float[1][] {  // bufferを保管しておき、毎回バッファを作成することを防ぐ。
+                new float[1024]  // FIXME: ステレオマイクかも？
         };
         short[] sbuf = new short[1024];
 
@@ -91,9 +76,27 @@ namespace HatoPlayer
         bool RightRemains = false;  // ASIOに送信していない右チャンネルのデータがbufferにまだ残っているか？
         int chLeft = 2;  // TODO: チャンネル番号の設定
         int chRight = 3;
+        int chRecord = 4;
 
         private unsafe void UnsafeAsioCallback(IntPtr buf, int chIdx, int count, int asioSampleType)
         {
+            if (chIdx == chRecord)
+            {
+                // ここにマイク入力を書く
+                if (recordBuffer[0].Length < count)
+                {
+                    // マネージド配列の長さが足りない場合
+                    recordBuffer = new float[1][] {
+                        new float[count]
+                    };
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    recordBuffer[0][i] = (float)Math.Sin(i * 0.01);
+                }
+            }
+
             // asioSampleType によって buf の大きさが異なるので真面目に注意。
             // ゼロクリアは既にしてあるという設定です。
 
@@ -113,7 +116,9 @@ namespace HatoPlayer
             //*** 必要に応じてSafeCallBackからのデータのfetch
             if ((chIdx == chLeft && !LeftRemains) || (chIdx == chRight && !RightRemains))
             {
-                SafeCallback(new AsioBuffer(buffer, 2, count));  // チャンネル数は2
+                SafeCallback(new AsioIOBuffers(
+                    new AsioBuffer(recordBuffer, recordBuffer.Length, count),  // マイク入力
+                    new AsioBuffer(buffer, buffer.Length, count)));  // チャンネル数は2
                 LeftRemains = RightRemains = true;
             }
 
@@ -205,7 +210,7 @@ namespace HatoPlayer
         /// コールバック関数の引数として与えられる AsioBuffer の float[][] Buffer メンバは、
         /// その配列の長さが要求されたサンプル数より長い場合があるということに注意して下さい。
         /// </summary>
-        public void Run(Action<AsioBuffer> callback)
+        public void Run(Action<AsioIOBuffers> callback)
         {
             SafeCallback = callback;
 

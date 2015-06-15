@@ -292,8 +292,10 @@ namespace HatoPlayer
         int bufcountL = 0;
         int bufcountR = 0;
 
-        private unsafe void AsioCallback(AsioHandler.AsioBuffer aBuf)
+        private unsafe void AsioCallback(AsioIOBuffers ioBuf)
         {
+            AsioBuffer aBuf = ioBuf.Output;
+
             if (bufcountL < aBuf.SampleCount || bufcountR < aBuf.SampleCount)
             {
                 Console.WriteLine("Not Enough Buffer... ＞＜ " + DateTime.Now.Millisecond);

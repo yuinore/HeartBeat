@@ -718,8 +718,10 @@ namespace HatoSynthGUI
                 asio = new AsioHandler();
 
                 // 再生が停止するまで AsioHandler を解放しないように・・・
-                asio.Run(aBuf =>
+                asio.Run(ioBuf =>
                 {
+                    AsioBuffer aBuf = ioBuf.Output;
+
                     var buf2 = synth.Take(aBuf.SampleCount).Select(x => x.ToArray()).ToArray();  // 同じスレッドで処理しちゃったてへっ
 
                     for (int ch = 0; ch < aBuf.ChannelCount; ch++)
