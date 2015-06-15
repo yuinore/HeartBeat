@@ -44,7 +44,7 @@ namespace HatoDSP
         /// 合成された2チャンネルの信号を返します。
         /// このクラスはスレッドセーフですが、同時に2つのスレッドから Take を呼ばないで下さい。
         /// </summary>
-        public Signal[] Take(int count)
+        public Signal[] Take(int count, float[][] audioInput = null, float[][] micInput = null)
         {
             var mix = (new int[2]).Select(x => new float[count]).ToArray();
 
@@ -95,6 +95,37 @@ namespace HatoDSP
                     Gate = new ConstantSignal(1, count),  // ここが違う！！
                     SamplingRate = 44100
                 };
+
+                if (audioInput != null)
+                {
+                    if (audioInput.Length == 1)
+                    {
+                        var sig = new ExactSignal(audioInput[0], 1.0f, false);
+                        lenv.Locals.Add("audioInputL".ToLower(), sig);
+                        lenv.Locals.Add("audioInputR".ToLower(), sig);
+                    }
+                    else if (audioInput.Length >= 2)
+                    {
+                        lenv.Locals.Add("audioInputL".ToLower(), new ExactSignal(audioInput[0], 1.0f, false));
+                        lenv.Locals.Add("audioInputR".ToLower(), new ExactSignal(audioInput[1], 1.0f, false));
+                    }
+                }
+
+                if (micInput != null)
+                {
+                    // TODO: JavaScriptから入力のチャンネル数を取得できるように・・・
+
+                    if (micInput.Length == 1)
+                    {
+                        var sig = new ExactSignal(micInput[0], 1.0f, false);
+                        lenv.Locals.Add("micInput".ToLower(), sig);
+                    }
+                    else if (micInput.Length >= 2)
+                    {
+                        lenv.Locals.Add("micInput".ToLower(), new ExactSignal(micInput[0], 1.0f, false));
+                    }
+                }
+
                 note.cell.Take(count, lenv);
                 if (note.cell.ChannelCount == 1)
                 {

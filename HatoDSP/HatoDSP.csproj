@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="ADSR.cs" />
     <Compile Include="Arithmetic.cs" />
+    <Compile Include="AudioSource.cs" />
     <Compile Include="BiquadFilter.cs" />
     <Compile Include="AnalogOscillator.cs" />
     <Compile Include="CellWire.cs" />
