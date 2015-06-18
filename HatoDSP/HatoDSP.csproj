@@ -64,6 +64,7 @@
     <Compile Include="FrequencyModulation.cs" />
     <Compile Include="HatoSynthDevice.cs" />
     <Compile Include="IIRFilter.cs" />
+    <Compile Include="InputThroughCell.cs" />
     <Compile Include="JoinedSignal.cs" />
     <Compile Include="CellParameterInfo.cs" />
     <Compile Include="JovialBuffer.cs" />
