@@ -76,7 +76,7 @@ namespace HatoPlayer
         bool RightRemains = false;  // ASIOに送信していない右チャンネルのデータがbufferにまだ残っているか？
         int chLeft = 2;  // TODO: チャンネル番号の設定
         int chRight = 3;
-        int chRecord = 4;
+        int chRecord = 2;
 
         private unsafe void UnsafeAsioCallback(IntPtr buf, int chIdx, int count, int asioSampleType)
         {

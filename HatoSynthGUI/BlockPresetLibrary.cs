@@ -80,7 +80,8 @@ namespace HatoSynthGUI
             new BlockPreset("Freq Mod",      "Frequency Mod",  38, new float[] {0.0f}),
             new BlockPreset("Phase Mod",     "Phase Mod",      39, new float[] {0.0f}),
             new BlockPreset("Const",         "Constant",       40, new float[] {1.0f}),
-            new BlockPreset("Tiny Mixer",    "Tiny Mixer",     41, new float[] {0.0f, 0.0f, 0.5f})
+            new BlockPreset("Tiny Mixer",    "Tiny Mixer",     41, new float[] {0.0f, 0.0f, 0.5f}),
+            new BlockPreset("Mic",           "Microphone",     42, new float[] {})
         };
     }
 }

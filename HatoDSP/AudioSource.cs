@@ -6,28 +6,49 @@ using System.Threading.Tasks;
 
 namespace HatoDSP
 {
-    class AudioSource : SingleInputCell
+    class AudioSource : InputThroughCell
     {
-        string varName;
+        readonly string varName;
+
+        public AudioSource(string sourcename)
+        {
+            varName = sourcename;
+        }
+
+        public override int ChannelCountInternal
+        {
+            get { return 1; }
+        }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            throw new NotImplementedException();
         }
 
         public override CellParameterInfo[] ParamsList
         {
-            get { throw new NotImplementedException(); }
+            get
+            {
+                return new CellParameterInfo[] {
+                };
+            }
         }
 
-        public override int ChannelCount
+        public override void TakeInternal(int count, LocalEnvironment lenv)
         {
-            get { throw new NotImplementedException(); }
-        }
+            Signal sig;
 
-        public override void Take(int count, LocalEnvironment lenv)
-        {
-            throw new NotImplementedException();
+            // TODO: varName が pitch などであった場合の処理
+            if (lenv.Locals.TryGetValue(varName, out sig) == false)
+            {
+                sig = new ConstantSignal(0, count);
+            }
+
+            float[] buf = sig.ToArray();
+
+            for (int i = 0; i < count; i++)
+            {
+                lenv.Buffer[0][i] = buf[i];
+            }
         }
     }
 }
