@@ -74,8 +74,8 @@ namespace HatoPlayer
 
         bool LeftRemains = false;  // ASIOに送信していない左チャンネルのデータがbufferにまだ残っているか？
         bool RightRemains = false;  // ASIOに送信していない右チャンネルのデータがbufferにまだ残っているか？
-        int chLeft = 2;  // TODO: チャンネル番号の設定
-        int chRight = 3;
+        int chLeft = 4;  // TODO: チャンネル番号の設定
+        int chRight = 5;
         int chRecord = 2;
 
         private unsafe void UnsafeAsioCallback(IntPtr buf, int chIdx, int count, int asioSampleType)
@@ -91,9 +91,17 @@ namespace HatoPlayer
                     };
                 }
 
-                for (int i = 0; i < count; i++)
+                short* p2 = (short*)buf;
+
+                switch ((AsioSampleType)asioSampleType)
                 {
-                    recordBuffer[0][i] = (float)Math.Sin(i * 0.01);
+                    case AsioSampleType.ASIOSTInt32LSB:  // 00 00 LL HH
+                        for (int i = 0; i < count; i++) { p2++; recordBuffer[0][i] = (*(p2++)) / 32767.0f; }
+                        break;
+                    default:
+                        Console.WriteLine("Sample Type of " + asioSampleType.ToString() + " is Not Supported.");
+                        // do nothing
+                        break;
                 }
             }
 

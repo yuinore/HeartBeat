@@ -722,7 +722,11 @@ namespace HatoSynthGUI
                 {
                     AsioBuffer aBuf = ioBuf.Output;
 
-                    var buf2 = synth.Take(aBuf.SampleCount).Select(x => x.ToArray()).ToArray();  // 同じスレッドで処理しちゃったてへっ
+                    float[][] fBuf = new float[1][] { new float[aBuf.SampleCount] };
+
+                    Array.Copy(ioBuf.Input.Buffer[0], fBuf[0], aBuf.SampleCount);
+
+                    var buf2 = synth.Take(aBuf.SampleCount, null, fBuf).Select(x => x.ToArray()).ToArray();  // 同じスレッドで処理しちゃったてへっ
 
                     for (int ch = 0; ch < aBuf.ChannelCount; ch++)
                     {

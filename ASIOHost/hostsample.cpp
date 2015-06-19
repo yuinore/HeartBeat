@@ -181,6 +181,8 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	// store the timeInfo for later use
 	asioDriverInfo.tInfo = *timeInfo;
 
+    static int isFirst = 1;
+
 	// get the time stamp of the buffer, not necessary if no
 	// synchronization to other media is required
 	if (timeInfo->timeInfo.flags & kSystemTimeValid)
@@ -215,6 +217,18 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	// buffer size in samples
 	long buffSize = asioDriverInfo.preferredSize;
 
+    if (isFirst == 1)
+    {
+        for (int i = 0; i < asioDriverInfo.inputBuffers + asioDriverInfo.outputBuffers; i++)
+        {
+            printf("buffer %d: type =%d\r\n", i, (int)asioDriverInfo.channelInfos[i].type);  // ASIOSTInt32LSB = 18
+            printf("buffer %d: isInput = %d\r\n", i, (int)asioDriverInfo.bufferInfos[i].isInput);
+            printf("buffer %d: channelNum = %d\r\n", i, (int)asioDriverInfo.bufferInfos[i].channelNum);
+            //printf("buffer %d: samplerequired = %d\r\n", i, buffSize);  // buffSizeはAsioのコントロールパネルで設定可能
+            fflush(stdout);
+        }
+    }
+
     // 入力をC#側に送信
     for (int i = 0; i < asioDriverInfo.inputBuffers + asioDriverInfo.outputBuffers; i++)
     {
@@ -231,9 +245,6 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	{
 		if (asioDriverInfo.bufferInfos[i].isInput == ASIOFalse)
         {
-            // printf("buffer %d: type =%d\r\n", i, (int)asioDriverInfo.channelInfos[i].type);  // ASIOSTInt32LSB = 18
-            // printf("buffer %d: samplerequired = %d\r\n", i, buffSize);  // buffSizeはAsioのコントロールパネルで設定可能
-
 			// OK do processing for the outputs only
 			switch (asioDriverInfo.channelInfos[i].type)
 			{
@@ -295,6 +306,8 @@ ASIOTime *bufferSwitchTimeInfo(ASIOTime *timeInfo, long index, ASIOBool processN
 	// finally if the driver supports the ASIOOutputReady() optimization, do it here, all data are in place
 	if (asioDriverInfo.postOutput)
 		ASIOOutputReady();
+
+    isFirst = 0;
 
 	return 0L;
 }
