@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HatoDSPFast;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -36,6 +37,14 @@ namespace HatoDSP
         {
             // 半ハン窓と、-40dBの指数減衰の積。
             return (float)(Math.Pow(0.01, t) * (0.5 + 0.5 * Math.Cos(Math.PI * t)));
+        }
+
+        /// <summary>
+        /// ノート番号（実数）を基本周波数[Hz]に変換します。
+        /// </summary>
+        public static float PitchToFreq(float pitch)
+        {
+            return (float)(FastMathWrap.Pow2((pitch - 69.0) / 12.0) * 441);
         }
     }
 }

@@ -10,6 +10,10 @@ namespace HatoDSP
     {
         FilterType type = FilterType.LowPass;
 
+        float CutoffPitch = 69;  // 69[semi], == 441Hz
+        float Resonance = 6;  // Q value
+        float FilterEnvelopeAmount = 36;  // [semi]
+
         Cell waveCell
         {
             get { return base.InputCells[0]; }
@@ -96,10 +100,10 @@ namespace HatoDSP
 
             if (cutoffCell == null)
             {
-                float cutoff = 0;
+                float w0 = (float)(2 * Math.PI * SlowMath.PitchToFreq(CutoffPitch) / lenv.SamplingRate);
+                if (w0 > (float)Math.PI) w0 = (float)Math.PI;
 
-                float w0 = (float)(2 * Math.PI * (800 + cutoff * 5000) / lenv.SamplingRate);
-                float Q = 6.0f;
+                float Q = Resonance;
 
                 float[] ab = new float[6];
 
@@ -133,11 +137,12 @@ namespace HatoDSP
 
                 float w0 = 0;
 
-                float Q = 6.0f;
+                float Q = Resonance;
 
                 for (int i = 0; i < count; i++)
                 {
-                    w0 = (float)(2 * Math.PI * (800 + cutoff[i] * 5000) / lenv.SamplingRate);
+                    w0 = (float)(2 * Math.PI * SlowMath.PitchToFreq(CutoffPitch + cutoff[i] * FilterEnvelopeAmount) / lenv.SamplingRate);
+                    if (w0 > (float)Math.PI) w0 = (float)Math.PI;
 
                     FilterDesigner.Biquad(
                         type, w0, Q, 0.5f,
