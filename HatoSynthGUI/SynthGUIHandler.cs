@@ -202,18 +202,41 @@ namespace HatoSynthGUI
             CellDetailContainer.Controls.Add(new Label() { Text = preset.Name });
             CellDetailContainer.Controls.Add(new Label() { Text = "" });
 
-            CellParameterInfo[] paramsList = (new CellTree(preset.Name, preset.ModuleName)).Generate().ParamsList;  // !?!?!?!?
+            CellParameterInfo[] paramsList = (new CellTree(preset.Name, preset.ModuleName)).Generate().ParamsList;  // !?!?!?!? TODO: ParamsListをCellTreeに追加？
 
-            for (int i = 0; i < paramsList.Length; i++)
+            if (paramsList.Length == preset.Ctrl.Length)
             {
-                CellParameterInfo p = paramsList[i];
+                for (int i = 0; i < paramsList.Length; i++)
+                {
+                    CellParameterInfo p = paramsList[i];
 
-                CellDetailContainer.Controls.Add(new Label() { Text = p.Name });
+                    CellDetailContainer.Controls.Add(new Label() { Text = p.Name });
 
-                TextBox tbox = new TextBox() { Text = preset.Ctrl[i].ToString() };
-                tbox.Name = "" + i;
-                tbox.TextChanged += cellParamsTextBox_TextChanged;
-                CellDetailContainer.Controls.Add(tbox);
+                    TextBox tbox = new TextBox() { Text = preset.Ctrl[i].ToString() };
+                    tbox.Name = "" + i;
+                    tbox.TextChanged += cellParamsTextBox_TextChanged;
+                    CellDetailContainer.Controls.Add(tbox);
+                }
+            }
+            else
+            {
+                MessageBox.Show("プリセットが読み込めませんでした。");
+
+                // ここで正常なpresetの生成*************************************
+                preset.Ctrl = new float[paramsList.Length];
+
+                for (int i = 0; i < paramsList.Length; i++)
+                {
+                    CellParameterInfo p = paramsList[i];
+
+                    CellDetailContainer.Controls.Add(new Label() { Text = p.Name });
+
+                    TextBox tbox = new TextBox() { Text = paramsList[i].DefaultValue.ToString() };
+                    preset.Ctrl[i] = paramsList[i].DefaultValue;  // 正常なプリセットの生成
+                    tbox.Name = "" + i;
+                    tbox.TextChanged += cellParamsTextBox_TextChanged;
+                    CellDetailContainer.Controls.Add(tbox);
+                }
             }
         }
 

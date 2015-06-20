@@ -13,7 +13,8 @@ namespace HatoDSP
         float CutoffPitch = 69;  // 69[semi], == 441Hz
         float Resonance = 6;  // Q value
         float FilterEnvelopeAmount = 36;  // [semi]
-
+        int Slope = 2;  // フィルタの直列接続数[個]。-6*slope/oct の減衰（うろ覚え）
+        
         Cell waveCell
         {
             get { return base.InputCells[0]; }
@@ -34,18 +35,17 @@ namespace HatoDSP
 
         IIRFilter[] filt;
 
-        int slope = 2;
-
         public BiquadFilter()
         {
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            if (ctrl.Length >= 1)
-            {
-                type = (FilterType)(ctrl[0].Value + 0.5);
-            }
+            if (ctrl.Length >= 1) { type = (FilterType)(ctrl[0].Value + 0.5); }
+            if (ctrl.Length >= 2) { CutoffPitch = ctrl[1].Value; }
+            if (ctrl.Length >= 3) { Resonance = ctrl[2].Value; }
+            if (ctrl.Length >= 4) { FilterEnvelopeAmount = ctrl[3].Value; }
+            if (ctrl.Length >= 5) { Slope = Math.Max(1, Math.Min(6, (int)(ctrl[4].Value + 0.5))); }
         }
 
         public override CellParameterInfo[] ParamsList
@@ -55,7 +55,11 @@ namespace HatoDSP
                 return new CellParameterInfo[]{
                     new CellParameterInfo(
                         "Filter Type", false, 0, (float)(FilterType.Count - 1), (float)FilterType.LowPass,
-                        x => ((FilterType)(x + 0.5)).ToString())
+                        x => ((FilterType)(x + 0.5)).ToString()),
+                    new CellParameterInfo("Cutoff", true, 0, 127, 69, x => SlowMath.PitchToFreq(x) + "Hz"),
+                    new CellParameterInfo("Resonance", true, 0.1f, 10, 6, CellParameterInfo.IdLabel),
+                    new CellParameterInfo("Env Amt", true, 0, 127, 36, x => x + "semitones"),
+                    new CellParameterInfo("Slope", true, 1, 6, 2, x => "-" + (x*6) + "dB/oct")
                 };
             }
         }
@@ -96,7 +100,10 @@ namespace HatoDSP
                 cutoffCell.Take(count, lenv3);  // バッファにデータを格納
             }
 
-            filt = filt ?? (new int[slope]).Select(x => new IIRFilter(waveCell.ChannelCount, 1, 0, 0, 0, 0, 0)).ToArray();
+            if (filt == null || filt.Length != Slope)
+            {
+                filt = (new int[Slope]).Select(x => new IIRFilter(waveCell.ChannelCount, 1, 0, 0, 0, 0, 0)).ToArray();
+            }
 
             if (cutoffCell == null)
             {
