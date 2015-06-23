@@ -11,12 +11,14 @@ namespace HatoDSP
         // Cell[] base.InputCells;
 
         float phaseShift = 0.0f;
+        float phaseModAmountRadian = 1.0f;
 
         public override CellParameterInfo[] ParamsList
         {
             get {
                 return new CellParameterInfo[] {
-                    new CellParameterInfo("phase shift", true, 0.0f, 2.0f*(float)Math.PI, 0.0f, CellParameterInfo.IdLabel)
+                    new CellParameterInfo("phase shift", true, 0.0f, 2.0f*(float)Math.PI, 0.0f, CellParameterInfo.IdLabel),
+                    new CellParameterInfo("amount", true, 0.0f, 2.0f*(float)Math.PI, 1.0f, CellParameterInfo.IdLabel)
                 };
             }
         }
@@ -26,6 +28,10 @@ namespace HatoDSP
             if (ctrl.Length >= 1)
             {
                 phaseShift = ctrl[0].Value;
+            }
+            if (ctrl.Length >= 2)
+            {
+                phaseModAmountRadian = ctrl[1].Value;
             }
         }
 
@@ -53,10 +59,9 @@ namespace HatoDSP
                     phaseSignal = Signal.Add(lenv.Locals["phase"], phaseSignal);
                 }
 
-                if (phaseShift != 0.0f)
-                {
-                    phaseSignal = Signal.Add(phaseSignal, new ConstantSignal(phaseShift, count));
-                }
+                phaseSignal = Signal.Multiply(phaseSignal, new ConstantSignal(phaseShift, count));
+
+                phaseSignal = Signal.Add(phaseSignal, new ConstantSignal(phaseShift, count));
 
                 var lenv3 = lenv.Clone();
                 lenv3.Locals["phase"] = phaseSignal;

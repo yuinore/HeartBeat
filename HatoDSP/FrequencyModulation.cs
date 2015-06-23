@@ -11,13 +11,15 @@ namespace HatoDSP
         // Cell[] base.InputCells;
 
         float freqShift = 0.0f;
+        float freqModAmountCent = 1.0f;
 
         public override CellParameterInfo[] ParamsList
         {
             get
             {
                 return new CellParameterInfo[] {
-                    new CellParameterInfo("pitch shift", true, 0.0f, 2.0f*(float)Math.PI, 0.0f, CellParameterInfo.IdLabel)
+                    new CellParameterInfo("pitch shift", true, 0.0f, 2.0f*(float)Math.PI, 0.0f, CellParameterInfo.IdLabel),
+                    new CellParameterInfo("amount", true, 0.0f, 12.0f, 1.0f, CellParameterInfo.IdLabel)
                 };
             }
         }
@@ -27,6 +29,10 @@ namespace HatoDSP
             if (ctrl.Length >= 1)
             {
                 freqShift = ctrl[0].Value;
+            }
+            if (ctrl.Length >= 2)
+            {
+                freqModAmountCent = ctrl[1].Value;
             }
         }
 
@@ -49,12 +55,12 @@ namespace HatoDSP
                 // todo: ステレオ
                 Signal freqSignal = new ExactSignal(lenv2.Buffer[0], 1.0f, false);
 
-                freqSignal = Signal.Add(lenv.Pitch, freqSignal);
+                freqSignal = Signal.Multiply(freqSignal, new ConstantSignal(freqModAmountCent, count));
 
-                if (freqShift != 0.0f)
-                {
-                    freqSignal = Signal.Add(freqSignal, new ConstantSignal(freqShift, count));
-                }
+                freqSignal = Signal.AddRange(new Signal[] {
+                    freqSignal, 
+                    new ConstantSignal(freqShift, count),
+                    lenv.Pitch});
 
                 var lenv3 = lenv.Clone();
                 lenv3.Pitch = freqSignal;

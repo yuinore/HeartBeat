@@ -14,6 +14,8 @@ namespace HatoDSP
         float Resonance = 6;  // Q value
         float FilterEnvelopeAmount = 36;  // [semi]
         int Slope = 2;  // フィルタの直列接続数[個]。-6*slope/oct の減衰（うろ覚え）
+
+        static readonly int MaxFilterSlope = 16;
         
         Cell waveCell
         {
@@ -45,7 +47,7 @@ namespace HatoDSP
             if (ctrl.Length >= 2) { CutoffPitch = ctrl[1].Value; }
             if (ctrl.Length >= 3) { Resonance = ctrl[2].Value; }
             if (ctrl.Length >= 4) { FilterEnvelopeAmount = ctrl[3].Value; }
-            if (ctrl.Length >= 5) { Slope = Math.Max(1, Math.Min(6, (int)(ctrl[4].Value + 0.5))); }
+            if (ctrl.Length >= 5) { Slope = Math.Max(1, Math.Min(MaxFilterSlope, (int)(ctrl[4].Value + 0.5))); }
         }
 
         public override CellParameterInfo[] ParamsList
