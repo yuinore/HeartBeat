@@ -223,7 +223,8 @@ namespace HatoSynthGUI
                 MessageBox.Show("プリセットが読み込めませんでした。");
 
                 // ここで正常なpresetの生成*************************************
-                preset.Ctrl = new float[paramsList.Length];
+                var oldCtrl = preset.Ctrl;
+                preset.Ctrl = new float[paramsList.Length];  // 長さを正しいコントロールの数に合わせる。
 
                 for (int i = 0; i < paramsList.Length; i++)
                 {
@@ -231,8 +232,16 @@ namespace HatoSynthGUI
 
                     CellDetailContainer.Controls.Add(new Label() { Text = p.Name });
 
-                    TextBox tbox = new TextBox() { Text = paramsList[i].DefaultValue.ToString() };
-                    preset.Ctrl[i] = paramsList[i].DefaultValue;  // 正常なプリセットの生成
+                    if (i < oldCtrl.Length)
+                    {
+                        preset.Ctrl[i] = oldCtrl[i]; // 既存のパラメータ値の引き継ぎ
+                    }
+                    else
+                    {
+                        preset.Ctrl[i] = paramsList[i].DefaultValue;  // 正常なプリセットの生成
+                    }
+
+                    TextBox tbox = new TextBox() { Text = preset.Ctrl[i].ToString() };
                     tbox.Name = "" + i;
                     tbox.TextChanged += cellParamsTextBox_TextChanged;
                     CellDetailContainer.Controls.Add(tbox);
