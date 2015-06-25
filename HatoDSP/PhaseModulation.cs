@@ -59,7 +59,7 @@ namespace HatoDSP
                     phaseSignal = Signal.Add(lenv.Locals["phase"], phaseSignal);
                 }
 
-                phaseSignal = Signal.Multiply(phaseSignal, new ConstantSignal(phaseShift, count));
+                phaseSignal = Signal.Multiply(phaseSignal, new ConstantSignal(phaseModAmountRadian, count));
 
                 phaseSignal = Signal.Add(phaseSignal, new ConstantSignal(phaseShift, count));
 

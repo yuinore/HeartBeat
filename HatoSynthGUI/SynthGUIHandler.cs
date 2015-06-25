@@ -173,15 +173,20 @@ namespace HatoSynthGUI
             if (Single.TryParse(((TextBox)sender).Text, out val))
             {
                 preset.Ctrl[paramIdx] = val;
+                CellDetailContainer.Controls[paramIdx + "_valuelabel"].Text = " = " + new CellTree("", preset.ModuleName).Generate().ParamsList[paramIdx].Label(val);
+                CellDetailContainer.Controls[paramIdx + "_valuelabel"].ForeColor = SystemColors.ControlText;
+            }
+            else
+            {
+                // 数値に変換できない
+                CellDetailContainer.Controls[paramIdx + "_valuelabel"].Text = " = " + "???";
+                CellDetailContainer.Controls[paramIdx + "_valuelabel"].ForeColor = Color.Red;
             }
         }
 
         private void ClearDetailContainer()
         {
-            while (CellDetailContainer.Controls.Count >= 1)
-            {
-                CellDetailContainer.Controls.RemoveAt(CellDetailContainer.Controls.Count - 1);  // 逆順の方が速いかな？（未検証）
-            }
+            CellDetailContainer.Controls.Clear();
         }
 
         private void pictureBox1_DoubleClick(object sender, EventArgs e)
@@ -204,6 +209,31 @@ namespace HatoSynthGUI
 
             CellParameterInfo[] paramsList = (new CellTree(preset.Name, preset.ModuleName)).Generate().ParamsList;  // !?!?!?!? TODO: ParamsListをCellTreeに追加？
 
+            // FIXME: Don't Repeat Yourself!!!!!!!!!!
+
+            // **************** presetのパラメータ個数が異なっていた場合 *************************
+            if (paramsList.Length != preset.Ctrl.Length)
+            {
+                MessageBox.Show("プリセットが読み込めませんでした。");
+
+                // ここで正常なpresetの生成
+                var oldCtrl = preset.Ctrl;
+                preset.Ctrl = new float[paramsList.Length];  // 長さを正しいコントロールの数に合わせる。
+
+                for (int i = 0; i < paramsList.Length; i++)
+                {
+                    if (i < oldCtrl.Length)
+                    {
+                        preset.Ctrl[i] = oldCtrl[i]; // 既存のパラメータ値の引き継ぎ
+                    }
+                    else
+                    {
+                        preset.Ctrl[i] = paramsList[i].DefaultValue;  // 正常なプリセットの生成
+                    }
+                }
+            }
+            // *****************************************
+
             if (paramsList.Length == preset.Ctrl.Length)
             {
                 for (int i = 0; i < paramsList.Length; i++)
@@ -216,35 +246,9 @@ namespace HatoSynthGUI
                     tbox.Name = "" + i;
                     tbox.TextChanged += cellParamsTextBox_TextChanged;
                     CellDetailContainer.Controls.Add(tbox);
-                }
-            }
-            else
-            {
-                MessageBox.Show("プリセットが読み込めませんでした。");
 
-                // ここで正常なpresetの生成*************************************
-                var oldCtrl = preset.Ctrl;
-                preset.Ctrl = new float[paramsList.Length];  // 長さを正しいコントロールの数に合わせる。
-
-                for (int i = 0; i < paramsList.Length; i++)
-                {
-                    CellParameterInfo p = paramsList[i];
-
-                    CellDetailContainer.Controls.Add(new Label() { Text = p.Name });
-
-                    if (i < oldCtrl.Length)
-                    {
-                        preset.Ctrl[i] = oldCtrl[i]; // 既存のパラメータ値の引き継ぎ
-                    }
-                    else
-                    {
-                        preset.Ctrl[i] = paramsList[i].DefaultValue;  // 正常なプリセットの生成
-                    }
-
-                    TextBox tbox = new TextBox() { Text = preset.Ctrl[i].ToString() };
-                    tbox.Name = "" + i;
-                    tbox.TextChanged += cellParamsTextBox_TextChanged;
-                    CellDetailContainer.Controls.Add(tbox);
+                    string labeltext = " = " + new CellTree("", preset.ModuleName).Generate().ParamsList[i].Label(preset.Ctrl[i]);
+                    CellDetailContainer.Controls.Add(new Label() { Name = i + "_valuelabel", Text = labeltext });
                 }
             }
         }
