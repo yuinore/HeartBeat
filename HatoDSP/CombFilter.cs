@@ -75,14 +75,14 @@ namespace HatoDSP
             }
 
             LocalEnvironment lenv2 = lenv.Clone();
-            float[][] input = jInput.GetReference(outChCnt, count);
+            float[][] input = jInput.GetReference(child.ChannelCount, count);
             lenv2.Buffer = input;
             child.Take(count, lenv2);
 
             float[][] sidechain = null;
             if (child2 != null)
             {
-                sidechain = jSidechain.GetReference(outChCnt, count);
+                sidechain = jSidechain.GetReference(child2.ChannelCount, count);
                 lenv2.Buffer = sidechain;
                 child2.Take(count, lenv2);
             }
@@ -94,7 +94,8 @@ namespace HatoDSP
                     delaySamples = delayTimeMs * lenv.SamplingRate * 1e-3f;
                     if (sidechain != null)
                     {
-                        delaySamples += sidechain[ch][i] * 100;
+                        int sideChannel = ch % child2.ChannelCount;
+                        delaySamples += sidechain[sideChannel][i] * 100;
                     }
                     if (delaySamples > maxDelaySamples - 1) delaySamples = maxDelaySamples - 1;
                     if (delaySamples < 0) delaySamples = 0;

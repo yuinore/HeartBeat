@@ -17,8 +17,6 @@ namespace HatoDSP
             }
         }
 
-        CellParameterValue[] ctrl;
-
         double time = 0;  // 累積時間
         int n = 0;  // 累積サンプル数
 
@@ -26,6 +24,7 @@ namespace HatoDSP
         float D = 0.5f;
         float S = 0.1f;
         float R = 0.01f;
+        float amp = 1.0f;
 
         float lastgain = 0.0f;
         double releasedAt = 0.0f;
@@ -49,14 +48,24 @@ namespace HatoDSP
                     new CellParameterInfo("Attack", true, 0, 1, 0.01f, x => x + "s"),
                     new CellParameterInfo("Decay", true, 0, 1, 0.5f, x => x + "s"),
                     new CellParameterInfo("Sustain", true, 0, 1, 0.1f, x => x + "s"),
-                    new CellParameterInfo("Release", true, 0, 1, 0.01f, x => x + "s")
+                    new CellParameterInfo("Release", true, 0, 1, 0.01f, x => x + "s"),
+                    new CellParameterInfo("Amp", true, 0, 1, 1.0f, CellParameterInfo.PercentLabel)
                 };
             }
         }
 
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
-            this.ctrl = ctrl;
+            // ctrlの解釈
+            // A, D, S, R
+            if (ctrl != null)
+            {
+                if (ctrl.Length >= 1) { A = ctrl[0].Value; }
+                if (ctrl.Length >= 2) { D = ctrl[1].Value; }
+                if (ctrl.Length >= 3) { S = ctrl[2].Value; }
+                if (ctrl.Length >= 4) { R = ctrl[3].Value; }
+                if (ctrl.Length >= 5) { amp = ctrl[4].Value; }
+            }
         }
 
         public override int ChannelCount
@@ -77,16 +86,6 @@ namespace HatoDSP
         public override void Take(int count, LocalEnvironment lenv)
         {
             if (releaseFinished) return;
-
-            // ctrlの解釈
-            // A, D, S, R
-            if (ctrl != null)
-            {
-                if (ctrl.Length >= 1) { A = ctrl[0].Value; }
-                if (ctrl.Length >= 2) { D = ctrl[1].Value; }
-                if (ctrl.Length >= 3) { S = ctrl[2].Value; }
-                if (ctrl.Length >= 4) { R = ctrl[3].Value; }
-            }
 
             float[] gate = lenv.Gate is ConstantSignal ? null : lenv.Gate.ToArray();
             bool gate_lt_05 = lenv.Gate is ConstantSignal && ((ConstantSignal)lenv.Gate).val > 0.5;
@@ -151,7 +150,7 @@ namespace HatoDSP
                 {
                     for (int ch = 0; ch < carrierChCnt; ch++)  // どっちの順序が速い？？
                     {
-                        lenv.Buffer[ch][i] += buf2[ch][i] * envelope[i];  // 結果を格納
+                        lenv.Buffer[ch][i] += buf2[ch][i] * envelope[i] * amp;  // 結果を格納
                     }
                 }
             }
@@ -159,7 +158,7 @@ namespace HatoDSP
             {
                 for (int i = 0; i < count; i++)
                 {
-                    lenv.Buffer[0][i] += envelope[i];  // 結果を格納
+                    lenv.Buffer[0][i] += envelope[i] * amp;  // 結果を格納
                 }
             }
         }

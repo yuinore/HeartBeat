@@ -54,6 +54,9 @@ namespace HatoDSP
         }
 
         public static Func<float, string> IdLabel = x => Math.Round(x * 100) * 0.01 + "";
+
         public static Func<float, string> PercentLabel = x => Math.Round(x * 10000) * 0.01 + "%";
+
+        public static Func<string, Func<float, string>> LabelWithUnit = (unit => (val => val + unit));
     }
 }

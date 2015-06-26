@@ -362,7 +362,7 @@ namespace HatoPlayer
 
                     float[][] buf = new float[2][] { new float[count], new float[count] };
 
-                    // シンセの再生
+                    #region シンセの再生
                     float amp = (float)Math.Pow(10, SynthVolumeInDb * 0.05);
 
                     foreach (var kvpair in MixchToSynth)
@@ -385,8 +385,9 @@ namespace HatoPlayer
                             throw new Exception("フワーッ！");
                         }
                     }
+                    #endregion
 
-                    // wavの再生
+                    #region wavの再生
                     Sound[] slist;
                     lock (PlayingSoundList)
                     {
@@ -404,11 +405,12 @@ namespace HatoPlayer
                         {
                             int j0 = (int)jd;
                             if (j0 < 0) continue;
+                            if (j0 >= snd.BufSampleCount - 1) continue;  // 多分冗長なはず
 
                             float t = (float)(jd - j0);
 
-                            buf[0][i] += ((1 - t) * snd.fbuf[0 % chCnt][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
-                            buf[1][i] += ((1 - t) * snd.fbuf[1 % chCnt][j0] + t * snd.fbuf[1][j0 + 1]) * snd.amp;
+                            buf[0][i] += ((1 - t) * snd.fbuf[0 % chCnt][j0] + t * snd.fbuf[0 % chCnt][j0 + 1]) * snd.amp;
+                            buf[1][i] += ((1 - t) * snd.fbuf[1 % chCnt][j0] + t * snd.fbuf[1 % chCnt][j0 + 1]) * snd.amp;
 
                             jd += snd.SamplingRate / 44100.0;
                         }
@@ -423,6 +425,7 @@ namespace HatoPlayer
                             }
                         }
                     }
+                    #endregion
 
                     lock (bufqueueL)
                     {
