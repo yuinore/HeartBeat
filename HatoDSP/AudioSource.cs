@@ -10,6 +10,11 @@ namespace HatoDSP
     {
         readonly string varName;
 
+        public AudioSource()  // 単体テスト用
+        {
+            varName = "";
+        }
+
         public AudioSource(string sourcename)
         {
             varName = sourcename;
@@ -47,7 +52,7 @@ namespace HatoDSP
 
             for (int i = 0; i < count; i++)
             {
-                lenv.Buffer[0][i] = buf[i];
+                lenv.Buffer[0][i] += buf[i];
             }
         }
     }
