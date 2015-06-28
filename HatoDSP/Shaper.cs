@@ -8,7 +8,15 @@ namespace HatoDSP
 {
     public class Shaper : SingleInputCell
     {
+        public enum ShaperType
+        {
+            HardClip = 0,
+            Wrap,
+            Count
+        }
+
         float inv_drive = 0.01f;
+        ShaperType type = ShaperType.HardClip;
         JovialBuffer jBuf = new JovialBuffer();
 
         Cell child
@@ -21,7 +29,8 @@ namespace HatoDSP
             get
             {
                 return new CellParameterInfo[] {
-                    new CellParameterInfo("Drive", true, 0, 1000, 100, CellParameterInfo.IdLabel)
+                    new CellParameterInfo("Drive", true, 0, 1000, 100, CellParameterInfo.IdLabel),
+                    new CellParameterInfo("Wrap", true, 0, (int)ShaperType.Count-1, 0, x => ((ShaperType)(int)x).ToString())
                 };
             }
         }
@@ -29,6 +38,7 @@ namespace HatoDSP
         public override void AssignControllers(CellParameterValue[] ctrl)
         {
             if (ctrl.Length >= 1) { inv_drive = 1f / ctrl[0].Value; }
+            if (ctrl.Length >= 2) { type = (ShaperType)(ctrl[1].Value + 0.5); }
         }
 
         // メモ：入力を自動で加算し、1in-1out演算ができるようなアレ
@@ -57,8 +67,18 @@ namespace HatoDSP
                 {
                     float x = tempbuf[ch][i];
 
-                    if (x > inv_drive) x = inv_drive;  // Hard Clip
-                    if (x < -inv_drive) x = -inv_drive;
+                    switch (type)
+                    {
+                        case ShaperType.HardClip:
+                            if (x > inv_drive) x = inv_drive;  // Hard Clip
+                            if (x < -inv_drive) x = -inv_drive;
+                            break;
+                        case ShaperType.Wrap:
+                            x = x - (float)Math.Round(x / (2 * inv_drive)) * (2 * inv_drive);
+                            break;
+                        default:
+                            break;
+                    }
 
                     lenv.Buffer[ch][i] += x;
                 }
