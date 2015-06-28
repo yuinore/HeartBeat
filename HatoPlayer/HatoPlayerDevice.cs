@@ -26,7 +26,7 @@ namespace HatoPlayer
         /// <summary>
         /// 音声を再生するデバイス。DirectSoundとASIOは同時に使用できない（当たり前）
         /// </summary>
-        internal PlaybackDeviceType PlaybackDevice = PlaybackDeviceType.ASIO;
+        internal PlaybackDeviceType PlaybackDevice = PlaybackDeviceType.DirectSound;
 
         /// <summary>
         /// シンセサイザーの音量。キー音とそれ以外で分けられたら良いのですが。

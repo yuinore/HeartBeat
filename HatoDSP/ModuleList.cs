@@ -32,7 +32,7 @@ namespace HatoDSP
             new ModuleInfo(3, "ADSR", () => new ADSR()),
             new ModuleInfo(4, "Rainbow", () => new Rainbow()),
             new ModuleInfo(5, "Arithmetic", () => new Arithmetic()),
-            new ModuleInfo(6, "Dynamics", () => new Dynamics()),
+            new ModuleInfo(6, "Dynamics", () => new Shaper()),
             new ModuleInfo(7, "Comb Filter", () => new CombFilter()),
             new ModuleInfo(8, "Chorus", () => new Chorus()),
             new ModuleInfo(9, "Phase Mod", () => new PhaseModulation()),

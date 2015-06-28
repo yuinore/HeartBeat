@@ -52,7 +52,7 @@
     <Compile Include="Chorus.cs" />
     <Compile Include="CombFilter.cs" />
     <Compile Include="ConstantCell.cs" />
-    <Compile Include="Dynamics.cs" />
+    <Compile Include="Shaper.cs" />
     <Compile Include="FilterDesigner.cs" />
     <None Include="ButterworthFilterCell.cs" />
     <Compile Include="Cell.cs" />
