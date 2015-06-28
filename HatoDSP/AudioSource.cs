@@ -8,16 +8,16 @@ namespace HatoDSP
 {
     class AudioSource : InputThroughCell
     {
-        readonly string varName;
+        readonly string varNameLower;
 
         public AudioSource()  // 単体テスト用
         {
-            varName = "";
+            varNameLower = "";
         }
 
         public AudioSource(string sourcename)
         {
-            varName = sourcename;
+            varNameLower = sourcename.ToLower();
         }
 
         public override int ChannelCountInternal
@@ -43,7 +43,27 @@ namespace HatoDSP
             Signal sig;
 
             // TODO: varName が pitch などであった場合の処理
-            if (lenv.Locals.TryGetValue(varName, out sig) == false)
+            if (varNameLower == "pitch")
+            {
+                sig = lenv.Pitch;
+            }
+            else if (varNameLower == "gate")
+            {
+                sig = lenv.Gate;
+            }
+            else if (varNameLower == "freq")
+            {
+                sig = lenv.Freq;
+            }
+            else if (varNameLower == "samplingrate")
+            {
+                sig = new ConstantSignal(lenv.SamplingRate, count);
+            }
+            else if (lenv.Locals.TryGetValue(varNameLower, out sig))
+            {
+                // sig is set.
+            }
+            else
             {
                 sig = new ConstantSignal(0, count);
             }
