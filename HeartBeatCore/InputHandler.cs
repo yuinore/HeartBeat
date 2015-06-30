@@ -71,9 +71,16 @@ namespace HeartBeatCore
 
             // midi入力の初期化
             if(InputDevice.DeviceCount >= 9) {
-                midiInDev = new InputDevice(8);  // Windowsからmidiデバイスを開く
-                midiInDev.ChannelMessageReceived += midiInDev_ChannelMessageReceived;  // コールバック関数の指定
-                midiInDev.StartRecording();  // 入力待機の開始
+                try
+                {
+                    // exception here
+                    midiInDev = new InputDevice(8);  // Windowsからmidiデバイスを開く
+                    midiInDev.ChannelMessageReceived += midiInDev_ChannelMessageReceived;  // コールバック関数の指定
+                    midiInDev.StartRecording();  // 入力待機の開始
+                }
+                catch
+                {
+                }
             }
         }
 
