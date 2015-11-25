@@ -405,8 +405,8 @@ namespace HatoPlayer
 
                             float t = (float)(jd - j0);
 
-                            buf[0][i] += ((1 - t) * snd.fbuf[0 % chCnt][j0] + t * snd.fbuf[0][j0 + 1]) * snd.amp;
-                            buf[1][i] += ((1 - t) * snd.fbuf[1 % chCnt][j0] + t * snd.fbuf[1][j0 + 1]) * snd.amp;
+                            buf[0][i] += ((1 - t) * snd.fbuf[0 % chCnt][j0] + t * snd.fbuf[0 % chCnt][j0 + 1]) * snd.amp;
+                            buf[1][i] += ((1 - t) * snd.fbuf[1 % chCnt][j0] + t * snd.fbuf[1 % chCnt][j0 + 1]) * snd.amp;
 
                             jd += snd.SamplingRate / 44100.0;
                         }
