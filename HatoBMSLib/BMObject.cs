@@ -194,16 +194,13 @@ namespace HatoBMSLib
             }
         }
 
-        /*public override string ToString()
+        public override string ToString()
         {
-            long n2 = Beat.n;
-            long d2 = Beat.d;
-            while (d2 < 16)
-            {
-                n2 *= 2;
-                d2 *= 2;
-            }
-            return "#" + (n2 / d2).ToString("D3") + "\t" + (n2 % d2) + "/" + d2 + "\t#WAV" + BMSParser.IntToHex36Upper(MixerChannel);
-        }*/
+            int integPart = (int)Math.Floor((double)Measure);
+
+            Rational decimalPart = Measure - integPart;
+
+            return "#" + integPart.ToString("D3") + " " + this.BMSChannel.ToString("X2") + "\t" + decimalPart.ToString() + "\t#WAV" + BMConvert.ToBase36(Wavid);
+        }
     }
 }

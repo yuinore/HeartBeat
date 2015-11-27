@@ -15,6 +15,7 @@ namespace HatoBMSLib
     public class BMSStruct
     {
         public string DirectoryName;
+        public string BMSFilePath;
 
         public readonly bool EditorMode = false;  // BMSの読み込み前に設定されなければならないので、コンストラクタから設定しなければなりません。
 
@@ -158,6 +159,7 @@ namespace HatoBMSLib
         public BMSStruct(string path)
         {
             DirectoryName = Path.GetDirectoryName(path);
+            BMSFilePath = path;
             transp = new Transport(ExceptionHandler);
 
             #region BMSファイルのパース
