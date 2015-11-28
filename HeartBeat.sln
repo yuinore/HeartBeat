@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeat", "HeartBeat\HeartBeat.csproj", "{9466681B-25FF-4A7D-8A9A-D119A6443D7C}"
 EndProject
@@ -46,7 +46,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HatoSynthGUI", "HatoSynthGU
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnzuBMSDiff", "AnzuBMSDiff\AnzuBMSDiff.csproj", "{FADB4062-D722-4808-85EB-1F6AA25BA922}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartChartGenerator", "SmartChartGenerator\SmartChartGenerator.csproj", "{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}"
+EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -303,11 +308,24 @@ Global
 		{FADB4062-D722-4808-85EB-1F6AA25BA922}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{FADB4062-D722-4808-85EB-1F6AA25BA922}.Release|x64.ActiveCfg = Release|Any CPU
 		{FADB4062-D722-4808-85EB-1F6AA25BA922}.Release|x86.ActiveCfg = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|x64.Build.0 = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Debug|x86.Build.0 = Debug|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|x64.ActiveCfg = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|x64.Build.0 = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|x86.ActiveCfg = Release|Any CPU
+		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
