@@ -52,6 +52,7 @@
     <Compile Include="BitPacker.cs" />
     <Compile Include="BitPackingDictionary.cs" />
     <Compile Include="BitUnpacker.cs" />
+    <Compile Include="CleverDictionary.cs" />
     <Compile Include="Complex.cs" />
     <Compile Include="DictionaryExtension.cs" />
     <Compile Include="DragDropHandler.cs" />

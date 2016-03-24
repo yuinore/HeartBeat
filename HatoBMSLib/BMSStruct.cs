@@ -243,7 +243,12 @@ namespace HatoBMSLib
                             else if (MatchBMPXX.Evaluate(out match))
                             {
                                 int wavid = BMConvert.FromBase36(match.Groups[1].Captures[0].Value);
-                                BitmapDefinitionList.Add(wavid, val);
+
+                                if (BitmapDefinitionList.ContainsKey(wavid))
+                                {
+                                    ExceptionHandler.ThrowFormatWarning("#BMP" + BMConvert.ToBase36(wavid) + "が再定義されています。");
+                                }
+                                BitmapDefinitionList[wavid] = val;
                             }
                             else if (MatchBPMXX.Evaluate(out match))
                             {
@@ -487,9 +492,10 @@ namespace HatoBMSLib
                 transp.AddDefaultTempo(BPM);
 
                 // 暗黙の副題
-                if(Title!=null && Subtitle == null){
+                if (Title != null && Subtitle == null)
+                {
                     // http://hitkey.nekokan.dyndns.info/cmdsJP.htm#TITLE-IMPLICIT-SUBTITLE
-                    var ImplicitSubtitleMatch = Regex.Match(Title, @"(.*)\s*(\-.+\-|～.+～|\(.+\)|\[.+\]|\<.+\>|" + "\"" + ".+" + "\"" + ")", RegexOptions.Compiled);
+                    var ImplicitSubtitleMatch = Regex.Match(Title, @"^(.*?)\s*(\-.+\-|～.+～|\(.+\)|\[.+\]|\<.+\>|"".+"")\z", RegexOptions.Compiled);
                     // Subtitleが空文字で定義されていた場合はどうするべきか？
 
                     if (ImplicitSubtitleMatch.Success)
@@ -500,7 +506,7 @@ namespace HatoBMSLib
                 }
                 if (Artist != null && Subartist == null)
                 {
-                    var ImplicitSubartistMatch = Regex.Match(Artist, @"(.*)\s*(\-.+\-|～.+～|\(.+\)|\[.+\]|\<.+\>|" + "\"" + ".+" + "\"" + ")", RegexOptions.Compiled);
+                    var ImplicitSubartistMatch = Regex.Match(Artist, @"^(.*?)\s*(\-.+\-|～.+～|\(.+\)|\[.+\]|\<.+\>|"".+"")\z", RegexOptions.Compiled);
                     if (Subartist == null && ImplicitSubartistMatch.Success)
                     {
                         Subartist = ImplicitSubartistMatch.Groups[2].Captures[0].Value;

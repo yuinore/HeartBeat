@@ -124,7 +124,7 @@ namespace AnzuBMSDiff
 
                 BMSStruct b2 = new BMSStruct(listBox1.Items[i].ToString());
 
-                errmsg += BMSDiffCheck.Diff(b1, b2, out errCnt);  // 若干無駄な計算を含む気がしますがオーダーが変わらないので無視します
+                errmsg += (new BMSDiffCheck()).Diff(b1, b2, out errCnt);  // 若干無駄な計算を含む気がしますがオーダーが変わらないので無視します
 
                 errTotalCnt += errCnt;
             }

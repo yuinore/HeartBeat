@@ -52,7 +52,7 @@ namespace HatoBMSLib
     /// BMSにおけるオブジェを表します。これは、BMSに配置された、２桁の３６進数です。
     /// ロングノートは始点と終点を個別に持つとは言ってない。
     /// </summary>
-    
+
     public class BMObject : IComparable<BMObject>
     {
         public BMObject(int bmsch, int wavid, Rational measure)
@@ -200,7 +200,8 @@ namespace HatoBMSLib
 
             Rational decimalPart = Measure - integPart;
 
-            return "#" + integPart.ToString("D3") + " " + this.BMSChannel.ToString("X2") + "\t" + decimalPart.ToString() + "\t#WAV" + BMConvert.ToBase36(Wavid);
+            return "#" + integPart.ToString("D3") + " " + BMConvert.ToBase36(this.BMSChannel) + "\t" + decimalPart.ToString()
+                + (IsGraphic() ? "\t#BMP" : "\t#WAV") + BMConvert.ToBase36(Wavid);
         }
     }
 }
