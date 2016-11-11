@@ -71,6 +71,7 @@ namespace HatoBMSLib
             else if (Math.Abs(measureToTempoChange[0] - tempo) >= 0.0001)
             {
                 // エラー
+                throw new Exception("ぽえ");
             }
         }
 
@@ -89,6 +90,8 @@ namespace HatoBMSLib
         {
             if (arranged) throw new InvalidOperationException("既にTransportの値が固定されています。新たにデータを追加する場合は、Arrangedをfalseに設定して下さい。");
 
+            // stopbeatsが拍数であることに注意
+            
             if (measureToStop.ContainsKey(measure))
             {
                 ExceptionHandler.ThrowFormatWarning("ストップシーケンスが複数回定義されています。");
@@ -289,6 +292,87 @@ namespace HatoBMSLib
             if (!arranged) throw new InvalidOperationException("先にArrangeTransport関数を呼び出して下さい。");
 
             return BeatToSeconds(MeasureToBeat(measure));
+        }
+
+        public void Export(out List<BMObject> objs, out SortedDictionary<int, double> BPMDefinitionList, out SortedDictionary<int, double> StopDefinitionList)
+        {
+            // 次の要素をBMSに書き出す
+            // measureToTempoChange
+            // measureToSignature
+            // measureToStop
+
+            const int BMSCH_TEMPO = 3;
+            const int BMSCH_EXTEMPO = 8;
+            const int BMSCH_SIGNATURE = 2;
+            const int BMSCH_STOP = 9;
+
+            int BPMDefinitionCursor = 1;  // 一番最初のデータが入っていない定義番号
+            int StopDefinitionCursor = 1;  // 一番最初のデータが入っていない定義番号
+
+            const double BPM_PRECISION = 0.00001;
+            const double STOP_PRECISION = 1.0;
+            
+            objs = new List<BMObject>();
+            BPMDefinitionList = new SortedDictionary<int, double>();
+            StopDefinitionList = new SortedDictionary<int, double>();
+
+            foreach (var ev in measureToTempoChange)
+            {
+                if (ev.Value == (long)ev.Value && 1 <= ev.Value && ev.Value <= 255)
+                {
+                    objs.Add(new BMObject(BMSCH_TEMPO, 0, BMConvert.FromBase36(String.Format("{0:X2}", ev.Value)), ev.Key));
+                }
+                else
+                {
+                    double roundedValue = Math.Round(ev.Value / BPM_PRECISION) * BPM_PRECISION;
+
+                    if (roundedValue <= 0) roundedValue = BPM_PRECISION;
+
+                    int defId = -1;
+
+                    if (BPMDefinitionList.ContainsValue(ev.Value))  // FIXME: 遅そう
+                    {
+                        defId = BPMDefinitionList.First(x => x.Value == ev.Value).Key;  // FIXME: 遅そう
+                    }
+                    else
+                    {
+                        BPMDefinitionList[BPMDefinitionCursor] = ev.Value;
+                        defId = BPMDefinitionCursor;
+
+                        BPMDefinitionCursor++;  // この数字、登場順ではなく数値順なのでは・・・？
+                    }
+
+                    objs.Add(new BMObject(BMSCH_EXTEMPO, 0, defId, ev.Key));
+                }
+            }
+
+            foreach (var ev in measureToSignature)
+            {
+                objs.Add(new BMObjectSignature(ev.Value, ev.Key));
+            }
+
+            foreach (var ev in measureToStop)
+            {
+                double roundedValue = Math.Round(ev.Value * 48.0 / STOP_PRECISION) * STOP_PRECISION;
+
+                if (roundedValue <= 0) roundedValue = STOP_PRECISION;
+
+                int defId = -1;
+
+                if (StopDefinitionList.ContainsValue(ev.Value))  // FIXME: 遅そう
+                {
+                    defId = StopDefinitionList.First(x => x.Value == ev.Value).Key;  // FIXME: 遅そう
+                }
+                else
+                {
+                    StopDefinitionList[StopDefinitionCursor] = ev.Value;
+                    defId = StopDefinitionCursor;
+
+                    StopDefinitionCursor++;
+                }
+
+                objs.Add(new BMObject(BMSCH_STOP, 0, defId, ev.Key));
+            }
         }
     }
 }

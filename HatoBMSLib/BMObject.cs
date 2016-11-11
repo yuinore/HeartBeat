@@ -55,9 +55,10 @@ namespace HatoBMSLib
 
     public class BMObject : IComparable<BMObject>
     {
-        public BMObject(int bmsch, int wavid, Rational measure)
+        public BMObject(int bmsch, int subCh, int wavid, Rational measure)
         {
             this.BMSChannel = bmsch;
+            this.BMSSubChannel = subCh;
             this.Wavid = wavid;
             this.Measure = measure;
         }
@@ -68,7 +69,8 @@ namespace HatoBMSLib
         }
 
         public int BMSChannel;  // in Hex (ex. Lane26(2PSC) is 38 )
-        public int Wavid;  // in 36th
+        public int BMSSubChannel;
+        public int Wavid;  // in 36th (特に、標準BPM定義においては16進文字列を36進として解釈した値が格納される。)
         public Rational Measure;  // 理論上の再生地点で、ゲーム再生には用いない
 
         public double Beat;
@@ -202,6 +204,25 @@ namespace HatoBMSLib
 
             return "#" + integPart.ToString("D3") + " " + BMConvert.ToBase36(this.BMSChannel) + "\t" + decimalPart.ToString()
                 + (IsGraphic() ? "\t#BMP" : "\t#WAV") + BMConvert.ToBase36(Wavid);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BMObject bm = obj as BMObject;
+
+            if (bm == null) return false;
+
+            return (
+                bm.BMSChannel == BMSChannel &&
+                bm.Wavid == Wavid &&
+                bm.Measure == Measure &&
+                ((bm.Terminal == null) == (Terminal == null)) &&
+                ((Terminal == null) ? true : bm.Terminal.Equals(Terminal)));
+        }
+
+        public override int GetHashCode()
+        {
+            return BMSChannel ^ Wavid ^ Measure.GetHashCode() ^ ((Terminal == null) ? 0 : Terminal.GetHashCode());
         }
     }
 }

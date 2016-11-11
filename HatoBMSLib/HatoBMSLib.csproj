@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="BMConvert.cs" />
     <Compile Include="BMObject.cs" />
+    <Compile Include="BMObjectSignature.cs" />
     <Compile Include="BMSExceptionHandler.cs" />
     <Compile Include="BMSFormatException.cs" />
     <Compile Include="BMSStruct.cs" />
