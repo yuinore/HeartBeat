@@ -161,26 +161,28 @@ namespace HatoBMSLib
             writer.WriteLine("#PLAYER " + Player);
             writer.WriteLine("#GENRE " + Genre);
             writer.WriteLine("#TITLE " + Title);
-            if (Subtitle != null) writer.WriteLine("#SUBTITLE " + Subtitle);
             writer.WriteLine("#ARTIST " + Artist);
-            if (Subartist != null) writer.WriteLine("#SUBARTIST " + Subartist);
             writer.WriteLine("#BPM " + BPM);
             writer.WriteLine("#PLAYLEVEL " + Playlevel);
             writer.WriteLine("#RANK " + Rank);
 
             writer.WriteLine();
 
+            if (Subtitle != null) writer.WriteLine("#SUBTITLE " + Subtitle);
+            if (Subartist != null) writer.WriteLine("#SUBARTIST " + Subartist);
             if (Stagefile != null) writer.WriteLine("#STAGEFILE " + Stagefile);
-            if (BackBMP != null) writer.WriteLine("#BACKBMP " + BackBMP);
             if (Banner != null) writer.WriteLine("#BANNER " + Banner);
+            if (BackBMP != null) writer.WriteLine("#BACKBMP " + BackBMP);
 
             writer.WriteLine();
 
             if (Difficulty != 0) writer.WriteLine("#DIFFICULTY " + Difficulty);
+            //if (ExRank != 0) writer.WriteLine("#EXRANK " + ExRank);
             if (Total != null) writer.WriteLine("#TOTAL " + Total);
+            if (Comment != null) writer.WriteLine("#COMMENT " + Comment);
             if (LNObj != null && LNObj != 0)
             {
-                writer.WriteLine("#LNOBJ " + LNObj);
+                writer.WriteLine("#LNOBJ " + BMConvert.ToBase36((int)LNObj));
             }else
             {
                 writer.WriteLine("#LNTYPE " + LNType);
@@ -221,12 +223,14 @@ namespace HatoBMSLib
 
                 foreach (var expansion in BMSHeader)
                 {
-                    writer.Write("#" + expansion.Key + (expansion.Value == "" ? "" : (" " + expansion.Value)));
+                    writer.WriteLine("#" + expansion.Key + (expansion.Value == "" ? "" : (" " + expansion.Value)));
+                    // ↑ここがWriteになってたのが原因か！！
                 }
 
                 foreach (var expansion in ExtensionFields)
                 {
-                    writer.Write(expansion);
+                    writer.WriteLine(expansion);
+                    // ↑ここがWriteになってたのが原因か！！
                 }
 
                 writer.WriteLine();
@@ -236,13 +240,20 @@ namespace HatoBMSLib
 
             writer.WriteLine("*---------------------- MAIN DATA FIELD");
             writer.WriteLine();
+            
+            var allobjs_wo_terminals = SoundBMObjects.Concat(GraphicBMObjects).Concat(OtherBMObjects).Concat(transpObjs).ToArray();
 
-            var allobjs = SoundBMObjects.Concat(GraphicBMObjects).Concat(OtherBMObjects).Concat(transpObjs);
+            var terminalObjs = allobjs_wo_terminals.Where(x => x.Terminal != null).Select(x => x.Terminal);
+
+            var allobjs = allobjs_wo_terminals.Concat(terminalObjs);
+
+            // 注意点: terminalObjsがちゃんとterminalになってるかどうかとかのチェックは頑張って
 
             // Tupleはすごい
+            // #XXX02: が #XXX01: よりも前に来るとか・・・まじですか・・・
             var groups = allobjs
                 .GroupBy(x => Tuple.Create((int)Math.Floor((double)x.Measure), x.BMSChannel, x.BMSSubChannel))
-                .OrderBy(x => x.Key)
+                .OrderBy(x => x.Key.Item2 == 2 ? Tuple.Create(x.Key.Item1, -2, x.Key.Item3) : x.Key)
                 .ToArray();
 
             Tuple<int, int, int> lastKey = new Tuple<int, int, int>(-1, -1, -1);

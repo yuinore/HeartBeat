@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,12 +30,9 @@ namespace Simamu
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
-            var bms2 = new BMSStruct(textBox_mergingBMS.Text, true);
-            
-            bms2.Export(textBox_mergingBMS.Text + "_comverted.bms");
+            // BMSStructWriterTestClass.Search(@"Some BMS Directory");
 
-            MessageBox.Show(this, bms2.Message);
-
+            BMSStructWriterTestClass.TestOneFile(textBox_mergingBMS.Text, this);
             return;
 
             //----------------------------------------

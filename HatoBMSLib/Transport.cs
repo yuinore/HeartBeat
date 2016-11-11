@@ -320,7 +320,7 @@ namespace HatoBMSLib
             {
                 if (ev.Value == (long)ev.Value && 1 <= ev.Value && ev.Value <= 255)
                 {
-                    objs.Add(new BMObject(BMSCH_TEMPO, 0, BMConvert.FromBase36(String.Format("{0:X2}", ev.Value)), ev.Key));
+                    objs.Add(new BMObject(BMSCH_TEMPO, 0, BMConvert.FromBase36(String.Format("{0:X2}", (int)ev.Value)), ev.Key));
                 }
                 else
                 {
@@ -330,13 +330,13 @@ namespace HatoBMSLib
 
                     int defId = -1;
 
-                    if (BPMDefinitionList.ContainsValue(ev.Value))  // FIXME: 遅そう
+                    if (BPMDefinitionList.ContainsValue(roundedValue))  // FIXME: 遅そう
                     {
-                        defId = BPMDefinitionList.First(x => x.Value == ev.Value).Key;  // FIXME: 遅そう
+                        defId = BPMDefinitionList.First(x => x.Value == roundedValue).Key;  // FIXME: 遅そう
                     }
                     else
                     {
-                        BPMDefinitionList[BPMDefinitionCursor] = ev.Value;
+                        BPMDefinitionList[BPMDefinitionCursor] = roundedValue;
                         defId = BPMDefinitionCursor;
 
                         BPMDefinitionCursor++;  // この数字、登場順ではなく数値順なのでは・・・？
@@ -359,13 +359,13 @@ namespace HatoBMSLib
 
                 int defId = -1;
 
-                if (StopDefinitionList.ContainsValue(ev.Value))  // FIXME: 遅そう
+                if (StopDefinitionList.ContainsValue(roundedValue))  // FIXME: 遅そう
                 {
-                    defId = StopDefinitionList.First(x => x.Value == ev.Value).Key;  // FIXME: 遅そう
+                    defId = StopDefinitionList.First(x => x.Value == roundedValue).Key;  // FIXME: 遅そう
                 }
                 else
                 {
-                    StopDefinitionList[StopDefinitionCursor] = ev.Value;
+                    StopDefinitionList[StopDefinitionCursor] = roundedValue;
                     defId = StopDefinitionCursor;
 
                     StopDefinitionCursor++;
