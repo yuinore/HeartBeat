@@ -68,6 +68,8 @@ namespace SmartChartGenerator
             Analyze(filename, true, -1, out TDP, out MDP);
         }
 
+        bool AnalyzingNotesPerSecond = false;
+
         private void Analyze(string filename, bool drawGraph, int ExLevel, out double TDP, out double MDP)
         {
             TDP = MDP = -1;
@@ -80,24 +82,37 @@ namespace SmartChartGenerator
                 return;
             }
 
+            AnalyzingNotesPerSecond = radioButton1.Checked;
+
             b = new BMSStruct(filename);
 
             //MessageBox.Show(b.PlayableBMObjects.Count + "notes");
 
             // 集計
             #region オブジェ数計算
-            Dictionary<int, int> SecondToNotesCount = new Dictionary<int, int>();
-            Dictionary<int, int> SecondToScratchCount = new Dictionary<int, int>();
-            Dictionary<int, int> SecondToLNCount = new Dictionary<int, int>();
+            //__________________________________________________________________________ Short1-7 Long1-7 ShortScr LongScr
+            Dictionary<int, int> SecondToNotesCount = new Dictionary<int, int>(); //____   yes      yes     yes      yes
+            Dictionary<int, int> SecondToScratchCount = new Dictionary<int, int>(); //__   no       no      yes      yes
+            Dictionary<int, int> SecondToLNCount = new Dictionary<int, int>(); //_______   no       yes     no       yes
+            Dictionary<int, int> SecondToLNScratchCount = new Dictionary<int, int>(); //   no       no      no       yes
             int maxSec = 10;
             int maxNotes = 5;
             {
                 foreach (var obj in b.PlayableBMObjects)
                 {
-                    int sec = (int)Math.Floor(obj.Seconds);
+                    int sec = 0;
+                    if (AnalyzingNotesPerSecond)
+                    {
+                        sec = (int)Math.Floor(obj.Seconds);
+                    }
+                    else
+                    {
+                        sec = (int)Math.Floor((double)obj.Measure);
+                    }
                     SecondToNotesCount[sec] = SecondToNotesCount.GetValueOrDefault(sec) + 1;
                     SecondToScratchCount[sec] = SecondToScratchCount.GetValueOrDefault(sec) + (obj.Keyid == 6 ? 1 : 0);
                     SecondToLNCount[sec] = SecondToLNCount.GetValueOrDefault(sec) + (obj.Terminal != null ? 1 : 0);
+                    SecondToLNScratchCount[sec] = SecondToLNScratchCount.GetValueOrDefault(sec) + ((obj.Terminal != null && obj.Keyid == 6) ? 1 : 0);
 
                     maxSec = Math.Max(sec, maxSec);
                     maxNotes = Math.Max(maxNotes, SecondToNotesCount[sec]);
@@ -220,97 +235,106 @@ namespace SmartChartGenerator
                 chart1.Series.Clear();
                 chart1.Legends.Clear();
 
-                Series test4 = new Series();
+                Action<Chart, SeriesChartType, Color, string, int, int, Func<int, double>> AddSeries =
+                    (chart, chartType, color, seriesName, start, end, f) =>
                 {
-                    test4.ChartType = SeriesChartType.StackedColumn;
-                    test4.Color = Color.FromArgb(0xFF, 0x33, 0x66);
-                    test4.Name = "Scratch Count";
-
-                    for (int i = 0; i < maxSec + 2 + 5; i++)
+                    Series series = new Series();
                     {
-                        //if (SecondToScratchCount.GetValueOrDefault(i) != 0)
-                        //{
-                        test4.Points.AddXY(i, SecondToScratchCount.GetValueOrDefault(i));
-                        //}
+                        series.ChartType = chartType;
+                        series.Color = color;
+                        series.Name = seriesName;
+
+                        for (int i = start; i < end; i++)
+                        {
+                            series.Points.AddXY(i, f(i));
+                        }
+
+                        chart1.Series.Add(series);
+                    }
+                };
+
+                AddSeries(chart1,
+                    SeriesChartType.StackedColumn, Color.FromArgb(0x99, 0x00, 0x33), "Long Scratch Count",
+                    0, maxSec + 2 + 5,
+                    i => SecondToLNScratchCount.GetValueOrDefault(i));
+
+                AddSeries(chart1,
+                    SeriesChartType.StackedColumn, Color.FromArgb(0xFF, 0x33, 0x66), "Scratch Count",
+                    0, maxSec + 2 + 5,
+                    i => SecondToScratchCount.GetValueOrDefault(i) - SecondToLNScratchCount.GetValueOrDefault(i));
+
+                AddSeries(chart1,
+                    SeriesChartType.StackedColumn, Color.FromArgb(0xFF, 0xCC, 0x33), "LN Count",
+                    0, maxSec + 2 + 5,
+                    i => SecondToLNCount.GetValueOrDefault(i) - SecondToLNScratchCount.GetValueOrDefault(i));
+
+                AddSeries(chart1,
+                    SeriesChartType.StackedColumn, Color.FromArgb(0x99, 0x99, 0x99), "Notes Count",
+                    0, maxSec + 2 + 5,
+                    i => SecondToNotesCount.GetValueOrDefault(i) - SecondToScratchCount.GetValueOrDefault(i)
+                        - SecondToLNCount.GetValueOrDefault(i) + SecondToLNScratchCount.GetValueOrDefault(i));
+
+                if (AnalyzingNotesPerSecond)
+                {
+                    /*Series test7 = new Series();
+                    {
+                        test7.ChartType = SeriesChartType.Line;
+                        test7.Color = Color.FromArgb(0x88, 0x00, 0xFF);
+                        test7.BorderWidth = 2;
+                        test7.Name = "LN Count_";
+
+                        for (int i = 0; i < maxSec + 2 + 5; i++)
+                        {
+                            test7.Points.AddXY(i, SecondToLNCount.GetValueOrDefault(i));
+                        }
+
+                        chart1.Series.Add(test7);
+                    }*/
+                    
+                    Series test2 = new Series();
+                    {
+                        test2.ChartType = SeriesChartType.Line;
+                        test2.Color = Color.FromArgb(0x00, 0x66, 0xCC);
+                        test2.BorderWidth = 2;
+                        test2.Name = "M Ave Max (3sec)";
+
+                        for (int i = 0; i < (maxSec + averagingWidthSeconds + 1) / regionWidthSeconds; i++)
+                        {
+                            test2.Points.AddXY((double)i * regionWidthSeconds, RegionToMaxDensity.GetValueOrDefault(i));
+                        }
+
+                        chart1.Series.Add(test2);
                     }
 
-                    chart1.Series.Add(test4);
-                }
-
-                Series test = new Series();
-                {
-                    test.ChartType = SeriesChartType.StackedColumn;
-                    //test.Color = Color.FromArgb(0x99, 0xCC, 0x66);
-                    //test.Color = Color.FromArgb(0xFF, 0xCC, 0x66);
-                    test.Color = Color.FromArgb(0xAA, 0xAA, 0xAA);
-                    test.Name = "Notes Count";
-
-                    for (int i = 0; i < maxSec + 2 + 5; i++)
+                    Series test6 = new Series();
                     {
-                        test.Points.AddXY(i, SecondToNotesCount.GetValueOrDefault(i) - SecondToScratchCount.GetValueOrDefault(i));
+                        test6.ChartType = SeriesChartType.Line;
+                        test6.Color = Color.FromArgb(0x00, 0x66, 0x66);
+                        test6.BorderWidth = 1;
+                        test6.Name = "M Ave Min (3sec)";
+
+                        for (int i = 0; i < (maxSec + averagingWidthSeconds + 1) / regionWidthSeconds; i++)
+                        {
+                            test6.Points.AddXY((double)i * regionWidthSeconds, RegionToMinDensity.GetValueOrDefault(i));
+                        }
+
+                        chart1.Series.Add(test6);
                     }
 
-                    chart1.Series.Add(test);
-                }
-
-                Series test7 = new Series();
-                {
-                    test7.ChartType = SeriesChartType.Line;
-                    test7.Color = Color.FromArgb(0xFF, 0xCC, 0x33);
-                    test7.BorderWidth = 2;
-                    test7.Name = "LN Count";
-
-                    for (int i = 0; i < maxSec + 2 + 5; i++)
+                    Series test5 = new Series();
                     {
-                        test7.Points.AddXY(i, SecondToLNCount.GetValueOrDefault(i));
+                        test5.ChartType = SeriesChartType.Line;
+                        test5.Color = Color.FromArgb(0x66, 0x00, 0xCC);
+                        test5.BorderWidth = 2;
+                        test5.Name = "Tateren [Hz]";
+
+                        for (int i = 0; i < (maxSec + averagingWidthSeconds + 1) / regionWidthSeconds; i++)
+                        {
+                            test5.Points.AddXY((double)i * regionWidthSeconds, RegionToTateren.GetValueOrDefault(i));
+                        }
+
+                        chart1.Series.Add(test5);
                     }
-
-                    chart1.Series.Add(test7);
-                }
-
-                Series test2 = new Series();
-                {
-                    test2.ChartType = SeriesChartType.Line;
-                    test2.Color = Color.FromArgb(0x00, 0x66, 0xCC);
-                    test2.BorderWidth = 2;
-                    test2.Name = "M Ave Max (3sec)";
-
-                    for (int i = 0; i < (maxSec + averagingWidthSeconds + 1) / regionWidthSeconds; i++)
-                    {
-                        test2.Points.AddXY((double)i * regionWidthSeconds, RegionToMaxDensity.GetValueOrDefault(i));
-                    }
-
-                    chart1.Series.Add(test2);
-                }
-
-                Series test6 = new Series();
-                {
-                    test6.ChartType = SeriesChartType.Line;
-                    test6.Color = Color.FromArgb(0x00, 0x66, 0x66);
-                    test6.BorderWidth = 1;
-                    test6.Name = "M Ave Min (3sec)";
-
-                    for (int i = 0; i < (maxSec + averagingWidthSeconds + 1) / regionWidthSeconds; i++)
-                    {
-                        test6.Points.AddXY((double)i * regionWidthSeconds, RegionToMinDensity.GetValueOrDefault(i));
-                    }
-
-                    chart1.Series.Add(test6);
-                }
-
-                Series test5 = new Series();
-                {
-                    test5.ChartType = SeriesChartType.Line;
-                    test5.Color = Color.FromArgb(0x66, 0x00, 0xCC);
-                    test5.BorderWidth = 2;
-                    test5.Name = "Tateren [Hz]";
-
-                    for (int i = 0; i < (maxSec + averagingWidthSeconds + 1) / regionWidthSeconds; i++)
-                    {
-                        test5.Points.AddXY((double)i * regionWidthSeconds, RegionToTateren.GetValueOrDefault(i));
-                    }
-
-                    chart1.Series.Add(test5);
                 }
 
                 Legend legend = new Legend();
@@ -369,23 +393,41 @@ namespace SmartChartGenerator
         {
             if (b == null) return;
 
-            // クライアント座標をグラフ上の座標に変換する
-            var x = chart1.ChartAreas[0].AxisX.PixelPositionToValue(e.X);
-            var y = chart1.ChartAreas[0].AxisY.PixelPositionToValue(e.Y);
+            double x, y;
+            try
+            {
+                // クライアント座標をグラフ上の座標に変換する
+                x = chart1.ChartAreas[0].AxisX.PixelPositionToValue(e.X);
+                y = chart1.ChartAreas[0].AxisY.PixelPositionToValue(e.Y);
+            }
+            catch
+            {
+                // 位置引数は 0～100 の範囲内で指定する必要があります。
+                return;
+            }
             // Chartコントロールにデータを追加する
             //chart1.Series[0].Points.AddXY(x, y);
 
-            var seconds = x;
+            if (AnalyzingNotesPerSecond)
+            {
+                var seconds = x;
 
-            var measure = b.transp.BeatToMeasure(b.transp.SecondsToBeat(seconds));
-            var measure2 = b.transp.BeatToMeasure(b.transp.SecondsToBeat(seconds + 1));
+                var measure = b.transp.BeatToMeasure(b.transp.SecondsToBeat(seconds));
+                var measure2 = b.transp.BeatToMeasure(b.transp.SecondsToBeat(seconds + 1));
 
-            var integPartOfMeasure = (int)Math.Floor((double)measure);
-            var integPartOfMeasure2 = (int)Math.Floor((double)measure2);
+                var integPartOfMeasure = (int)Math.Floor((double)measure);
+                var integPartOfMeasure2 = (int)Math.Floor((double)measure2);
 
-            label1.Text =
-                "#" + integPartOfMeasure.ToString("D3")// + "  " + (measure - integPartOfMeasure).ToString()
-                + " ～ #" + integPartOfMeasure2.ToString("D3");// + "  " + (measure2 - integPartOfMeasure2).ToString();
+                label1.Text =
+                    "#" + integPartOfMeasure.ToString("D3")// + "  " + (measure - integPartOfMeasure).ToString()
+                    + " ～ #" + integPartOfMeasure2.ToString("D3");// + "  " + (measure2 - integPartOfMeasure2).ToString();
+            }
+            else
+            {
+                var measure = Math.Round(x);
+                
+                label1.Text = "#" + ((int)measure).ToString("D3");
+            }
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -616,6 +658,25 @@ namespace SmartChartGenerator
             }
 
             b = null;
+        }
+
+        private void textBox1_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private void textBox1_DragDrop(object sender, DragEventArgs e)
+        {
+            textBox1.Text = ((string[])(string[])e.Data.GetData(DataFormats.FileDrop, false))[0];
+
+            Analyze();
         }
     }
 }
