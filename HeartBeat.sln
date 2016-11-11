@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeartBeat", "HeartBeat\HeartBeat.csproj", "{9466681B-25FF-4A7D-8A9A-D119A6443D7C}"
 EndProject
@@ -47,6 +47,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnzuBMSDiff", "AnzuBMSDiff\AnzuBMSDiff.csproj", "{FADB4062-D722-4808-85EB-1F6AA25BA922}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartChartGenerator", "SmartChartGenerator\SmartChartGenerator.csproj", "{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simamu", "Simamu\Simamu.csproj", "{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}"
 EndProject
 Global
 	GlobalSection(Performance) = preSolution
@@ -324,6 +326,22 @@ Global
 		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|x64.Build.0 = Release|Any CPU
 		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|x86.ActiveCfg = Release|Any CPU
 		{3B952EBF-D98A-4C01-AFB7-A37F410C1B1E}.Release|x86.Build.0 = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|x64.Build.0 = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Debug|x86.Build.0 = Debug|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|x64.ActiveCfg = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|x64.Build.0 = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|x86.ActiveCfg = Release|Any CPU
+		{6A7A9D90-BC74-4D5A-895C-7BF5356C6897}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
