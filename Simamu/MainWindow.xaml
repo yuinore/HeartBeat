@@ -22,6 +22,7 @@
         <TextBox x:Name="textBox_bmx2wavPath" Height="23" Margin="184,93,57,0" TextWrapping="Wrap" VerticalAlignment="Top" TextChanged="textBox_bmx2wavPath_TextChanged"/>
         <TextBlock x:Name="textBlock_Copy3" HorizontalAlignment="Left" Margin="41,100,0,0" TextWrapping="Wrap" Text="bmx2wavc.exeのパス" VerticalAlignment="Top" Height="16" Width="128"/>
         <TextBlock x:Name="textBlock_bmx2wavStatus" Margin="0,96,28,0" TextWrapping="Wrap" Text="--" VerticalAlignment="Top" Foreground="Black" HorizontalAlignment="Right" Width="21"/>
+        <CheckBox x:Name="checkBox_removeTemp" Content="実行後、一時ファイルを削除する" HorizontalAlignment="Left" Margin="41,237,0,0" VerticalAlignment="Top" IsChecked="True"/>
 
     </Grid>
 </Window>

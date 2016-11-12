@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -171,15 +172,24 @@ namespace Simamu
                 batchText += "\"" + bmx2wavExecutablePath + "\" -c \"#temp_bmx2wav.ini\" \"" + tempBmsFilename + "\" \""+ targetWavFilename + "\"\r\n";
             }
 
+            if (checkBox_removeTemp.IsChecked == true)
+            {
+                batchText += "\r\nDEL \"#temp_*\"\r\n";  // DELは危険なのでは？
+            }
+
             batchText += "\r\nPAUSE\r\n";
 
-            File.WriteAllText(bmsDirectoryPath + @"\" + "#temp_batch_(click_here).bat", batchText);
+            File.WriteAllText(bmsDirectoryPath + @"\" + "#temp_#batch_(click_here).bat", batchText);
+
+            //******** 設定ファイルのコピー ********
+            var targetIniFilename = bmsDirectoryPath + @"\" + "#temp_bmx2wav.ini";
+            if (!File.Exists(targetIniFilename)) {
+                File.Copy(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "#temp_bmx2wav.ini"), targetIniFilename, false);
+            }
 
             //******** あとはバッチファイルを実行するだけ！ ********
 
             // todo:
-            //   iniの書き出し
-            //   一時ファイルの削除
             //   不要なwav定義の削除（任意）
             //   画面設定の記憶
         }
