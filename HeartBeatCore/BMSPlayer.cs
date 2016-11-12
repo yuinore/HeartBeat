@@ -346,6 +346,50 @@ namespace HeartBeatCore
             b = new BMSStruct(path);
             TraceWarning(b.Message, false);
 
+            #region オブジェ密度計算
+            {
+                StringBuilder densCsv = new StringBuilder();
+                densCsv.Append("time,density\r\n");
+
+                var objs = b.PlayableBMObjects;
+
+                double aveWidth = 3.0;  // seconds
+                double flashInterval = 0.5;
+
+                var nSecAve = objs.Select(x => Tuple.Create(x.Seconds, 1.0)).Concat(objs.Select(x => Tuple.Create(x.Seconds + aveWidth, -1.0))).OrderBy(x => x.Item1);
+
+                int duration = (int)Math.Floor(nSecAve.Last().Item1) + 1;
+
+                nSecAve = nSecAve.Concat(Enumerable.Range(0, duration + 1).Select(x => Tuple.Create((double)x, 0.0))).OrderBy(x => x.Item1);
+
+                double maxObjCount = 0;
+                double maxDensityAt = -1;
+                double currentObjCount = 0;
+                double lastFlashTime = -99;
+
+                foreach (var o in nSecAve)
+                {
+                    currentObjCount += o.Item2;
+                    if (currentObjCount > maxObjCount)
+                    {
+                        maxObjCount = currentObjCount;
+                        maxDensityAt = o.Item1;
+                    }
+
+                    if (o.Item1 - lastFlashTime > flashInterval)
+                    {
+                        densCsv.Append(o.Item1 + "," + (currentObjCount / aveWidth) + "\r\n");  // ここらへんは適当
+                        lastFlashTime = Math.Floor(o.Item1 / flashInterval) * flashInterval;
+                    }
+                }
+
+                Console.WriteLine("max density : " + (maxObjCount / aveWidth) + " at " + maxDensityAt);
+
+                var densityfilename = Path.GetDirectoryName(path) + @"\____" + Path.GetFileNameWithoutExtension(path) + @"_density(" + ((int)aveWidth) +"s).csv";
+                File.WriteAllText(densityfilename, densCsv.ToString());
+            }
+            #endregion
+
             ps.MaximumAcceptance = b.PlayableBMObjects.Count();
             ps.MaximumExScore = ps.MaximumAcceptance * regulation.MaxScorePerObject;
 

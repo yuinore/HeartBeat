@@ -52,12 +52,13 @@ namespace HatoBMSLib
     /// BMSにおけるオブジェを表します。これは、BMSに配置された、２桁の３６進数です。
     /// ロングノートは始点と終点を個別に持つとは言ってない。
     /// </summary>
-    
+
     public class BMObject : IComparable<BMObject>
     {
-        public BMObject(int bmsch, int wavid, Rational measure)
+        public BMObject(int bmsch, int subCh, int wavid, Rational measure)
         {
             this.BMSChannel = bmsch;
+            this.BMSSubChannel = subCh;
             this.Wavid = wavid;
             this.Measure = measure;
         }
@@ -68,7 +69,8 @@ namespace HatoBMSLib
         }
 
         public int BMSChannel;  // in Hex (ex. Lane26(2PSC) is 38 )
-        public int Wavid;  // in 36th
+        public int BMSSubChannel;
+        public int Wavid;  // in 36th (特に、標準BPM定義においては16進文字列を36進として解釈した値が格納される。)
         public Rational Measure;  // 理論上の再生地点で、ゲーム再生には用いない
 
         public double Beat;
@@ -194,16 +196,33 @@ namespace HatoBMSLib
             }
         }
 
-        /*public override string ToString()
+        public override string ToString()
         {
-            long n2 = Beat.n;
-            long d2 = Beat.d;
-            while (d2 < 16)
-            {
-                n2 *= 2;
-                d2 *= 2;
-            }
-            return "#" + (n2 / d2).ToString("D3") + "\t" + (n2 % d2) + "/" + d2 + "\t#WAV" + BMSParser.IntToHex36Upper(MixerChannel);
-        }*/
+            int integPart = (int)Math.Floor((double)Measure);
+
+            Rational decimalPart = Measure - integPart;
+
+            return "#" + integPart.ToString("D3") + " " + BMConvert.ToBase36(this.BMSChannel) + "\t" + decimalPart.ToString()
+                + (IsGraphic() ? "\t#BMP" : "\t#WAV") + BMConvert.ToBase36(Wavid);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BMObject bm = obj as BMObject;
+
+            if (bm == null) return false;
+
+            return (
+                bm.BMSChannel == BMSChannel &&
+                bm.Wavid == Wavid &&
+                bm.Measure == Measure &&
+                ((bm.Terminal == null) == (Terminal == null)) &&
+                ((Terminal == null) ? true : bm.Terminal.Equals(Terminal)));
+        }
+
+        public override int GetHashCode()
+        {
+            return BMSChannel ^ Wavid ^ Measure.GetHashCode() ^ ((Terminal == null) ? 0 : Terminal.GetHashCode());
+        }
     }
 }

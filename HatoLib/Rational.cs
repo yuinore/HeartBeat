@@ -32,6 +32,9 @@ namespace HatoLib
         /// </summary>
         private readonly long denominator;
 
+        public long Numerator { get { return numerator; } }
+        public long Denominator { get { return denominator; } }
+
         public Rational(long nume)
         {
             numerator = nume;
