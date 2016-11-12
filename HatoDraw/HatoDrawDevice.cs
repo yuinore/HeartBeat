@@ -151,7 +151,7 @@ namespace HatoDraw
                     DpiX = renderDpi.Width,  // この値が何か重要な働きをしている・・・
                     DpiY = renderDpi.Height,
                     MinLevel = SharpDX.Direct2D1.FeatureLevel.Level_DEFAULT,
-                    PixelFormat = new PixelFormat(Format.Unknown, AlphaMode.Ignore),
+                    PixelFormat = new PixelFormat(Format.Unknown, D2D.AlphaMode.Ignore),
                     //PixelFormat = new PixelFormat(Format.R8G8B8A8_UInt, AlphaMode.Straight),
                     Type = RenderTargetType.Default,
                     Usage = RenderTargetUsage.None
