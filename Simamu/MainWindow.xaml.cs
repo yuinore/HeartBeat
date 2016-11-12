@@ -1,4 +1,5 @@
-﻿using HatoBMSLib;
+﻿using CsvHelper;
+using HatoBMSLib;
 using HatoLib;
 using System;
 using System.Collections.Generic;
@@ -192,6 +193,7 @@ namespace Simamu
             // todo:
             //   不要なwav定義の削除（任意）
             //   画面設定の記憶
+            //   csvへの同値関係の書き出し・読み込み
         }
 
         private void textBox_bmx2wavPath_TextChanged(object sender, TextChangedEventArgs e)
@@ -214,6 +216,47 @@ namespace Simamu
                 {
                     textBlock_bmx2wavStatus.Text = "x";
                     textBlock_bmx2wavStatus.Foreground = Brushes.Red;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                var csvFilename = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ctrl.csv");
+
+                using (var csv = new CsvWriter(new StreamWriter(new FileStream(csvFilename, FileMode.Create, FileAccess.Write), Encoding.GetEncoding("Shift_JIS"))))
+                {
+                    csv.WriteHeader((new { Value = "" }).GetType());
+                    csv.WriteRecord(new { Value = textBox_mergingBMS.Text });
+                    csv.WriteRecord(new { Value = textBox_bmx2wavPath.Text });
+                    csv.WriteRecord(new { Value = textBox_namingRule.Text });
+                }
+            }
+            catch
+            {
+            }
+            // あの、これ普通にCsvHelper使わなくていいと思うんですけど・・・
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var csvFilename = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ctrl.csv");
+
+                using (var csv = new CsvReader(new StreamReader(new FileStream(csvFilename, FileMode.Open, FileAccess.Read), Encoding.GetEncoding("Shift_JIS"))))
+                {
+                    csv.Read();
+                    textBox_mergingBMS.Text = csv.GetField<string>(0);
+                    csv.Read();
+                    textBox_bmx2wavPath.Text = csv.GetField<string>(0);
+                    csv.Read();
+                    textBox_namingRule.Text = csv.GetField<string>(0);
                 }
             }
             catch
