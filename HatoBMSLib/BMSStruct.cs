@@ -150,7 +150,14 @@ namespace HatoBMSLib
             SortedDictionary<int, double> transpBPMDef;
             SortedDictionary<int, double> transpStopDef;
 
-            transp.Export(out transpObjs, out transpBPMDef, out transpStopDef);
+            double initialBPM;
+
+            transp.Export(out transpObjs, out transpBPMDef, out transpStopDef, out initialBPM);
+
+            if (Math.Abs(initialBPM - BPM) >= 0.001)
+            {
+                throw new Exception("穏やかじゃないわね");
+            }
 
             var writer = new StreamWriter(ws, Encoding.GetEncoding("Shift_JIS"));
 

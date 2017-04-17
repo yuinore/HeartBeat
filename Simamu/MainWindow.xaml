@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Simamu"
         mc:Ignorable="d"
-        Title="Simamu -Simple Audio Mergeing Utility-" Height="350" Width="608" Closing="Window_Closing" Loaded="Window_Loaded">
+        Title="Simamu -Simple Audio Mergeing Utility-" Height="350" Width="608" Closing="Window_Closing" Loaded="Window_Loaded" Icon="icon.ico">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>

@@ -294,7 +294,7 @@ namespace HatoBMSLib
             return BeatToSeconds(MeasureToBeat(measure));
         }
 
-        public void Export(out List<BMObject> objs, out SortedDictionary<int, double> BPMDefinitionList, out SortedDictionary<int, double> StopDefinitionList)
+        public void Export(out List<BMObject> objs, out SortedDictionary<int, double> BPMDefinitionList, out SortedDictionary<int, double> StopDefinitionList, out double initialBPM)
         {
             // 次の要素をBMSに書き出す
             // measureToTempoChange
@@ -316,14 +316,24 @@ namespace HatoBMSLib
             BPMDefinitionList = new SortedDictionary<int, double>();
             StopDefinitionList = new SortedDictionary<int, double>();
 
+            initialBPM = 120;
+
             foreach (var ev in measureToTempoChange)
             {
+                if (ev.Key == 0)
+                {
+                    initialBPM = ev.Value;
+                    continue;
+                }
+
                 if (ev.Value == (long)ev.Value && 1 <= ev.Value && ev.Value <= 255)
                 {
+                    // 標準BPM定義
                     objs.Add(new BMObject(BMSCH_TEMPO, 0, BMConvert.FromBase36(String.Format("{0:X2}", (int)ev.Value)), ev.Key));
                 }
                 else
                 {
+                    // 拡張BPM定義
                     double roundedValue = Math.Round(ev.Value / BPM_PRECISION) * BPM_PRECISION;
 
                     if (roundedValue <= 0) roundedValue = BPM_PRECISION;
@@ -339,7 +349,7 @@ namespace HatoBMSLib
                         BPMDefinitionList[BPMDefinitionCursor] = roundedValue;
                         defId = BPMDefinitionCursor;
 
-                        BPMDefinitionCursor++;  // この数字、登場順ではなく数値順なのでは・・・？
+                        BPMDefinitionCursor++;  // この数字、登場順ではなく数値順であるべきなのでは・・・？
                     }
 
                     objs.Add(new BMObject(BMSCH_EXTEMPO, 0, defId, ev.Key));

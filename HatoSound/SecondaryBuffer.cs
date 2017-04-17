@@ -164,10 +164,18 @@ namespace HatoSound
 
         public void StopAndPlay(double volumeInDb = 0, double playfrom = 0)
         {
-            dsSecondaryBuffer.Stop();
-            dsSecondaryBuffer.CurrentPosition = (int)(playfrom * SamplingRate * ChannelCount * sizeof(short));
-            dsSecondaryBuffer.Volume = (int)(volumeInDb * 100.0);  // -10000 ～ 0, それぞれ -100dB, 0dB を表す。
-            dsSecondaryBuffer.Play(0, PlayFlags.None);
+            try
+            {
+                dsSecondaryBuffer.Stop();
+                dsSecondaryBuffer.CurrentPosition = (int)(playfrom * SamplingRate * ChannelCount * sizeof(short));
+                dsSecondaryBuffer.Volume = (int)(volumeInDb * 100.0);  // -10000 ～ 0, それぞれ -100dB, 0dB を表す。
+                dsSecondaryBuffer.Play(0, PlayFlags.None);
+            }
+            catch
+            {
+                // FIXME:
+                //   LNの途中で離すとエラー。誰か直して
+            }
         }
 
         /// <summary>
