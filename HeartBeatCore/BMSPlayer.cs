@@ -118,7 +118,7 @@ namespace HeartBeatCore
         private GameRegulation regulation = new HeartBeatRegulation();
 
         // TODO: これ↓の初期化処理
-        public Skin skin = new SimpleChipSkin();
+        public Skin skin = new SimpleRingSkin();
 
         PlayingState ps = new PlayingState();  // スキンにデータを受け渡すのに使う
 

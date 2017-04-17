@@ -130,7 +130,7 @@ namespace HatoPainter
                 rt.FillRectangle(
                                 xpos - 32f + 16f + 96f - 16f, 0,
                                 48, 480,
-                                0x888888, 0.12f);
+                                0x888888, 0.24f);
             }
             #endregion
 

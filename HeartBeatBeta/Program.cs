@@ -131,6 +131,14 @@ namespace HeartBeatBeta
                 {
                     RingShowingPeriodByMeasure = Convert.ToSingle(cmd.Substring(2));
                 }
+                else if (cmd.ToLower() == "--auto")
+                {
+                    autoplay = true;
+                }
+                else if (cmd.ToLower() == "--noauto")
+                {
+                    autoplay = false;
+                }
                 else if (cmd.Length >= 1 && cmd[0] != '-')
                 {
                     // 空白を含む場合は？→なぜか普通に実行できて怖い
