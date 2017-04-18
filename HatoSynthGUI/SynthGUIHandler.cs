@@ -433,6 +433,7 @@ namespace HatoSynthGUI
             }
 
             form.KeyDown += form_KeyDown;
+            form.KeyUp += form_KeyUp;
             //splitContainer1.KeyDown += form_KeyDown;
             //splitContainer1.Panel1.KeyDown += form_KeyDown;
             //splitContainer1.Panel2.KeyDown += form_KeyDown;
@@ -695,6 +696,8 @@ namespace HatoSynthGUI
                 arr.direction = ArrowDirection.None;
             }
         }
+        
+        bool KeyboardPlayMode = true;  // PCキーボード演奏モード
 
         void form_KeyDown(object sender, KeyEventArgs e)
         {
@@ -709,6 +712,27 @@ namespace HatoSynthGUI
                     // ASIOの制約かもしれないですね。
                     // それともアセンブリ(.dllファイル)の読み込みに時間が掛かっている・・・？
                 }
+            }
+
+            if (KeyboardPlayMode)
+            {
+                if (e.KeyCode == Keys.Z) { synth.NoteOn(60); }
+                if (e.KeyCode == Keys.X) { synth.NoteOn(62); }
+                if (e.KeyCode == Keys.C) { synth.NoteOn(64); }
+                if (e.KeyCode == Keys.V) { synth.NoteOn(65); }
+                if (e.KeyCode == Keys.B) { synth.NoteOn(67); }
+            }
+        }
+        
+        private void form_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (KeyboardPlayMode)
+            {
+                if (e.KeyCode == Keys.Z) { synth.NoteOff(60); }
+                if (e.KeyCode == Keys.X) { synth.NoteOff(62); }
+                if (e.KeyCode == Keys.C) { synth.NoteOff(64); }
+                if (e.KeyCode == Keys.V) { synth.NoteOff(65); }
+                if (e.KeyCode == Keys.B) { synth.NoteOff(67); }
             }
         }
 
