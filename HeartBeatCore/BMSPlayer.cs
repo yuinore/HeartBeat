@@ -386,7 +386,10 @@ namespace HeartBeatCore
                 Console.WriteLine("max density : " + (maxObjCount / aveWidth) + " at " + maxDensityAt);
 
                 var densityfilename = Path.GetDirectoryName(path) + @"\____" + Path.GetFileNameWithoutExtension(path) + @"_density(" + ((int)aveWidth) +"s).csv";
-                File.WriteAllText(densityfilename, densCsv.ToString());
+                if (false)
+                {
+                    File.WriteAllText(densityfilename, densCsv.ToString());
+                }
             }
             #endregion
 
